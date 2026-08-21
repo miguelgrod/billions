@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Billions · ¿Cuál recaudó más?</title>
+  <meta name="description" content="Juego de comparación: adivina cuál de las dos películas recaudó más en todo el mundo." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .display { font-family: 'Bebas Neue', 'Inter', sans-serif; letter-spacing: .02em; }
+    @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.035); } 100% { transform: scale(1); } }
+    .pop { animation: pop .45s ease-out; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    .shake { animation: shake .45s ease-out; }
+    @keyframes toastPop {
+      0%   { opacity: 0; transform: translateY(10px) scale(.85); }
+      14%  { opacity: 1; transform: translateY(0) scale(1.05); }
+      24%  { transform: scale(1); }
+      72%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-8px) scale(.98); }
+    }
+    .toast-show { animation: toastPop 1.4s ease-out forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      .toast-show { animation: none; opacity: 1; }
+      .pop, .shake { animation: none; }
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    .fade-up { animation: fadeUp .35s ease-out both; }
+  </style>
+</head>
+<body class="antialiased min-h-screen bg-neutral-950 text-neutral-100 selection:bg-amber-400 selection:text-neutral-900">
+
+  <div class="pointer-events-none fixed inset-0 opacity-60"
+       style="background:radial-gradient(60% 50% at 50% 0%, rgba(245,158,11,.13), transparent 70%)"></div>
+
+  <div id="app" class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-5 sm:px-6">
+
+    <!-- Cabecera -->
+    <header class="mb-4 flex items-center justify-between gap-4">
+      <div class="flex items-baseline gap-2">
+        <h1 class="display text-3xl leading-none text-amber-400 sm:text-4xl">BILLIONS</h1>
+        <span class="hidden text-xs font-medium text-neutral-500 sm:inline">¿cuál recaudó más?</span>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Nivel</div>
+          <div id="score" class="display text-2xl leading-none text-neutral-100">0</div>
+        </div>
+        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Récord</div>
+          <div id="best" class="display text-2xl leading-none text-amber-400">0</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tablero -->
+    <main id="board" class="flex flex-1 flex-col">
+      <p class="mb-3 text-center text-sm text-neutral-400">
+        Elige la película con <span class="font-semibold text-neutral-200">mayor recaudación mundial</span>
+      </p>
+
+      <div class="relative grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <!-- Tarjeta A -->
+        <button data-side="0" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 hover:border-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
+          <!-- carátula -->
+          <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
+          <!-- contenido -->
+          <div class="relative flex flex-col items-center px-5 pb-5 pt-6">
+            <span class="js-year mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm"></span>
+            <span class="js-title display text-2xl leading-tight text-white drop-shadow-lg sm:text-4xl"></span>
+            <span class="js-gross display mt-2 h-8 text-2xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-3xl"></span>
+            <span class="js-hint mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>
+          </div>
+        </button>
+
+        <!-- Separador VS -->
+        <div class="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 sm:block">
+          <div class="display flex h-12 w-12 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 text-lg text-neutral-400">VS</div>
+        </div>
+        <div class="display -my-1 text-center text-sm text-neutral-600 sm:hidden">VS</div>
+
+        <!-- Aviso de acierto o fallo, superpuesto -->
+        <div id="toast" role="status" aria-live="polite"
+             class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
+          <div id="toast-box" class="max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
+            <div id="toast-msg" class="display text-4xl leading-none sm:text-5xl"></div>
+            <div id="toast-sub" class="mt-1 text-balance text-xs font-medium text-neutral-400"></div>
+          </div>
+        </div>
+
+        <!-- Tarjeta B -->
+        <button data-side="1" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 hover:border-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
+          <!-- carátula -->
+          <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
+          <!-- contenido -->
+          <div class="relative flex flex-col items-center px-5 pb-5 pt-6">
+            <span class="js-year mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm"></span>
+            <span class="js-title display text-2xl leading-tight text-white drop-shadow-lg sm:text-4xl"></span>
+            <span class="js-gross display mt-2 h-8 text-2xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-3xl"></span>
+            <span class="js-hint mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>
+          </div>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Pantalla previa -->
+    <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-neutral-950/90 p-4 backdrop-blur">
+      <div class="fade-up w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-7 text-center shadow-2xl">
+        <h2 class="display text-4xl leading-none text-amber-400">BILLIONS</h2>
+        <p class="mt-2 text-sm text-neutral-400">El juego de la taquilla</p>
+
+        <ol class="mt-6 space-y-3 text-left text-sm text-neutral-300">
+          <li class="flex gap-3">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">1</span>
+            <span>Te salen <strong class="text-neutral-100">dos películas</strong> enfrentadas.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">2</span>
+            <span>Elige la que <strong class="text-neutral-100">más recaudó</strong> en todo el mundo.</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">3</span>
+            <span>Aciertas y subes de nivel. <strong class="text-neutral-100">Un fallo y se acaba.</strong></span>
+          </li>
+        </ol>
+
+        <button id="play" class="mt-7 w-full rounded-xl bg-amber-400 px-5 py-3 font-semibold text-neutral-900 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
+          Empezar a jugar
+        </button>
+        <p id="intro-best" class="mt-3 h-4 text-xs text-neutral-500"></p>
+      </div>
+    </div>
+
+    <!-- Fin de partida -->
+    <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-neutral-950/85 p-4 backdrop-blur">
+      <div class="fade-up w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-7 text-center shadow-2xl">
+        <div class="display text-xl text-neutral-400">Fin de la partida</div>
+        <div id="go-score" class="display my-2 text-7xl leading-none text-amber-400">0</div>
+        <p id="go-label" class="text-sm text-neutral-400">niveles superados</p>
+        <p id="go-detail" class="mt-4 text-sm leading-relaxed text-neutral-300"></p>
+        <button id="restart" class="mt-6 w-full rounded-xl bg-amber-400 px-5 py-3 font-semibold text-neutral-900 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
+          Jugar otra vez
+        </button>
+      </div>
+    </div>
+
+    <footer class="mt-4 text-center text-[11px] leading-relaxed text-neutral-600">
+      Recaudación mundial en USD sin ajustar por inflación · Fuente: The Numbers · Datos a agosto de 2026<br />
+      Carátulas: Wikipedia · uso ilustrativo, los derechos pertenecen a sus respectivos estudios
+    </footer>
+  </div>
+
+  <script src="movies.js" defer></script>
+  <script src="posters.js" defer></script>
+  <script src="main.js" defer></script>
+</body>
+</html>
