@@ -53,9 +53,20 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 - **Ritmo:** `REVEAL_MS` (2800 ms tras acertar) y `GAMEOVER_MS` (3200 ms tras
   fallar) al principio de `main.js`. Son el tiempo para leer las cifras; se
   tocan a menudo, están como constantes con nombre por eso.
-- **Parejas:** aleatorias, nunca la misma dos rondas seguidas (`state.lastPairKey`).
-  La pareja siguiente se sortea y se precarga durante la ronda actual
-  (`state.next`), para que no parpadee al pasar de nivel.
+- **Dificultad progresiva:** la marca lo parecidas que son las dos recaudaciones,
+  medido como ratio entre ellas (2.0 = la ganadora dobla a la otra; 1.05 = moneda
+  al aire). `banda(level)` devuelve la horquilla admisible del nivel, que parte de
+  `RATIO_INICIAL` (2.0) y cae hacia `RATIO_SUELO` (1.12) con `RATIO_CAIDA`. La
+  horquilla tiene tope (`BANDA`) para que en niveles altos no cuele un duelo
+  fácil de más. Mediana real: 2.2 en el nivel 1, 1.6 en el 8, 1.3 en el 20.
+  **El suelo es deliberado:** sin él aparecerían rondas decididas al azar, que es
+  lo que hacía injusto el juego cuando las parejas eran aleatorias (27,5 % de las
+  rondas tenían ratio <1.1).
+- **Parejas:** `randomPair(level)` sortea hasta encontrar una que entre en la
+  horquilla, aflojándola cada 8 intentos, con un salvavidas final. Nunca repite la
+  del turno anterior (`state.lastPairKey`). La pareja siguiente se sortea y se
+  precarga durante la ronda actual (`state.next`), para que no parpadee al pasar
+  de nivel; por eso existe `state.round`, que es `state.score + 1`.
 - **Avisos:** un único elemento `#toast` superpuesto al tablero, con estilo por
   tipo en `TOAST_STYLES` (`ok` / `fail`). Se oculta solo con la animación CSS;
   no hay temporizador. Para añadir un tipo basta una entrada más en la tabla.

@@ -6,6 +6,15 @@ const REVEAL_MS = 2800;    // tiempo para leer las cifras antes de la ronda sigu
 const GAMEOVER_MS = 3200;  // tiempo para leerlas antes de la pantalla de fin
 const COUNT_MS = 900;      // duración del contador de recaudación
 
+// Dificultad: la marca lo parecidas que son las dos recaudaciones. Se mide como
+// ratio entre ellas (2.0 = la ganadora dobla a la otra, 1.05 = moneda al aire).
+// Arranca en duelos muy desiguales y se va estrechando nivel a nivel, con un
+// suelo para que nunca llegue a ser puro azar.
+const RATIO_INICIAL = 2.0;
+const RATIO_SUELO = 1.12;
+const RATIO_CAIDA = 0.85;   // cuánto se estrecha por nivel
+const BANDA = 1.45;         // ancho de la horquilla, para que no cuele un duelo fácil de más
+
 const els = {
   cards: [...document.querySelectorAll('.choice')],
   score: document.getElementById('score'),
@@ -27,6 +36,7 @@ const els = {
 const state = {
   score: 0,
   best: 0,
+  round: 1,             // ronda en juego: de ella depende la dificultad
   pair: [null, null],   // las dos películas en juego
   next: null,           // pareja precargada para la ronda siguiente
   locked: true,         // bloquea clics durante la revelación
@@ -39,16 +49,40 @@ const state = {
 
 const rnd = (n) => Math.floor(Math.random() * n);
 
-// Pareja aleatoria de películas distintas, nunca la misma que la ronda anterior
-function randomPair() {
-  let a, b, key;
-  do {
-    a = rnd(MOVIES.length);
-    b = rnd(MOVIES.length);
-    key = [a, b].sort((x, y) => x - y).join('-');
-  } while (a === b || key === state.lastPairKey);
-  state.lastPairKey = key;
-  return Math.random() < 0.5 ? [MOVIES[a], MOVIES[b]] : [MOVIES[b], MOVIES[a]];
+const ratio = (a, b) => (a.g > b.g ? a.g / b.g : b.g / a.g);
+
+// Horquilla de ratios admisible para un nivel: baja hacia RATIO_SUELO
+function banda(level) {
+  const lo = RATIO_SUELO + (RATIO_INICIAL - RATIO_SUELO) * Math.pow(RATIO_CAIDA, level - 1);
+  return [lo, lo * BANDA];
+}
+
+// Pareja de películas cuya diferencia de recaudación encaje en la dificultad
+// del nivel, distintas y nunca la misma que la ronda anterior.
+function randomPair(level) {
+  let [lo, hi] = banda(level);
+  for (let intento = 0; intento < 40; intento++) {
+    const a = MOVIES[rnd(MOVIES.length)];
+    const rivales = MOVIES.filter((b) => {
+      if (b === a) return false;
+      const r = ratio(a, b);
+      return r >= lo && r <= hi;
+    });
+    if (rivales.length) {
+      const b = rivales[rnd(rivales.length)];
+      const key = [a.r, b.r].sort((x, y) => x - y).join('-');
+      if (key !== state.lastPairKey) {
+        state.lastPairKey = key;
+        return Math.random() < 0.5 ? [a, b] : [b, a];
+      }
+    }
+    if (intento % 8 === 7) { lo *= 0.92; hi *= 1.12; }   // afloja si cuesta encontrar
+  }
+  // Salvavidas: con la horquilla aflojada esto no debería ocurrir nunca
+  let a, b;
+  do { a = MOVIES[rnd(MOVIES.length)]; b = MOVIES[rnd(MOVIES.length)]; } while (a === b);
+  state.lastPairKey = [a.r, b.r].sort((x, y) => x - y).join('-');
+  return [a, b];
 }
 
 const fmtMoney = (n) =>
@@ -156,7 +190,8 @@ function resetCards() {
 function newRound() {
   clearTimeout(state.timer);
   resetCards();
-  state.pair = state.next || randomPair();
+  state.round = state.score + 1;
+  state.pair = state.next || randomPair(state.round);
   state.next = null;
   state.pair.forEach((movie, i) => {
     const card = els.cards[i];
@@ -166,7 +201,7 @@ function newRound() {
     card.disabled = false;
   });
   state.locked = false;
-  state.next = randomPair();
+  state.next = randomPair(state.round + 1);
   preload(state.next);
 }
 
@@ -235,6 +270,7 @@ function gameOver() {
 
 function startGame() {
   state.score = 0;
+  state.round = 1;
   state.next = null;
   state.newRecord = false;
   els.score.textContent = '0';
