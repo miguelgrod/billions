@@ -5,6 +5,8 @@ const BEST_KEY = 'billions.best';
 const REVEAL_MS = 2800;    // tiempo para leer las cifras antes de la ronda siguiente
 const GAMEOVER_MS = 3200;  // tiempo para leerlas antes de la pantalla de fin
 const COUNT_MS = 900;      // duración del contador de recaudación
+const OUT_MS = 260;        // salida de las tarjetas al cambiar de nivel
+const STAGGER_MS = 70;     // desfase entre una tarjeta y la otra al entrar
 
 // Dificultad: la marca lo parecidas que son las dos recaudaciones. Se mide como
 // ratio entre ellas (2.0 = la ganadora dobla a la otra, 1.05 = moneda al aire).
@@ -176,8 +178,10 @@ const LOSE_CLASSES = ['border-red-500', 'bg-red-500/10', 'shake'];
 
 function resetCards() {
   els.cards.forEach((card) => {
-    card.classList.remove(...WIN_CLASSES, ...LOSE_CLASSES, 'opacity-60');
+    card.classList.remove(...WIN_CLASSES, ...LOSE_CLASSES, 'opacity-60',
+      'card-in', 'card-out');
     card.classList.add(...NEUTRAL_BORDER);
+    card.style.animationDelay = '';
     part(card, 'js-poster').classList.remove('brightness-90', 'saturate-100', 'blur-0');
     const gross = part(card, 'js-gross');
     gross.textContent = '';
@@ -187,9 +191,20 @@ function resetCards() {
   hideToast();
 }
 
+// Saca las tarjetas de la ronda anterior y monta la siguiente cuando ya no se
+// ven: así el cambio de pareja no se ve a medias y ningún estado de la ronda
+// anterior (borde, cifra, carátula) llega a solaparse con el nuevo.
 function newRound() {
   clearTimeout(state.timer);
+  if (!state.pair[0]) return mountRound();      // primera ronda: nada que sacar
+  els.cards.forEach((card) => card.classList.add('card-out'));
+  state.timer = setTimeout(mountRound, OUT_MS);
+}
+
+function mountRound() {
   resetCards();
+  void els.cards[0].offsetWidth;                // reinicia las animaciones
+
   state.round = state.score + 1;
   state.pair = state.next || randomPair(state.round);
   state.next = null;
@@ -200,9 +215,21 @@ function newRound() {
     paintPoster(card, movie);
     card.disabled = false;
   });
+  entradaTarjetas();
+
   state.locked = false;
   state.next = randomPair(state.round + 1);
   preload(state.next);
+}
+
+// Entrada escalonada de las dos tarjetas
+function entradaTarjetas() {
+  els.cards.forEach((card, i) => {
+    card.classList.remove('card-in');
+    void card.offsetWidth;
+    card.style.animationDelay = `${i * STAGGER_MS}ms`;
+    card.classList.add('card-in');
+  });
 }
 
 function revealCard(card, movie, isWinner) {
@@ -233,6 +260,9 @@ function choose(side) {
   if (correct) {
     state.score++;
     els.score.textContent = state.score;
+    els.score.classList.remove('score-bump');
+    void els.score.offsetWidth;
+    els.score.classList.add('score-bump');
     if (state.score > state.best) {
       state.best = state.score;
       state.newRecord = true;
@@ -272,6 +302,7 @@ function startGame() {
   state.score = 0;
   state.round = 1;
   state.next = null;
+  state.pair = [null, null];   // no hay ronda anterior: entra sin animación de salida
   state.newRecord = false;
   els.score.textContent = '0';
   els.gameover.classList.add('hidden');
@@ -284,6 +315,7 @@ const introVisible = () => !els.intro.classList.contains('hidden');
 function closeIntro() {
   els.intro.classList.add('hidden');
   els.intro.classList.remove('flex');
+  entradaTarjetas();          // el tablero se descubre ahora: que entre animado
 }
 
 /* ---------- eventos ---------- */

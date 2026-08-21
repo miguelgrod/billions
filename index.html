@@ -14,6 +14,31 @@
     .pop { animation: pop .45s ease-out; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
     .shake { animation: shake .45s ease-out; }
+    /* El hover de Tailwind no distingue puntero de dedo: en táctil se queda
+       pegado al último elemento tocado, y en escritorio persiste sobre la
+       tarjeta recién pulsada. Con la guarda, sólo se pinta si hay ratón de
+       verdad y la tarjeta admite clics. */
+    @media (hover: hover) {
+      .choice:not(:disabled):hover { border-color: #fbbf24; }   /* amber-400 */
+    }
+
+    /* Cambio de nivel: las tarjetas salen y entra la pareja siguiente */
+    @keyframes cardOut {
+      to { opacity: 0; transform: translateY(10px) scale(.985); }
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(18px) scale(.985); }
+    }
+    .card-out { animation: cardOut .26s ease-in forwards; }
+    .card-in  { animation: cardIn .42s cubic-bezier(.2,.8,.25,1) both; }
+
+    @keyframes scoreBump {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.28); color: #34d399; }
+      100% { transform: scale(1); }
+    }
+    .score-bump { animation: scoreBump .5s ease-out; }
+
     @keyframes toastPop {
       0%   { opacity: 0; transform: translateY(10px) scale(.85); }
       14%  { opacity: 1; transform: translateY(0) scale(1.05); }
@@ -24,7 +49,7 @@
     .toast-show { animation: toastPop 1.4s ease-out forwards; }
     @media (prefers-reduced-motion: reduce) {
       .toast-show { animation: none; opacity: 1; }
-      .pop, .shake { animation: none; }
+      .pop, .shake, .card-out, .card-in, .score-bump { animation: none; }
     }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
     .fade-up { animation: fadeUp .35s ease-out both; }
@@ -63,7 +88,7 @@
 
       <div class="relative grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <!-- Tarjeta A -->
-        <button data-side="0" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 hover:border-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
+        <button data-side="0" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
           <!-- carátula -->
           <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
           <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
@@ -92,7 +117,7 @@
         </div>
 
         <!-- Tarjeta B -->
-        <button data-side="1" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 hover:border-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
+        <button data-side="1" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
           <!-- carátula -->
           <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
           <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>

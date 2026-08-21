@@ -73,9 +73,20 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 - **Teclado:** `←`/`1` y `→`/`2` eligen; `Enter` o espacio arranca y reinicia.
 - **Récord:** `localStorage`, clave `billions.best`, siempre entre `try/catch`
   (modo privado del navegador).
+- **Cambio de nivel:** `newRound()` saca las tarjetas (`card-out`, `OUT_MS`) y
+  `mountRound()` monta la pareja nueva cuando ya no se ven, con entrada
+  escalonada (`entradaTarjetas()`, `STAGGER_MS`). Montar con las tarjetas
+  invisibles es lo que evita ver el cambio a medias. `state.pair[0]` vacío
+  significa "no hay ronda anterior que sacar" (primera ronda y reinicio).
 - Los bordes de las tarjetas son de 4 px **siempre**, y solo cambia el color
   entre reposo, hover, acierto y fallo. Si cambias el grosor por estado, el
   contenido se desplaza.
+- **El hover NO usa la variante `hover:` de Tailwind**, sino una regla propia
+  dentro de `@media (hover: hover)` con `:not(:disabled)`. Motivo: la variante de
+  Tailwind v3 no distingue ratón de dedo, así que en táctil el `:hover` se queda
+  pegado a la última tarjeta tocada y en escritorio sobrevive sobre la tarjeta
+  recién pulsada — se veía como si el borde de la selección anterior no se
+  limpiara. No vuelvas a poner `hover:border-...` en el HTML.
 
 ## Carátulas
 
