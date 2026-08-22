@@ -100,6 +100,7 @@ const els = {
   rotuloTxt: document.getElementById('rotulo-txt'),
   rotuloIcono: document.getElementById('rotulo-icono'),
   estado: document.getElementById('estado'),
+  creditos: document.getElementById('creditos'),
   ask: document.getElementById('ask'),
   board: document.getElementById('board'),
   question: document.getElementById('question'),
@@ -648,6 +649,7 @@ function muestraTablero() {
   els.board.classList.remove('flex');
   state.actual = null;
   ocultaRotulo();
+  els.creditos.classList.add('hidden');
   pintaBurbujas();
   if (state.completadas.size === BURBUJAS) return victoria();
   const quedan = BURBUJAS - state.completadas.size;
@@ -673,6 +675,7 @@ function eligeBurbuja(i) {
 
 function lanzaPregunta(ronda) {
   ocultaRotulo();
+  els.creditos.classList.remove('hidden');
   els.trivial.classList.add('hidden');
   els.trivial.classList.remove('flex');
   els.board.classList.remove('hidden');

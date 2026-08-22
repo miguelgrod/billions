@@ -103,7 +103,9 @@ se pierde al tercer fallo.
   compuesta no se repite a la vista. **Un solo fotograma con varios puntos y
   `ease-in-out` frenaba en cada punto intermedio**: era lo que hacía que no
   fluyera.
-- El campo **no admite clics**: el sorteo arranca solo al volver de una pregunta.
+- El campo se deja **sin más texto que el estado**: los créditos de fuentes e
+  imágenes (`#creditos`) sólo aparecen en la pantalla de pregunta, que es donde
+  se ven las cifras y las fotografías que acreditan.
 
 ### Aspecto: lenguaje de Apple TV
 
