@@ -104,9 +104,14 @@ se pierde al tercer fallo.
 - **Las burbujas son esferas de degradado**, sin borde: tres paradas de color
   (`ESFERA`: luz, medio y sombra) desde un foco arriba a la izquierda, más una
   sombra difusa del propio color.
-- **Los iconos de categoría** (`ICONOS`, trazo sobre rejilla de 24: entrada,
-  calendario, claqueta, dos figuras y trofeo) viven en la leyenda y en el rótulo.
-  En el fondo de las burbujas van fotos, no iconos.
+- **No hay leyenda.** El nombre de la categoría aparece bajo la burbuja al
+  señalarla (`.etiqueta`, enganchada con el selector `+` al botón de la esfera):
+  la información se pide donde está el objeto, no en una tabla aparte. En táctil,
+  donde no hay hover, ese papel lo cumple el rótulo al elegir.
+- La burbuja señalada **sube de capa con `:has()`** para que su etiqueta no quede
+  debajo de las vecinas.
+- **Los iconos de categoría** (`ICONOS`) viven ya sólo en el rótulo. En el fondo
+  de las burbujas van fotos, no iconos.
 - **La paleta de las burbujas son pasteles del rosa al azul cielo**, la gama de
   la referencia que pasó Miguel. Los cinco tonos están repartidos por igual
   (199°–316°, con saltos de 24° a 38°): ese paso regular es lo que los mantiene
@@ -326,6 +331,32 @@ volver a lanzarlo sin esa opción para restaurarlo.
 - Al contrario que los pósters, las fotos de personas sí suelen ser libres
   (Commons), así que aquí no hay techo de resolución: se piden y normalizan al
   ancho que diga `--width`.
+
+## Sonido
+
+`audio/bg_music.m4a` (3,3 MB, AAC 96 kbps) suena en bucle de fondo, con el
+`.mp3` original de reserva en un segundo `<source>`. Tres efectos cortos
+acompañan al juego: `clic.mp3` al elegir burbuja, `acierto.mp3` y `error.mp3`
+al resolver.
+
+- **La música de fondo no se detiene nunca** salvo que el jugador la silencie:
+  los efectos suenan por encima, sin tocarla. Nada en el código la pausa.
+- Los efectos van a `VOL_SFX` (0,7), por encima de la música, y se rebobinan
+  antes de sonar para que dos seguidos no se pisen.
+- **El botón de silencio manda sobre todo**, música y efectos.
+
+- **Arranca al cerrar la pantalla previa, no al cargar**: ningún navegador deja
+  sonar audio antes de que el usuario interactúe, y ese botón es su primer clic.
+- **El volumen sube de 0 a `VOLUMEN` (0,32) en dos segundos**, para no dar un
+  golpe de sonido al empezar.
+- `preload="none"` en la música: no se descarga hasta que hace falta. Los
+  efectos sí van con `preload="auto"`, porque pesan poco y tienen que sonar sin
+  retardo.
+- Botón de silencio en la cabecera, con la preferencia guardada en
+  `localStorage` (`billions.sonido`). El `play()` va con `catch`: si el navegador
+  lo bloquea, el juego sigue sin enterarse.
+- El `.mp3` original venía a 320 kbps y pesaba 7,7 MB, demasiado para servirlo en
+  cada partida; el `.m4a` es la versión de uso.
 
 ## Publicar
 

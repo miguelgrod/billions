@@ -57,6 +57,10 @@ const ESFERA = {
   anio:     { luz: '#D6F0FF', medio: '#7FCDF2', hondo: '#4A97C2' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
+const SONIDO_KEY = 'billions.sonido';
+const VOLUMEN = 0.32;      // la música acompaña, no manda
+const VOL_SFX = 0.7;       // los efectos van por encima de ella
+const SUBIDA_MS = 2000;    // el volumen sube poco a poco al empezar
 
 // Un icono por categoría, dibujado a trazo sobre una rejilla de 24. Va dentro de
 // la esfera a muy poca opacidad: se lee como un relieve, no como un adorno.
@@ -94,7 +98,6 @@ const els = {
   rotuloTxt: document.getElementById('rotulo-txt'),
   rotuloIcono: document.getElementById('rotulo-icono'),
   estado: document.getElementById('estado'),
-  leyenda: document.getElementById('leyenda'),
   ask: document.getElementById('ask'),
   board: document.getElementById('board'),
   question: document.getElementById('question'),
@@ -116,6 +119,13 @@ const els = {
   introBest: document.getElementById('intro-best'),
   toast: document.getElementById('toast'),
   toastBox: document.getElementById('toast-box'),
+  musica: document.getElementById('musica'),
+  sfx: {
+    clic: document.getElementById('sfx-clic'),
+    acierto: document.getElementById('sfx-acierto'),
+    error: document.getElementById('sfx-error'),
+  },
+  sonido: document.getElementById('sonido'),
   toastMsg: document.getElementById('toast-msg'),
   toastPoints: document.getElementById('toast-points'),
   toastSub: document.getElementById('toast-sub'),
@@ -126,6 +136,7 @@ const state = {
   puntos: 0,
   best: 0,
   vidas: VIDAS,
+  sonido: true,
   round: 1,
   ronda: null,          // la ronda en juego
   next: null,           // ronda precargada para la siguiente
@@ -587,7 +598,7 @@ function pintaBurbujas() {
       <div class="burbuja absolute"
            style="left:${b.x}%;top:${b.y}%;z-index:${elegida ? 30 : 10}">
        <div class="deriva-x" style="--dx:${b.dx}px;--tx:${b.tx}s;--rx:${b.rx}s">
-        <div class="deriva-y" style="--dy:${b.dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
+        <div class="deriva-y relative" style="--dy:${b.dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
         <button data-burbuja="${i}" ${hecha ? 'disabled' : ''}
              class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${hecha ? 'cursor-default' : 'esfera-tocable'}"
              style="width:clamp(56px, ${11.5 * b.escala}vw, ${118 * b.escala}px);aspect-ratio:1;
@@ -600,11 +611,13 @@ function pintaBurbujas() {
              aria-label="${ETIQUETAS[b.cat]}${hecha ? ', completada' : ', elegir'}">
           ${hecha ? '<span class="absolute inset-0 flex items-center justify-center text-2xl text-white/70">✓</span>' : ''}
         </button>
+        ${hecha ? '' : `<span class="etiqueta glass-fuerte pointer-events-none absolute left-1/2 top-full mt-2.5
+                        whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold"
+                        style="transform:translateX(-50%);color:${luz}">${ETIQUETAS[b.cat]}</span>`}
         </div>
        </div>
       </div>`;
   }).join('');
-  pintaLeyenda();
 }
 
 // Rótulo con la temática de la burbuja que ha salido
@@ -623,20 +636,6 @@ function muestraRotulo(cat) {
 function ocultaRotulo() {
   els.rotulo.classList.add('hidden');
   els.rotulo.classList.remove('flex');
-}
-
-function pintaLeyenda() {
-  els.leyenda.innerHTML = CATEGORIAS.map((cat) => {
-    const color = COLORES[cat];
-    const total = state.campo.filter((b) => b.cat === cat).length;
-    const hechas = state.campo.filter((b, i) => b.cat === cat && state.completadas.has(i)).length;
-    const listo = total && hechas === total;
-    return `<span class="glass flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
-      style="opacity:${listo ? '.35' : '1'}">
-      ${iconoHTML(cat, { clase: 'h-3.5 w-3.5 shrink-0', color, grosor: 1.8 })}
-      <span class="text-white/80">${ETIQUETAS[cat]}</span>
-      <span class="tabular-nums text-white/40">${hechas}/${total}</span></span>`;
-  }).join('');
 }
 
 function muestraTablero() {
@@ -658,6 +657,7 @@ function muestraTablero() {
 // rótulo y a continuación se abre la pregunta de su categoría.
 function eligeBurbuja(i) {
   if (state.actual !== null || state.completadas.has(i)) return;
+  suena('clic');
   state.actual = i;
   pintaBurbujas();
   const cat = state.campo[i].cat;
@@ -685,6 +685,66 @@ function volverAlTablero() {
     hideToast();
     muestraTablero();
   }, OUT_MS);
+}
+
+/* ---------- música ---------- */
+
+const ALTAVOZ = {
+  on:  '<path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/>' +
+       '<path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.3 6.6a8 8 0 0 1 0 10.8"/>',
+  off: '<path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/>' +
+       '<path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+};
+
+function pintaBotonSonido() {
+  els.sonido.innerHTML = `
+    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      ${state.sonido ? ALTAVOZ.on : ALTAVOZ.off}
+    </svg>`;
+  els.sonido.style.opacity = state.sonido ? '1' : '.45';
+  els.sonido.setAttribute('aria-pressed', String(!state.sonido));
+  els.sonido.setAttribute('aria-label', state.sonido ? 'Silenciar música' : 'Activar música');
+}
+
+// El navegador no deja sonar nada hasta que el usuario interactúa, así que la
+// música arranca al cerrar la pantalla previa, que es su primer clic.
+function arrancaMusica() {
+  if (!state.sonido || !els.musica) return;
+  els.musica.volume = 0;
+  const intento = els.musica.play();
+  if (intento && intento.catch) intento.catch(() => { /* el navegador la ha bloqueado */ });
+  subeVolumen();
+}
+
+function subeVolumen() {
+  const t0 = performance.now();
+  const paso = (ahora) => {
+    const p = Math.min((ahora - t0) / SUBIDA_MS, 1);
+    els.musica.volume = VOLUMEN * p;
+    if (p < 1 && state.sonido) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+
+// Los efectos suenan por encima de la música, sin tocarla: la de fondo no se
+// detiene nunca salvo que el jugador la silencie.
+function suena(nombre) {
+  const a = els.sfx[nombre];
+  if (!a || !state.sonido) return;
+  try { a.currentTime = 0; } catch (e) { /* aún no ha cargado */ }
+  a.volume = VOL_SFX;
+  const intento = a.play();
+  if (intento && intento.catch) intento.catch(() => { /* bloqueado por el navegador */ });
+}
+
+function alternaSonido() {
+  state.sonido = !state.sonido;
+  try { localStorage.setItem(SONIDO_KEY, state.sonido ? '1' : '0'); } catch (e) { /* modo privado */ }
+  pintaBotonSonido();
+  if (!els.musica) return;
+  if (state.sonido) arrancaMusica();
+  else els.musica.pause();
 }
 
 /* ---------- cuenta atrás ---------- */
@@ -823,6 +883,7 @@ function resuelve(correcto, ms, agotado) {
   }
 
   const detalle = r.explica || explicaDuelo(r);
+  suena(correcto ? 'acierto' : 'error');
   if (correcto) {
     const ganados = puntosPor(ms);
     state.score++;
@@ -968,14 +1029,16 @@ els.answers.addEventListener('click', (e) => {
 });
 
 els.restart.addEventListener('click', startGame);
+els.sonido.addEventListener('click', alternaSonido);
 
 const introVisible = () => !els.intro.classList.contains('hidden');
 
 function closeIntro() {
   els.intro.classList.add('hidden');
   els.intro.classList.remove('flex');
-  // El reloj sólo corre durante una pregunta, y al cerrar la intro lo que
-  // aparece es el tablero.
+  // Primer clic del usuario: es el único momento en que el navegador deja
+  // arrancar el sonido. El reloj, en cambio, sólo corre durante una pregunta.
+  arrancaMusica();
 }
 
 els.play.addEventListener('click', closeIntro);
@@ -1003,7 +1066,9 @@ document.addEventListener('keydown', (e) => {
 
 try {
   state.best = Number(localStorage.getItem(BEST_KEY)) || 0;
+  state.sonido = localStorage.getItem(SONIDO_KEY) !== '0';
 } catch (e) { state.best = 0; }
+pintaBotonSonido();
 els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';
 
 // Prepara la primera ronda por detrás: al cerrar la intro el tablero ya está listo

@@ -86,6 +86,20 @@
     }
     .esfera-tocable { cursor: pointer; }
 
+    /* Nombre de la categoría al señalar la burbuja. Sustituye a la leyenda:
+       la información se pide donde está el objeto, no en una tabla aparte. */
+    .etiqueta {
+      opacity: 0;
+      translate: 0 6px;
+      transition: opacity .25s cubic-bezier(.2,.8,.2,1), translate .25s cubic-bezier(.2,.8,.2,1);
+    }
+    @media (hover: hover) {
+      .esfera-tocable:hover + .etiqueta { opacity: 1; translate: 0 0; }
+    }
+    .esfera-tocable:focus-visible + .etiqueta { opacity: 1; translate: 0 0; }
+    /* la burbuja señalada sube de capa para que su etiqueta no quede debajo */
+    .burbuja:has(.esfera-tocable:hover), .burbuja:has(.esfera-tocable:focus-visible) { z-index: 40; }
+
     @keyframes latido {
       0%, 100% { box-shadow: var(--sombra), 0 0 0 0 var(--halo); }
       55%      { box-shadow: var(--sombra), 0 0 0 22px transparent; }
@@ -165,6 +179,8 @@
         <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
           <span id="lives" class="flex h-4 items-center gap-1.5" aria-live="polite"></span>
         </div>
+        <button id="sonido" class="glass foco flex h-9 w-9 items-center justify-center rounded-full"
+                aria-label="Silenciar música" aria-pressed="false"></button>
       </div>
     </header>
 
@@ -179,10 +195,7 @@
           </div>
         </div>
       </div>
-      <div class="mt-3 flex flex-col items-center gap-3">
-        <p id="estado" class="h-5 text-center text-sm font-medium text-white/55"></p>
-        <div id="leyenda" class="flex flex-wrap items-center justify-center gap-2"></div>
-      </div>
+      <p id="estado" class="mt-3 h-5 text-center text-sm font-medium text-white/55"></p>
     </section>
 
     <!-- Pregunta -->
@@ -257,6 +270,15 @@
       Carátulas y fotografías: Wikipedia · uso ilustrativo, los derechos pertenecen a sus titulares
     </footer>
   </div>
+
+  <audio id="musica" loop preload="none">
+    <source src="audio/bg_music.m4a" type="audio/mp4" />
+    <source src="audio/bg_music.mp3" type="audio/mpeg" />
+  </audio>
+  <!-- Efectos: pesan poco y se precargan para que suenen sin retardo -->
+  <audio id="sfx-clic" src="audio/clic.mp3" preload="auto"></audio>
+  <audio id="sfx-acierto" src="audio/acierto.mp3" preload="auto"></audio>
+  <audio id="sfx-error" src="audio/error.mp3" preload="auto"></audio>
 
   <script src="movies.js" defer></script>
   <script src="posters.js" defer></script>
