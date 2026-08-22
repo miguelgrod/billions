@@ -575,8 +575,10 @@ function pintaBurbujas() {
     const velo = hecha
       ? `${hondo}e6, ${hondo}f2`
       : `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
+    // comillas simples: las dobles cerrarían el atributo style y tumbarían el
+    // estilo entero a partir de ahí
     const fondo = b.img
-      ? `radial-gradient(circle at 32% 26%, ${velo}), url("${b.img}") center/cover`
+      ? `radial-gradient(circle at 32% 26%, ${velo}), url('${b.img}') center/cover`
       : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
     const sombra = hecha
       ? '0 18px 40px -18px rgba(0,0,0,.6)'
