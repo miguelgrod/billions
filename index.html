@@ -86,17 +86,19 @@
     }
     .esfera-tocable { cursor: pointer; }
 
-    /* Nombre de la categoría al señalar la burbuja. Sustituye a la leyenda:
-       la información se pide donde está el objeto, no en una tabla aparte. */
+    /* Nombre de la categoría al señalar la burbuja, dentro de ella. Sustituye a
+       la leyenda: la información se pide donde está el objeto. */
+    /* La etiqueta vive dentro de la esfera: por eso el selector es descendente
+       y no de hermano adyacente. */
     .etiqueta {
       opacity: 0;
-      translate: 0 6px;
-      transition: opacity .25s cubic-bezier(.2,.8,.2,1), translate .25s cubic-bezier(.2,.8,.2,1);
+      scale: .92;
+      transition: opacity .25s cubic-bezier(.2,.8,.2,1), scale .25s cubic-bezier(.2,.8,.2,1);
     }
     @media (hover: hover) {
-      .esfera-tocable:hover + .etiqueta { opacity: 1; translate: 0 0; }
+      .esfera-tocable:hover .etiqueta { opacity: 1; scale: 1; }
     }
-    .esfera-tocable:focus-visible + .etiqueta { opacity: 1; translate: 0 0; }
+    .esfera-tocable:focus-visible .etiqueta { opacity: 1; scale: 1; }
     /* la burbuja señalada sube de capa para que su etiqueta no quede debajo */
     .burbuja:has(.esfera-tocable:hover), .burbuja:has(.esfera-tocable:focus-visible) { z-index: 40; }
 

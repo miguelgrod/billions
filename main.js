@@ -610,10 +610,11 @@ function pintaBurbujas() {
                     opacity:${hecha ? .3 : 1}"
              aria-label="${ETIQUETAS[b.cat]}${hecha ? ', completada' : ', elegir'}">
           ${hecha ? '<span class="absolute inset-0 flex items-center justify-center text-2xl text-white/70">✓</span>' : ''}
+          ${hecha ? '' : `<span class="etiqueta pointer-events-none absolute inset-0 flex items-center
+                          justify-center px-2 text-center font-bold uppercase leading-none tracking-tight text-white"
+                          style="font-size:${Math.max(9, 11 * b.escala).toFixed(1)}px;
+                                 text-shadow:0 1px 8px rgba(0,0,0,.65), 0 0 2px rgba(0,0,0,.5)">${ETIQUETAS[b.cat]}</span>`}
         </button>
-        ${hecha ? '' : `<span class="etiqueta glass-fuerte pointer-events-none absolute left-1/2 top-full mt-2.5
-                        whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold"
-                        style="transform:translateX(-50%);color:${luz}">${ETIQUETAS[b.cat]}</span>`}
         </div>
        </div>
       </div>`;

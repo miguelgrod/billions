@@ -104,12 +104,10 @@ se pierde al tercer fallo.
 - **Las burbujas son esferas de degradado**, sin borde: tres paradas de color
   (`ESFERA`: luz, medio y sombra) desde un foco arriba a la izquierda, más una
   sombra difusa del propio color.
-- **No hay leyenda.** El nombre de la categoría aparece bajo la burbuja al
-  señalarla (`.etiqueta`, enganchada con el selector `+` al botón de la esfera):
-  la información se pide donde está el objeto, no en una tabla aparte. En táctil,
-  donde no hay hover, ese papel lo cumple el rótulo al elegir.
-- La burbuja señalada **sube de capa con `:has()`** para que su etiqueta no quede
-  debajo de las vecinas.
+- **No hay leyenda.** El nombre de la categoría aparece **dentro** de la burbuja
+  al señalarla, en negrita y versales, con sombra para que se lea sobre la foto.
+  El tamaño de letra escala con el de la burbuja (9–14 px). En táctil, donde no
+  hay hover, ese papel lo cumple el rótulo al elegir.
 - **Los iconos de categoría** (`ICONOS`) viven ya sólo en el rótulo. En el fondo
   de las burbujas van fotos, no iconos.
 - **La paleta de las burbujas son pasteles del rosa al azul cielo**, la gama de
