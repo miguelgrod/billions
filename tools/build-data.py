@@ -15,12 +15,35 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, 'top_100_peliculas_recaudacion_mundial.xlsx')
 AMPLIADO = os.path.join(ROOT, 'top_peliculas_taquilla_y_critica.xlsx')
+HOJA_BASE = 'Top 100 Worldwide'
+HOJA_AMPLIADA = 'Listado completo'
 NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 
 
-def rows(xlsx, sheet):
+def archivo_de_hoja(z, nombre):
+    """Localiza la hoja por su nombre, no por el orden de los archivos.
+
+    Dentro del .xlsx, sheet1.xml no tiene por qué ser la primera pestaña: la
+    correspondencia vive en workbook.xml.rels. Si se reordenan las pestañas en
+    Excel, leer 'sheet3.xml' a ciegas cogería otra hoja sin avisar.
+    """
+    ns = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
+          'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
+    wb = ET.fromstring(z.read('xl/workbook.xml'))
+    rels = ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
+    destino = {r.get('Id'): r.get('Target').lstrip('/').replace('xl/', '', 1)
+               for r in rels}
+    for hoja in wb.findall('.//m:sheet', ns):
+        if hoja.get('name') == nombre:
+            rid = hoja.get('{%s}id' % ns['r'])
+            return destino[rid]
+    disponibles = [h.get('name') for h in wb.findall('.//m:sheet', ns)]
+    raise SystemExit(f'No encuentro la hoja «{nombre}». Hay: {disponibles}')
+
+
+def rows(xlsx, hoja):
     z = zipfile.ZipFile(xlsx)
-    root = ET.fromstring(z.read(f'xl/worksheets/{sheet}'))
+    root = ET.fromstring(z.read('xl/' + archivo_de_hoja(z, hoja)))
     out = []
     for row in root.findall('.//m:row', NS):
         c = {}
@@ -61,8 +84,10 @@ def categorias_oscar(celda):
 
 
 def main():
-    base = rows(BASE, 'sheet1.xml')
-    extra = {int(f['G']): f for f in rows(AMPLIADO, 'sheet3.xml') if f.get('G', '').isdigit()}
+    base = rows(BASE, HOJA_BASE)
+    extra = {int(f['G']): f for f in rows(AMPLIADO, HOJA_AMPLIADA) if f.get('G', '').isdigit()}
+    print(f'hojas: «{HOJA_BASE}» ({len(base)} filas) y «{HOJA_AMPLIADA}» '
+          f'({len(extra)} con recaudación)', file=sys.stderr)
 
     peliculas = []
     sin_extra = []
