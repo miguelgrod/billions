@@ -73,6 +73,13 @@ se pierde al tercer fallo.
 - **La rejilla se pone de pie en pantalla estrecha**: 4×5 por debajo de 640 px y
   5×4 por encima. Un móvil vertical no tiene sitio para cinco columnas de
   burbujas grandes.
+- **En móvil el campo ocupa todo el ancho del dispositivo** (`-mx-4 sm:mx-0`):
+  se sale del padding de `#app`, que le robaba 32 px.
+- **La posición se corrige al pintar para que ninguna burbuja asome fuera**:
+  el centro se limita a `radio + deriva + 2` de cada borde. Sin esa corrección,
+  las columnas de los extremos se salían hasta 51 px en un móvil.
+- **El recorrido de la deriva va en fracción del diámetro**, no en píxeles fijos:
+  38 px de deriva sacaban la burbuja del campo en una pantalla pequeña.
 - **El diámetro se calcula midiendo el contenedor** (`diametroBase()`): celda =
   mín(ancho/columnas, alto/filas), por 0,78. Sacarlo del ancho de la ventana
   ignoraba el alto, y con siete filas en un móvil corto las burbujas se solapaban

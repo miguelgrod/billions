@@ -246,7 +246,9 @@
 
     <!-- Campo de burbujas -->
     <section id="trivial" class="relative flex flex-1 flex-col">
-      <div id="burbujas" class="relative min-h-[300px] flex-1">
+      <!-- en móvil el campo se sale del padding del contenedor para ocupar todo
+           el ancho del dispositivo; de tablet en adelante vuelve a la caja -->
+      <div id="burbujas" class="relative -mx-4 min-h-[300px] flex-1 sm:mx-0">
         <div id="rotulo" class="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center">
           <div id="rotulo-caja" class="glass-fuerte rotulo-in rounded-[28px] px-9 py-6 text-center shadow-2xl">
             <div id="rotulo-icono" class="mx-auto mb-3 h-11 w-11 sm:h-12 sm:w-12"></div>

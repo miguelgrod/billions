@@ -481,18 +481,22 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
   const etiqueta = clicable ? 'button' : 'div';
   // la película ocupa la fila entera en móvil cuando hay tres tarjetas
   const tramo = anchaEnMovil ? 'col-span-2 sm:col-span-1' : '';
-  // Ajuste del alto en móvil: reducir 10% si estamos en pantalla estrecha
-  const mobileScale = typeof window !== 'undefined' && window.innerWidth ? (window.innerWidth < 640 ? 0.9 : 1) : 1;
-  const mobileMin = c.retrato ? Math.round(200 * mobileScale) : Math.round(220 * mobileScale);
+  // Altos un 15 % por debajo, sobre el mínimo de móvil que ya bajaba otro 10 %
+  // en pantalla estrecha. Los anchos no se tocan: el encuadre recorta algo más
+  // y eso lo absorbe object-cover.
+  const ALTO = 0.85;
+  const escalaMovil = typeof window !== 'undefined' && window.innerWidth
+    ? (window.innerWidth < 640 ? 0.9 : 1) : 1;
+  const minMovil = Math.round((c.retrato ? 200 : 220) * escalaMovil * ALTO);
   const alto = c.retrato
-    ? `min-h-[${mobileMin}px] sm:h-[270px] sm:w-[180px] lg:h-[405px] lg:w-[270px] sm:justify-self-center`
-    : `min-h-[${mobileMin}px] sm:h-[280px] sm:w-[186px] lg:h-[min(500px,56vh)] lg:w-[334px] sm:justify-self-center`;
+    ? `min-h-[${minMovil}px] sm:h-[230px] sm:w-[180px] lg:h-[344px] lg:w-[270px] sm:justify-self-center`
+    : `min-h-[${minMovil}px] sm:h-[238px] sm:w-[186px] lg:h-[min(425px,48vh)] lg:w-[334px] sm:justify-self-center`;
   return `
     <${etiqueta} ${clicable ? `data-index="${i}"` : ''}
       class="carta ${tramo} ${clicable ? 'choice foco cursor-pointer' : 'pointer-events-none'}
              group relative flex ${alto} flex-col justify-end overflow-hidden rounded-[26px]
              border border-white/10 bg-white/[.06] text-center shadow-[0_18px_50px_rgba(0,0,0,.55)]"
-      style="min-height: ${mobileMin}px">
+      style="min-height: ${minMovil}px">
       <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? '[object-position:50%_25%]' : ''}
                   opacity-0 brightness-[.62] saturate-[.95] transition-all duration-500
                   group-hover:brightness-90 group-hover:saturate-100"
@@ -693,9 +697,10 @@ function reparteBurbujas() {
         escala: 0.74 + Math.random() * 0.52,
         // Dos ejes con periodos largos y distintos: la trayectoria resultante no
         // se repite a la vista y el movimiento nunca se detiene salvo en los
-        // extremos de cada eje.
-        dx: (Math.random() < 0.5 ? -1 : 1) * (16 + Math.random() * 22),
-        dy: (Math.random() < 0.5 ? -1 : 1) * (16 + Math.random() * 22),
+        // extremos de cada eje. El recorrido va en fracción del diámetro, no en
+        // píxeles fijos: en un móvil, 38 px de deriva sacaban la burbuja fuera.
+        dx: (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.16),
+        dy: (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.16),
         tx: 26 + Math.random() * 18,
         ty: 31 + Math.random() * 21,
         rx: -Math.random() * 30,
@@ -728,6 +733,8 @@ function diametroBase() {
 
 function pintaBurbujas() {
   const base = diametroBase();
+  const W = els.burbujas.clientWidth || 1104;
+  const H = els.burbujas.clientHeight || 700;
   els.burbujas.innerHTML = state.campo.map((b, i) => {
     const { luz, medio, hondo } = ESFERA[b.cat];
     const hecha = state.completadas.has(i);
@@ -751,11 +758,20 @@ function pintaBurbujas() {
     const sombra = hecha
       ? '0 18px 40px -18px rgba(0,0,0,.6)'
       : `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
+    // La posición se corrige para que la burbuja, con su deriva incluida, no
+    // asome fuera del campo: sin esto las columnas de los extremos se salían.
+    const radio = (base * b.escala) / 2;
+    const dxPx = b.dx * base;
+    const dyPx = b.dy * base;
+    const mx = radio + Math.abs(dxPx) + 2;
+    const my = radio + Math.abs(dyPx) + 2;
+    const cx = Math.min(Math.max((b.x / 100) * W, mx), Math.max(mx, W - mx));
+    const cy = Math.min(Math.max((b.y / 100) * H, my), Math.max(my, H - my));
     return `
       <div class="burbuja absolute"
-           style="left:${b.x}%;top:${b.y}%;z-index:${elegida ? 30 : 10}">
-       <div class="deriva-x" style="--dx:${b.dx}px;--tx:${b.tx}s;--rx:${b.rx}s">
-        <div class="deriva-y relative" style="--dy:${b.dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
+           style="left:${((cx / W) * 100).toFixed(2)}%;top:${((cy / H) * 100).toFixed(2)}%;z-index:${elegida ? 30 : 10}">
+       <div class="deriva-x" style="--dx:${dxPx.toFixed(1)}px;--tx:${b.tx}s;--rx:${b.rx}s">
+        <div class="deriva-y relative" style="--dy:${dyPx.toFixed(1)}px;--ty:${b.ty}s;--ry:${b.ry}s">
         <button data-burbuja="${i}" ${hecha ? 'disabled' : ''}
              class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${hecha ? 'cursor-default' : 'esfera-tocable'}"
              style="width:${(base * b.escala).toFixed(1)}px;aspect-ratio:1;
