@@ -60,35 +60,39 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 ## El campo de burbujas
 
 **Veinte burbujas repartidas por la pantalla**, cuatro por categoría, sin
-recorrido ni ficha ni dado. Cada turno un sorteo las va encendiendo al azar y
-frena hasta pararse en una; esa plantea la pregunta. Acertar apaga la burbuja.
-Se gana al apagarlas todas y se pierde al tercer fallo.
+recorrido ni ficha ni dado. **El jugador pulsa la que quiere** y esa plantea la
+pregunta de su categoría. Acertar apaga la burbuja. Se gana al apagarlas todas y
+se pierde al tercer fallo.
 
 - **Las posiciones son una rejilla 5×4 con desorden**: cada burbuja nace en su
   celda y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a
   mano y, a diferencia de sortear posiciones libres, **nunca se solapan**.
 - **El reparto de categorías se baraja en cada partida**, manteniendo cuatro de
   cada una, así que dos partidas no se ven iguales.
-- **Tiempos del turno en el campo**: `VER_MS` (1,4 s viendo las burbujas),
-  `SORTEO_MS` (3,4 s de sorteo) y `ELEGIDA_MS` (1,1 s luciendo la elegida);
-  5,9 s en total antes de la pregunta.
-- **La duración del sorteo es un dato, no una consecuencia.** `tiemposSorteo()`
-  reparte `SORTEO_MS` entre los saltos con una curva cúbica y **normaliza por la
-  suma**, así que dura exactamente lo previsto por muchos saltos que se den. Si
-  sumara retardos sueltos, cambiar `SALTOS` alteraría la duración sin querer.
-- El sorteo **nunca repite la burbuja inmediatamente anterior**, que si no
-  parecería colgado un instante.
-- **Sólo entran las burbujas pendientes.** Con una sola sin resolver, para en ella.
-- **La burbuja encendida sube de capa** (`z-index`): al crecer invade a sus
+- **Cada burbuja lleva de fondo una foto de su temática al ~50 %**, sacada de los
+  archivos del propio juego: un director para dirección, un actor para reparto,
+  una carátula del top de taquilla, una película antigua para estrenos y una
+  premiada para Óscars (`imagenPara()`). Las veinte salen distintas.
+- **La foto va debajo y el color encima con alfa**, no al revés: así la esfera
+  conserva la identidad de color de su categoría y la foto se lee a media
+  intensidad. Poner la foto encima con `opacity` apagaría también el degradado.
+- **Elegida y bloqueo**: pulsar una burbuja fija `state.actual`; mientras haya
+  una elegida, las demás no responden. Las completadas van `disabled`.
+- `ELEGIDA_MS` (1,1 s) es lo que la elegida se luce con su rótulo antes de que se
+  abra la pregunta.
+- **La burbuja elegida sube de capa** (`z-index`): al crecer invade a sus
   vecinas y tiene que quedar por encima.
-- **Al pararse el sorteo sale un rótulo** con la temática (`muestraRotulo()`),
-  visible durante `ELEGIDA_MS`, y se retira al abrir la pregunta.
-- **Las burbujas fluyen a la deriva.** El centrado va en `transform` y la deriva
-  en la propiedad `translate`, que es independiente; la escala del resalte vive
-  en la esfera interior con la propiedad `scale`. Si las tres compartieran
-  `transform`, cada una pisaría a las otras. Cada burbuja tiene dirección,
-  amplitud y ritmo propios (20–36 s) y un retardo negativo para que arranquen
-  desfasadas.
+- **Al elegir sale un rótulo** con la temática (`muestraRotulo()`), visible
+  durante `ELEGIDA_MS`, y se retira al abrir la pregunta.
+- **Las burbujas fluyen a la deriva, con un nivel del DOM por propiedad**:
+  centrado (`transform`), eje X (`translate`), eje Y (`translate`) y escala
+  (`scale`). Compartir `transform` haría que cada uno anulase a los demás.
+- **Los dos ejes van por separado y con periodos distintos** (26–44 s y 31–52 s),
+  cada uno de ida y vuelta con una curva casi sinusoidal. Así el movimiento sólo
+  se detiene en los extremos de cada eje, como un péndulo, y la trayectoria
+  compuesta no se repite a la vista. **Un solo fotograma con varios puntos y
+  `ease-in-out` frenaba en cada punto intermedio**: era lo que hacía que no
+  fluyera.
 - El campo **no admite clics**: el sorteo arranca solo al volver de una pregunta.
 
 ### Aspecto: lenguaje de Apple TV
@@ -99,7 +103,18 @@ Se gana al apagarlas todas y se pierde al tercer fallo.
   aparte: `.display` es la misma familia con más peso y tracking negativo.
 - **Las burbujas son esferas de degradado**, sin borde: tres paradas de color
   (`ESFERA`: luz, medio y sombra) desde un foco arriba a la izquierda, más una
-  sombra difusa del propio color. Las pequeñas llevan un desenfoque leve que da
+  sombra difusa del propio color.
+- **Los iconos de categoría** (`ICONOS`, trazo sobre rejilla de 24: entrada,
+  calendario, claqueta, dos figuras y trofeo) viven en la leyenda y en el rótulo.
+  En el fondo de las burbujas van fotos, no iconos.
+- **La paleta de las burbujas son pasteles del rosa al azul cielo**, la gama de
+  la referencia que pasó Miguel. Los cinco tonos están repartidos por igual
+  (199°–316°, con saltos de 24° a 38°): ese paso regular es lo que los mantiene
+  distinguibles siendo todos de la misma familia. Si se añade una categoría, hay
+  que volver a repartir, no encajarla en un hueco.
+- **Los números van en blanco, no en un color de acento.** El color vive en las
+  burbujas; un acento naranja al lado de estos pasteles desentonaba. El verde,
+  el naranja y el rojo se reservan para lo semántico: acierto, fallo y tiempo. Las pequeñas llevan un desenfoque leve que da
   profundidad de campo; la destacada siempre entra a foco.
 - **Superficies de cristal** (`.glass`, `.glass-fuerte`): fondo translúcido con
   `backdrop-filter: blur() saturate()` y borde blanco muy tenue.
@@ -210,6 +225,9 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
   `state.score`, así que tras fallar se repite la dificultad del mismo nivel.
 - **Récord:** `localStorage`, clave `billions.best`, siempre entre `try/catch`
   (modo privado del navegador).
+- **En móvil, las rondas de tres tarjetas** ponen la película sola arriba
+  (`col-span-2`) y los dos actores debajo compartiendo fila; de tablet en
+  adelante van las tres en línea (`COLS`).
 - **Las tarjetas las genera el JS** (`cartaHTML()` en `#cards`), porque una ronda
   tiene una, dos o tres según el tipo. El HTML ya no lleva tarjetas fijas.
 - **Tamaño de las tarjetas:** en móvil ocupan el ancho y se estiran; de tablet

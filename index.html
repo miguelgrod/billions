@@ -57,18 +57,35 @@
        es independiente: así una no pisa a la otra. La escala del resalte vive en
        la esfera interior, por el mismo motivo. */
     .burbuja { transform: translate(-50%, -50%); }
-    @keyframes deriva {
-      0%, 100% { translate: 0 0; }
-      25%  { translate: var(--dx) var(--dy); }
-      50%  { translate: calc(var(--dx) * -0.7) calc(var(--dy) * 1.15); }
-      75%  { translate: calc(var(--dx) * 0.85) calc(var(--dy) * -0.95); }
+
+    /* La deriva se separa en dos ejes con periodos distintos. Cada eje va y
+       viene con una curva casi sinusoidal, así que sólo se detiene en los
+       extremos, como un péndulo: no hay tirones. Un único fotograma con varios
+       puntos y ease-in-out frenaba en cada punto intermedio. */
+    @keyframes derivaX { to { translate: var(--dx) 0; } }
+    @keyframes derivaY { to { translate: 0 var(--dy); } }
+    .deriva-x {
+      animation: derivaX var(--tx) cubic-bezier(.45,0,.55,1) infinite alternate;
+      animation-delay: var(--rx);
     }
-    .deriva { animation: deriva var(--dur, 26s) ease-in-out infinite; animation-delay: var(--retardo, 0s); }
+    .deriva-y {
+      animation: derivaY var(--ty) cubic-bezier(.45,0,.55,1) infinite alternate;
+      animation-delay: var(--ry);
+    }
 
     .esfera {
       border-radius: 50%;
-      transition: scale .5s cubic-bezier(.2,.8,.2,1), filter .5s, opacity .5s, box-shadow .5s;
+      transition: scale .75s cubic-bezier(.2,.8,.2,1), filter .75s, opacity .6s, box-shadow .75s;
     }
+    @media (hover: hover) {
+      .esfera-tocable:not(:disabled):hover { scale: 1.14 !important; filter: blur(0) !important; }
+    }
+    .esfera-tocable:focus-visible {
+      outline: none;
+      box-shadow: var(--sombra), 0 0 0 4px rgba(255,255,255,.9) !important;
+    }
+    .esfera-tocable { cursor: pointer; }
+
     @keyframes latido {
       0%, 100% { box-shadow: var(--sombra), 0 0 0 0 var(--halo); }
       55%      { box-shadow: var(--sombra), 0 0 0 22px transparent; }
@@ -115,7 +132,7 @@
     .pop { animation: pop .45s cubic-bezier(.2,.8,.2,1); }
 
     @media (prefers-reduced-motion: reduce) {
-      .flota, .burbuja-elegida, .aparece, .ask-in, .card-in, .card-out,
+      .deriva-x, .deriva-y, .esfera-elegida, .aparece, .ask-in, .card-in, .card-out,
       .score-bump, .life-out, .shake, .pop { animation: none; }
       .foco { transition: none; }
     }
@@ -143,7 +160,7 @@
         </div>
         <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
           <span class="text-[11px] font-medium uppercase tracking-wide text-white/45">Puntos</span>
-          <span id="points" class="display text-base leading-none text-[#FF9F0A]">0</span>
+          <span id="points" class="display text-base leading-none text-white">0</span>
         </div>
         <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
           <span id="lives" class="flex h-4 items-center gap-1.5" aria-live="polite"></span>
@@ -156,6 +173,7 @@
       <div id="burbujas" class="relative min-h-[380px] flex-1">
         <div id="rotulo" class="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center">
           <div id="rotulo-caja" class="glass-fuerte rotulo-in rounded-[28px] px-9 py-6 text-center shadow-2xl">
+            <div id="rotulo-icono" class="mx-auto mb-3 h-11 w-11 sm:h-12 sm:w-12"></div>
             <div class="text-[11px] font-semibold uppercase tracking-[.2em] text-white/45">Pregunta de</div>
             <div id="rotulo-txt" class="display mt-1 text-4xl leading-none sm:text-5xl"></div>
           </div>
@@ -189,7 +207,7 @@
            class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
         <div id="toast-box" class="glass-fuerte max-w-[86%] rounded-[28px] px-8 py-5 text-center shadow-2xl">
           <div id="toast-msg" class="display text-3xl leading-none sm:text-4xl"></div>
-          <div id="toast-points" class="display mt-1 hidden text-4xl leading-none text-[#FF9F0A] sm:text-5xl"></div>
+          <div id="toast-points" class="display mt-1 hidden text-4xl leading-none text-white sm:text-5xl"></div>
           <div id="toast-sub" class="mt-1.5 text-balance text-xs font-medium text-white/55"></div>
         </div>
       </div>
@@ -203,7 +221,7 @@
         <ol class="mt-7 space-y-4 text-left text-[15px] leading-snug text-white/80">
           <li class="flex gap-3.5">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
-            <span>Las burbujas crecen al azar hasta detenerse en una.</span>
+            <span>Pulsa la burbuja que quieras: su foto y su color dicen de qué va.</span>
           </li>
           <li class="flex gap-3.5">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">2</span>
@@ -225,7 +243,7 @@
     <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
       <div class="glass-fuerte aparece w-full max-w-sm rounded-[32px] p-8 text-center shadow-2xl">
         <div id="go-title" class="text-sm font-medium text-white/50">Fin de la partida</div>
-        <div id="go-score" class="display my-2 text-[68px] leading-none text-[#FF9F0A]">0</div>
+        <div id="go-score" class="display my-2 text-[68px] leading-none text-white">0</div>
         <p id="go-label" class="text-sm text-white/55"></p>
         <p id="go-detail" class="mt-5 text-sm leading-relaxed text-white/75"></p>
         <button id="restart" class="foco mt-7 w-full rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-black">
