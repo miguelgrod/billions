@@ -79,6 +79,16 @@ se pierde al tercer fallo.
   más lento.
 - **El reparto de categorías se baraja en cada partida**, manteniendo cuatro de
   cada una, así que dos partidas no se ven iguales.
+- **Una película no se pregunta dos veces en la misma partida** (`state.vistas` y
+  `frescas()`): cada generador trabaja sobre el depósito ya filtrado y la ronda
+  declara sus películas en `r.pelis`. Sin esto, en una partida de 20 rondas se
+  repetía alguna el 99 % de las veces, con 3,8 repeticiones de media. Si quedasen
+  menos de diez sin usar, se vuelve al depósito entero: antes repetir que
+  quedarse sin preguntas.
+- **Los depósitos de imagen de fondo son amplios a propósito** (45 de taquilla,
+  32 de estrenos, 27 premiadas). Con cuatro burbujas de cada categoría por
+  partida, un depósito de quince hacía que se repitieran las mismas carátulas
+  partida tras partida.
 - **Cada burbuja lleva de fondo una foto de su temática al ~50 %**, sacada de los
   archivos del propio juego: un director para dirección, un actor para reparto,
   una carátula del top de taquilla, una película antigua para estrenos y una

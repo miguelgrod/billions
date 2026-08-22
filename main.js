@@ -140,6 +140,7 @@ const state = {
   vidas: VIDAS,
   sonido: true,
   round: 1,
+  vistas: new Set(),    // películas ya preguntadas en esta partida
   ronda: null,          // la ronda en juego
   next: null,           // ronda precargada para la siguiente
   locked: true,
@@ -185,6 +186,13 @@ function reparto(m) {
   return (m.a || []).filter(actorPhoto);
 }
 
+// Deja fuera las películas ya preguntadas en esta partida. Si quedasen muy
+// pocas, devuelve el depósito entero: antes repetir que quedarse sin preguntas.
+function frescas(pool, minimo = 10) {
+  const libres = pool.filter((m) => !state.vistas.has(m.r));
+  return libres.length >= minimo ? libres : pool;
+}
+
 /* ---------- construcción de rondas ---------- */
 
 function bandaRatio(level) {
@@ -216,10 +224,11 @@ const cartaPersona = (nombre, foto, rol) => ({
 // ---- Taquilla: ¿cuál recaudó más? ----
 function rondaTaquilla(level) {
   const ratio = (a, b) => (a.g > b.g ? a.g / b.g : b.g / a.g);
+  const pool = frescas(PELIS);
   let [lo, hi] = bandaRatio(level);
   for (let i = 0; i < 40; i++) {
-    const a = pick(PELIS);
-    const rivales = PELIS.filter((b) => b !== a && ratio(a, b) >= lo && ratio(a, b) <= hi);
+    const a = pick(pool);
+    const rivales = pool.filter((b) => b !== a && ratio(a, b) >= lo && ratio(a, b) <= hi);
     if (rivales.length) {
       const b = pick(rivales);
       const [x, y] = coin() ? [a, b] : [b, a];
@@ -230,6 +239,7 @@ function rondaTaquilla(level) {
         cartas: [cartaPeli(x, { valor: x.g, dinero: true }),
                  cartaPeli(y, { valor: y.g, dinero: true })],
         correcta: x.g > y.g ? 0 : 1,
+        pelis: [x, y],
         firma: [x.r, y.r].sort((p, q) => p - q).join('-'),
       };
     }
@@ -241,9 +251,10 @@ function rondaTaquilla(level) {
 // ---- Estrenos: ¿cuál se estrenó antes? ----
 function rondaAnio(level) {
   const hueco = huecoAnios(level);
+  const pool = frescas(PELIS);
   for (let i = 0; i < 40; i++) {
-    const a = pick(PELIS);
-    const rivales = PELIS.filter((b) => {
+    const a = pick(pool);
+    const rivales = pool.filter((b) => {
       const d = Math.abs(a.y - b.y);
       return d >= hueco && d <= hueco * 2.2;
     });
@@ -258,6 +269,7 @@ function rondaAnio(level) {
         cartas: [cartaPeli(x, { sinAnio: true, valor: x.y }),
                  cartaPeli(y, { sinAnio: true, valor: y.y })],
         correcta: x.y < y.y ? 0 : 1,
+        pelis: [x, y],
         firma: [x.r, y.r].sort((p, q) => p - q).join('-'),
       };
     }
@@ -267,7 +279,7 @@ function rondaAnio(level) {
 
 // ---- Director: ¿dirigió esta persona esta película? ----
 function rondaDirector(level) {
-  const m = pick(CON_DIRECTOR);
+  const m = pick(frescas(CON_DIRECTOR));
   const verdadero = coin();
   let nombre;
   if (verdadero) {
@@ -290,6 +302,7 @@ function rondaDirector(level) {
     modo: 'sino',
     cartas: [cartaPeli(m), cartaPersona(nombre, directorPhoto(nombre), 'Director')],
     correcta: verdadero,
+    pelis: [m],
     explica: `${real}.`,
     firma: `dir-${m.r}-${nombre}`,
   };
@@ -297,7 +310,7 @@ function rondaDirector(level) {
 
 // ---- Reparto: ¿coincidieron estos dos actores? ----
 function rondaActores(level) {
-  const m = pick(CON_REPARTO);
+  const m = pick(frescas(CON_REPARTO));
   const cast = reparto(m);
   const juntos = coin();
   let a = pick(cast), b;
@@ -320,6 +333,7 @@ function rondaActores(level) {
              cartaPersona(a, actorPhoto(a), 'Reparto'),
              cartaPersona(b, actorPhoto(b), 'Reparto')],
     correcta: juntos,
+    pelis: [m],
     explica: juntos ? `Sí: los dos están en ${m.t}.` : `No: ${b} no sale en ${m.t}.`,
     firma: `act-${m.r}-${a}-${b}`,
   };
@@ -329,7 +343,7 @@ function rondaActores(level) {
 function rondaOscar() {
   // se equilibra a propósito: sin esto saldría "no" tres de cada cuatro veces
   const conPremio = coin();
-  const pool = CON_OSCAR.filter((m) => (m.o > 0) === conPremio);
+  const pool = frescas(CON_OSCAR.filter((m) => (m.o > 0) === conPremio), 6);
   if (!pool.length) return null;
   const m = pick(pool);
   return {
@@ -338,6 +352,7 @@ function rondaOscar() {
     modo: 'sino',
     cartas: [cartaPeli(m)],
     correcta: m.o > 0,
+    pelis: [m],
     explica: m.o > 0
       ? `Ganó ${m.o} ${m.o === 1 ? 'Óscar' : 'Óscars'}.`
       : 'No ganó ninguno.',
@@ -362,6 +377,7 @@ function nuevaRonda(level, categoria) {
     const r = tipo.crea(level);
     if (r && r.firma !== state.ultima) {
       state.ultima = r.firma;
+      (r.pelis || []).forEach((m) => state.vistas.add(m.r));
       return r;
     }
   }
@@ -515,9 +531,12 @@ function revelaCartas(r) {
 // carátulas escogidas según el criterio de cada categoría.
 const ACTORES_EN_JUEGO = [...new Set(CON_REPARTO.flatMap(reparto))];
 const ES_PERSONA = new Set(['director', 'actores']);
-const TOP_TAQUILLA = PELIS.slice(0, 18);
-const CLASICAS = PELIS.filter((m) => m.y <= 2005);
-const PREMIADAS = PELIS.filter((m) => (m.o || 0) >= 2);
+// Depósitos de imagen de fondo. Son amplios a propósito: con 4 burbujas de cada
+// categoría por partida, un depósito de 15 hace que se repitan las mismas
+// carátulas partida tras partida.
+const TOP_TAQUILLA = PELIS.slice(0, 45);
+const CLASICAS = PELIS.filter((m) => m.y <= 2012);
+const PREMIADAS = PELIS.filter((m) => (m.o || 0) >= 1);
 
 function imagenPara(cat, usadas) {
   const fuentes = {
@@ -985,6 +1004,7 @@ function startGame() {
   state.ronda = null;
   state.next = null;
   state.ultima = '';
+  state.vistas = new Set();
   state.campo = reparteBurbujas();
   state.completadas = new Set();
   state.actual = null;
