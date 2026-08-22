@@ -154,13 +154,18 @@
 </head>
 <body class="min-h-screen text-white antialiased selection:bg-white/25">
 
-  <!-- Fondo con luz difusa, al modo de tvOS -->
+  <!-- Fondo: la fotografía al 25 % sobre negro y, encima, las luces difusas
+       del modo tvOS. Va en un div fijo y no como background-attachment, que en
+       iOS da problemas. -->
+  <div class="pointer-events-none fixed inset-0 -z-20" style="background:#000"></div>
+  <div class="pointer-events-none fixed inset-0 -z-20"
+       style="background-image:url('imgs/bg_game.webp');background-size:cover;
+              background-position:center;opacity:.25"></div>
   <div class="pointer-events-none fixed inset-0 -z-10"
        style="background:
-         radial-gradient(60% 45% at 18% 12%, rgba(255,159,10,.13), transparent 60%),
-         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.13), transparent 60%),
-         radial-gradient(60% 50% at 50% 92%, rgba(191,90,242,.12), transparent 60%),
-         #000"></div>
+         radial-gradient(60% 45% at 18% 12%, rgba(255,159,10,.10), transparent 60%),
+         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.10), transparent 60%),
+         radial-gradient(60% 50% at 50% 92%, rgba(191,90,242,.09), transparent 60%)"></div>
 
   <div id="app" class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-8 sm:py-6">
 

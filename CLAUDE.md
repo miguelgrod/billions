@@ -132,8 +132,10 @@ se pierde al tercer fallo.
 - **El acierto y el fallo se marcan con estilo en línea**, no con clases: la
   superficie de cristal define su propio borde en el CSS y una clase de Tailwind
   podría quedar por debajo en la cascada.
-- El fondo son tres luces difusas de color sobre negro, fijas, como los del
-  sistema.
+- **El fondo es `imgs/bg_game.webp` al 25 % sobre negro** (un bokeh nocturno que
+  rima con las burbujas), y encima tres luces difusas de color. Va en un `div`
+  fijo y no con `background-attachment: fixed`, que en iOS da problemas. Las
+  luces se bajaron al 9–10 % al añadir la foto para que no la enturbiaran.
 
 ## Los cinco tipos de ronda
 
