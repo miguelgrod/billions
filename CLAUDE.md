@@ -242,6 +242,12 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
   `state.score`, así que tras fallar se repite la dificultad del mismo nivel.
 - **Récord:** `localStorage`, clave `billions.best`, siempre entre `try/catch`
   (modo privado del navegador).
+- **Los retratos se encuadran al 25 % de la altura de la foto**, no alineados
+  arriba. En un marco ancho y bajo —el de móvil— alinear arriba enseña sólo del
+  0 % al 40 % de la foto y corta la cara; al 25 % se ve del 15 % al 55 %, que es
+  justo la banda donde cae. En escritorio no cambia nada: ahí no sobra alto.
+  Las burbujas de persona van al 28 % por el mismo motivo, agravado por el
+  recorte circular.
 - **En móvil, las rondas de tres tarjetas** ponen la película sola arriba
   (`col-span-2`) y los dos actores debajo compartiendo fila; de tablet en
   adelante van las tres en línea (`COLS`).

@@ -409,7 +409,7 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
       class="carta ${tramo} ${clicable ? 'choice foco cursor-pointer' : 'pointer-events-none'}
              group relative flex ${alto} flex-col justify-end overflow-hidden rounded-[26px]
              border border-white/10 bg-white/[.06] text-center shadow-[0_18px_50px_rgba(0,0,0,.55)]">
-      <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? 'object-top' : ''}
+      <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? '[object-position:50%_25%]' : ''}
                   opacity-0 brightness-[.62] saturate-[.95] transition-all duration-500
                   group-hover:brightness-90 group-hover:saturate-100"
            alt="" aria-hidden="true" />
@@ -514,6 +514,7 @@ function revelaCartas(r) {
 // del propio juego: un director para dirección, un actor para reparto, y
 // carátulas escogidas según el criterio de cada categoría.
 const ACTORES_EN_JUEGO = [...new Set(CON_REPARTO.flatMap(reparto))];
+const ES_PERSONA = new Set(['director', 'actores']);
 const TOP_TAQUILLA = PELIS.slice(0, 18);
 const CLASICAS = PELIS.filter((m) => m.y <= 2005);
 const PREMIADAS = PELIS.filter((m) => (m.o || 0) >= 2);
@@ -591,8 +592,12 @@ function pintaBurbujas() {
       : `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
     // comillas simples: las dobles cerrarían el atributo style y tumbarían el
     // estilo entero a partir de ahí
+    // Las fotos de personas se encuadran algo por encima del centro: es donde
+    // cae la cara en un retrato, y en un recorte circular el centro geométrico
+    // la deja demasiado arriba.
+    const encuadre = ES_PERSONA.has(b.cat) ? 'center 28%' : 'center';
     const fondo = b.img
-      ? `radial-gradient(circle at 32% 26%, ${velo}), url('${b.img}') center/cover`
+      ? `radial-gradient(circle at 32% 26%, ${velo}), url('${b.img}') ${encuadre}/cover`
       : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
     const sombra = hecha
       ? '0 18px 40px -18px rgba(0,0,0,.6)'
