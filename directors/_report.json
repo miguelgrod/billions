@@ -1,0 +1,444 @@
+{
+ "por_puesto": {
+  "1": [
+   "James Cameron"
+  ],
+  "2": [
+   "Anthony Russo",
+   "Joe Russo"
+  ],
+  "3": [
+   "James Cameron"
+  ],
+  "4": [
+   "James Cameron"
+  ],
+  "5": [
+   "J.J. Abrams"
+  ],
+  "6": [
+   "Anthony Russo",
+   "Joe Russo"
+  ],
+  "7": [
+   "Jon Watts"
+  ],
+  "8": [
+   "Yu Yang"
+  ],
+  "9": [
+   "Jon Watts"
+  ],
+  "10": [
+   "Byron Howard"
+  ],
+  "11": [
+   "Kelsey Mann"
+  ],
+  "12": [
+   "Colin Trevorrow"
+  ],
+  "13": [
+   "Jon Favreau"
+  ],
+  "14": [
+   "Joss Whedon"
+  ],
+  "15": [
+   "James Wan"
+  ],
+  "16": [
+   "James Cameron"
+  ],
+  "17": [
+   "Joseph Kosinski"
+  ],
+  "18": [
+   "Chris Buck",
+   "Jennifer Lee"
+  ],
+  "19": [
+   "Greta Gerwig"
+  ],
+  "20": [
+   "Joss Whedon"
+  ],
+  "21": [
+   "Aaron Horvath",
+   "Michael Jelenic"
+  ],
+  "22": [
+   "Christopher Nolan"
+  ],
+  "23": [
+   "Shawn Levy"
+  ],
+  "24": [
+   "Ryan Coogler"
+  ],
+  "25": [
+   "Rian Johnson"
+  ],
+  "26": [
+   "David Yates"
+  ],
+  "27": [
+   "J.A. Bayona"
+  ],
+  "28": [
+   "Chris Buck",
+   "Jennifer Lee"
+  ],
+  "29": [
+   "Bill Condon"
+  ],
+  "30": [
+   "Brad Bird"
+  ],
+  "31": [
+   "Shane Black"
+  ],
+  "32": [
+   "F. Gary Gray"
+  ],
+  "33": [
+   "Pierre Coffin",
+   "Kyle Balda"
+  ],
+  "34": [
+   "Anthony Russo",
+   "Joe Russo"
+  ],
+  "35": [
+   "James Wan"
+  ],
+  "36": [
+   "Jon Watts"
+  ],
+  "37": [
+   "Anna Boden",
+   "Ryan Fleck"
+  ],
+  "38": [
+   "Peter Jackson"
+  ],
+  "39": [
+   "Michael Bay"
+  ],
+  "40": [
+   "Andrew Stanton"
+  ],
+  "41": [
+   "Sam Mendes"
+  ],
+  "42": [
+   "Michael Bay"
+  ],
+  "43": [
+   "Christopher Nolan"
+  ],
+  "44": [
+   "Todd Phillips"
+  ],
+  "45": [
+   "Josh Cooley"
+  ],
+  "46": [
+   "J.J. Abrams"
+  ],
+  "47": [
+   "Lee Unkrich"
+  ],
+  "48": [
+   "Gore Verbinski"
+  ],
+  "49": [
+   "David Derrick Jr."
+  ],
+  "50": [
+   "Steven Spielberg"
+  ],
+  "51": [
+   "Gareth Edwards"
+  ],
+  "52": [
+   "George Lucas"
+  ],
+  "53": [
+   "Rob Marshall"
+  ],
+  "54": [
+   "Guy Ritchie"
+  ],
+  "55": [
+   "Dean Fleischer Camp"
+  ],
+  "56": [
+   "Pierre Coffin",
+   "Kyle Balda"
+  ],
+  "57": [
+   "Tim Burton"
+  ],
+  "58": [
+   "Andrew Stanton"
+  ],
+  "60": [
+   "Byron Howard",
+   "Rich Moore"
+  ],
+  "61": [
+   "Peter Jackson"
+  ],
+  "63": [
+   "Christopher Nolan"
+  ],
+  "64": [
+   "Colin Trevorrow"
+  ],
+  "65": [
+   "Roger Allers",
+   "Rob Minkoff"
+  ],
+  "66": [
+   "Chris Renaud"
+  ],
+  "67": [
+   "Christopher Nolan"
+  ],
+  "68": [
+   "Pierre Coffin",
+   "Chris Renaud"
+  ],
+  "69": [
+   "Chris Columbus"
+  ],
+  "70": [
+   "Jake Kasdan"
+  ],
+  "71": [
+   "Jared Hess"
+  ],
+  "72": [
+   "Gore Verbinski"
+  ],
+  "73": [
+   "Peter Jackson"
+  ],
+  "74": [
+   "Sam Raimi"
+  ],
+  "75": [
+   "Jon Favreau"
+  ],
+  "76": [
+   "David Yates"
+  ],
+  "77": [
+   "Peter Jackson"
+  ],
+  "78": [
+   "Kyle Balda"
+  ],
+  "79": [
+   "David Yates"
+  ],
+  "80": [
+   "Andrew Stanton"
+  ],
+  "81": [
+   "Andrew Adamson"
+  ],
+  "82": [
+   "Peter Jackson"
+  ],
+  "83": [
+   "David Yates"
+  ],
+  "84": [
+   "George Lucas"
+  ],
+  "85": [
+   "Peter Jackson"
+  ],
+  "86": [
+   "Sam Raimi"
+  ],
+  "87": [
+   "Mike Newell"
+  ],
+  "88": [
+   "Carlos Saldanha"
+  ],
+  "89": [
+   "Chris Renaud"
+  ],
+  "90": [
+   "Steve Martino"
+  ],
+  "91": [
+   "Bryan Singer"
+  ],
+  "92": [
+   "Sam Mendes"
+  ],
+  "93": [
+   "Jon Watts"
+  ],
+  "94": [
+   "Chris Columbus"
+  ],
+  "95": [
+   "Zack Snyder"
+  ],
+  "96": [
+   "Gareth Edwards"
+  ],
+  "97": [
+   "James Gunn"
+  ],
+  "98": [
+   "Francis Lawrence"
+  ],
+  "99": [
+   "Ryan Coogler"
+  ],
+  "100": [
+   "Ruben Fleischer"
+  ]
+ },
+ "fotos": {
+  "Francis Ford Coppola": "francis-ford-coppola.jpg",
+  "Sidney Lumet": "sidney-lumet.jpg",
+  "Steven Spielberg": "steven-spielberg.jpg",
+  "Quentin Tarantino": "quentin-tarantino.jpg",
+  "Frank Darabont": "frank-darabont.jpg",
+  "Charles Chaplin": "charles-chaplin.jpg",
+  "Billy Wilder": "billy-wilder.jpg",
+  "Roberto Benigni": "roberto-benigni.jpg",
+  "George Roy Hill": "george-roy-hill.jpg",
+  "Ernst Lubitsch": "ernst-lubitsch.jpg",
+  "Alfred Hitchcock": "alfred-hitchcock.jpg",
+  "Martin Scorsese": "martin-scorsese.jpg",
+  "Fernando Meirelles": "fernando-meirelles.jpg",
+  "Michael Curtiz": "michael-curtiz.jpg",
+  "Akira Kurosawa": "akira-kurosawa.jpg",
+  "Stanley Kubrick": "stanley-kubrick.jpg",
+  "Joseph L. Mankiewicz": "joseph-l-mankiewicz.jpg",
+  "Peter Jackson": "peter-jackson.jpg",
+  "Robert Zemeckis": "robert-zemeckis.jpg",
+  "Irvin Kershner": "irvin-kershner.jpg",
+  "Hayao Miyazaki": "hayao-miyazaki.jpg",
+  "Giuseppe Tornatore": "giuseppe-tornatore.jpg",
+  "Stanley Donen": "stanley-donen.jpg",
+  "Gene Kelly": "gene-kelly.jpg",
+  "Sergio Leone": "sergio-leone.jpg",
+  "Orson Welles": "orson-welles.jpg",
+  "Christopher Nolan": "christopher-nolan.jpg",
+  "Jonathan Demme": "jonathan-demme.jpg",
+  "Bong Joon-ho": "bong-joon-ho.jpg",
+  "Roman Polanski": "roman-polanski.jpg",
+  "Miloš Forman": "milos-forman.jpg",
+  "David Fincher": "david-fincher.jpg",
+  "David Lean": "david-lean.jpg",
+  "George Lucas": "george-lucas.jpg",
+  "James Cameron": "james-cameron.jpg",
+  "Damien Chazelle": "damien-chazelle.jpg",
+  "Bryan Singer": "bryan-singer.jpg",
+  "Roger Allers": "roger-allers.jpg",
+  "Rob Minkoff": "rob-minkoff.jpg",
+  "The Wachowskis": "the-wachowskis.jpg",
+  "Victor Fleming": "victor-fleming.jpg",
+  "Peter Weir": "peter-weir.jpg",
+  "Ridley Scott": "ridley-scott.jpg",
+  "William Wyler": "william-wyler.jpg",
+  "Michel Gondry": "michel-gondry.jpg",
+  "Lee Unkrich": "lee-unkrich.jpg",
+  "Sam Mendes": "sam-mendes.jpg",
+  "Jean-Pierre Jeunet": "jean-pierre-jeunet.jpg",
+  "Daniel Kwan": "daniel-kwan.jpg",
+  "Daniel Scheinert": "daniel-scheinert.jpg",
+  "Luc Besson": "luc-besson.jpg",
+  "Andrew Stanton": "andrew-stanton.jpg",
+  "Joel Coen": "joel-coen.jpg",
+  "Ethan Coen": "ethan-coen.jpg",
+  "Brian De Palma": "brian-de-palma.jpg",
+  "Anthony Russo": "anthony-russo.jpg",
+  "Joe Russo": "joe-russo.jpg",
+  "Mel Gibson": "mel-gibson.jpg",
+  "Steve McQueen": "steve-mcqueen.jpg",
+  "Wes Anderson": "wes-anderson.jpg",
+  "Paul Thomas Anderson": "paul-thomas-anderson.jpg",
+  "Todd Phillips": "todd-phillips.jpg",
+  "David Yates": "david-yates.jpg",
+  "Byron Howard": "byron-howard.jpg",
+  "Rich Moore": "rich-moore.jpg",
+  "Jon Watts": "jon-watts.jpg",
+  "Chris Columbus": "chris-columbus.jpg",
+  "Barry Jenkins": "barry-jenkins.jpg",
+  "Joss Whedon": "joss-whedon.jpg",
+  "Joseph Kosinski": "joseph-kosinski.jpg",
+  "Chloé Zhao": "chloe-zhao.jpg",
+  "Josh Cooley": "josh-cooley.jpg",
+  "Kelsey Mann": "kelsey-mann.jpg",
+  "Shawn Levy": "shawn-levy.jpg",
+  "Mike Newell": "mike-newell.jpg",
+  "Alfonso Cuarón": "alfonso-cuaron.jpg",
+  "Guillermo del Toro": "guillermo-del-toro.jpg",
+  "James Gunn": "james-gunn.jpg",
+  "Alejandro G. Iñárritu": "alejandro-g-inarritu.jpg",
+  "J.J. Abrams": "j-j-abrams.jpg",
+  "Ryan Coogler": "ryan-coogler.jpg",
+  "Brad Bird": "brad-bird.jpg",
+  "Gareth Edwards": "gareth-edwards.jpg",
+  "Jon Favreau": "jon-favreau.jpg",
+  "Andrew Adamson": "andrew-adamson.jpg",
+  "Chris Buck": "chris-buck.jpg",
+  "Jennifer Lee": "jennifer-lee.jpg",
+  "Francis Lawrence": "francis-lawrence.jpg",
+  "Gore Verbinski": "gore-verbinski.jpg",
+  "Greta Gerwig": "greta-gerwig.jpg",
+  "Bill Condon": "bill-condon.jpg",
+  "Shane Black": "shane-black.jpg",
+  "James Wan": "james-wan.jpg",
+  "Pierre Coffin": "pierre-coffin.jpg",
+  "Chris Renaud": "chris-renaud.jpg",
+  "Jake Kasdan": "jake-kasdan.jpg",
+  "Guy Ritchie": "guy-ritchie.jpg",
+  "Colin Trevorrow": "colin-trevorrow.jpg",
+  "Aaron Horvath": "aaron-horvath.jpg",
+  "Michael Jelenic": "michael-jelenic.jpg",
+  "Rian Johnson": "rian-johnson.jpg",
+  "Sam Raimi": "sam-raimi.jpg",
+  "Tim Burton": "tim-burton.jpg",
+  "Carlos Saldanha": "carlos-saldanha.jpg",
+  "Anna Boden": "anna-boden.jpg",
+  "Ryan Fleck": "ryan-fleck.jpg",
+  "Kyle Balda": "kyle-balda.jpg",
+  "J.A. Bayona": "j-a-bayona.jpg",
+  "David Derrick Jr.": "david-derrick-jr.jpg",
+  "Zack Snyder": "zack-snyder.jpg",
+  "F. Gary Gray": "f-gary-gray.jpg",
+  "Rob Marshall": "rob-marshall.jpg",
+  "Ruben Fleischer": "ruben-fleischer.jpg",
+  "Michael Bay": "michael-bay.jpg",
+  "Steve Martino": "steve-martino.jpg",
+  "Yu Yang": "yu-yang.jpg",
+  "Dean Fleischer Camp": "dean-fleischer-camp.jpg",
+  "Jared Hess": "jared-hess.jpg"
+ },
+ "sin_foto": [],
+ "dudosos": [],
+ "via_indirecta": {
+  "Irvin Kershner": "File:Irvin Kershner.jpg",
+  "Daniel Scheinert": "Daniels (directors)",
+  "Anthony Russo": "Russo brothers",
+  "Joe Russo": "Russo brothers",
+  "Chris Columbus": "Chris Columbus (filmmaker)",
+  "Mike Newell": "Mike Newell (director)",
+  "Gareth Edwards": "Gareth Edwards (filmmaker)",
+  "Jennifer Lee": "Jennifer Lee (filmmaker)",
+  "Ryan Fleck": "Anna Boden and Ryan Fleck",
+  "Yu Yang": "Jiaozi (director)"
+ }
+}

@@ -1,7 +1,8 @@
 # Billions — juego de taquilla
 
-Quiz web: se enfrentan dos películas y hay que acertar cuál recaudó más en todo
-el mundo. Se encadenan niveles hasta el primer fallo. En producción:
+Quiz web de cine: cada ronda plantea una pregunta —taquilla, estrenos,
+directores, repartos u Óscars— y se encadenan niveles hasta el primer fallo.
+En producción:
 **https://bonitu.es/billions/**
 
 Vive dentro del repo de **Bonitu Plays** y se despliega con él, pero es un
@@ -27,13 +28,20 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 |---|---|
 | `index.html` | Tablero, pantalla previa, aviso superpuesto, pantalla de fin. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
 | `main.js` | Estado, rondas, revelado, récord. Sin módulos: variables globales y `defer` |
-| `movies.js` | `const MOVIES` — generado desde el Excel, **no editar a mano** |
+| `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` puesto, `t` título, `g` recaudación, `y` año, `o` Óscars, `d` director(es), `a` reparto |
 | `posters.js` | `const POSTERS` — puesto → nombre de archivo en `posters/` |
 | `posters/*.jpg` | 100 carátulas, 300 px de ancho |
 | `posters/_report.json` | Caché de resolución del descargador (qué página y qué archivo de Wikipedia usó cada película) |
+| `directors/*.jpg` | 118 fotos de directores, 400 px de ancho |
+| `actors/*.jpg` | 624 fotos de actores (de 641 personas), 300 px de ancho |
+| `directors.js` / `actors.js` | `DIRECTORS`/`ACTORS` (puesto de película → nombres) y `DIRECTOR_PHOTOS`/`ACTOR_PHOTOS` (nombre → archivo). **Todavía no los carga `index.html`**: los datos están listos, el juego no los usa |
+| `*/\_report.json` | Qué foto se asignó a cada persona, cuáles fueron por vía indirecta y cuáles quedaron en duda |
+| `tools/build-data.py` | Regenera `movies.js` cruzando los dos Excel |
 | `tools/fetch-posters.py` | Descarga las carátulas. Dos fuentes: Wikipedia (sin clave) o TMDB (con clave) |
+| `tools/fetch-people.py` | Saca del Excel los directores o los actores y descarga sus fotos (`--role`) |
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
-| `top_100_...xlsx` | Datos de origen |
+| `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
+| `top_peliculas_taquilla_y_critica.xlsx` | Datos ampliados: 189 películas con director, nota de FilmAffinity, Óscars y 5 actores. **`movies.js` no sale de aquí todavía** |
 
 ## Invariantes que no hay que romper
 
@@ -47,13 +55,47 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 4. **El juego funciona sin carátulas.** Si una imagen falta o falla, la tarjeta se
    queda con fondo liso y el título. No introduzcas dependencias de la imagen.
 
+## Los cinco tipos de ronda
+
+| Tipo | Pregunta | Respuesta |
+|---|---|---|
+| `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta |
+| `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta |
+| `director` | ¿Dirigió *X* esta película? | Sí / No |
+| `actores` | ¿Coincidieron estos dos actores en esta película? | Sí / No |
+| `oscar` | ¿Ganó esta película algún Óscar? | Sí / No |
+
+Cada tipo es una función `ronda*(level)` que devuelve un objeto con `pregunta`,
+`modo` (`elige` o `sino`), `cartas`, `correcta` y `firma` (para no repetir ronda).
+Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
+
+**Reglas que no hay que romper:**
+
+1. **Nada entra en juego sin fotografía.** Los fondos `PELIS`, `CON_DIRECTOR`,
+   `CON_REPARTO` y `CON_OSCAR` se filtran al arrancar comprobando que existe la
+   imagen. Es un requisito del diseño, no una optimización.
+2. **En las rondas de estreno el año va oculto** (`sinAnio`), porque es
+   justo lo que hay que adivinar. En las de taquilla sí se ve.
+3. **Los sí/no se equilibran a propósito.** Sólo 27 de 98 películas tienen Óscar,
+   así que `rondaOscar()` sortea primero la respuesta y luego busca película. Sin
+   eso, responder "no" siempre acertaría tres de cada cuatro veces.
+4. **El "no" de los repartos es una heurística, no un dato.** Sólo tenemos cinco
+   actores por película, así que "no coincidieron" se afirma cogiendo un intruso
+   de una película separada por `HUECO_SEGURO` años o más. Reduce mucho el riesgo
+   de afirmar en falso, pero no lo elimina: si bajas ese hueco, aumenta.
+5. **Las dos películas de 2026 sin datos ampliados** (*Michael*, *The Super Mario
+   Galaxy Movie*) sólo aparecen en rondas de taquilla y estreno.
+
 ## Detalles del juego
 
 - **Contrato de película:** `{ r: puesto, t: título, g: recaudación mundial, y: año }`.
 - **Ritmo:** `REVEAL_MS` (2800 ms tras acertar) y `GAMEOVER_MS` (3200 ms tras
   fallar) al principio de `main.js`. Son el tiempo para leer las cifras; se
   tocan a menudo, están como constantes con nombre por eso.
-- **Dificultad progresiva:** la marca lo parecidas que son las dos recaudaciones,
+- **Dificultad progresiva (sólo en los duelos):** en taquilla la marca lo
+  parecidas que son las dos recaudaciones; en estrenos, los años de diferencia
+  (`huecoAnios()`, de 18 años a 2). En las de sí/no lo que sube con el nivel es
+  lo plausible que es el intruso. Sobre la taquilla:
   medido como ratio entre ellas (2.0 = la ganadora dobla a la otra; 1.05 = moneda
   al aire). `banda(level)` devuelve la horquilla admisible del nivel, que parte de
   `RATIO_INICIAL` (2.0) y cae hacia `RATIO_SUELO` (1.12) con `RATIO_CAIDA`. La
@@ -73,11 +115,12 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 - **Teclado:** `←`/`1` y `→`/`2` eligen; `Enter` o espacio arranca y reinicia.
 - **Récord:** `localStorage`, clave `billions.best`, siempre entre `try/catch`
   (modo privado del navegador).
+- **Las tarjetas las genera el JS** (`cartaHTML()` en `#cards`), porque una ronda
+  tiene una, dos o tres según el tipo. El HTML ya no lleva tarjetas fijas.
 - **Cambio de nivel:** `newRound()` saca las tarjetas (`card-out`, `OUT_MS`) y
-  `mountRound()` monta la pareja nueva cuando ya no se ven, con entrada
-  escalonada (`entradaTarjetas()`, `STAGGER_MS`). Montar con las tarjetas
-  invisibles es lo que evita ver el cambio a medias. `state.pair[0]` vacío
-  significa "no hay ronda anterior que sacar" (primera ronda y reinicio).
+  `mountRound()` monta la ronda nueva cuando ya no se ven, con entrada
+  escalonada (`entradaTarjetas()`, `STAGGER_MS`). `state.ronda` vacío significa
+  "no hay ronda anterior que sacar" (primera ronda y reinicio).
 - Los bordes de las tarjetas son de 4 px **siempre**, y solo cambia el color
   entre reposo, hover, acierto y fallo. Si cambias el grosor por estado, el
   contenido se desplaza.
@@ -111,6 +154,56 @@ siempre el formato vertical.
 
 Las imágenes tienen copyright de sus estudios y están a título ilustrativo, con
 la atribución en el pie de página.
+
+## Directores y actores
+
+Los nombres salen de la hoja "Listado completo" de
+`top_peliculas_taquilla_y_critica.xlsx` (columna D los directores, H–L los cinco
+actores); las fotos, de la Wikipedia en inglés. Un solo script para ambos:
+
+```bash
+python3 tools/fetch-people.py --role directors --width 400
+python3 tools/fetch-people.py --role actors --width 300
+python3 tools/fetch-people.py --role actors --names     # sólo nombres
+```
+
+Es reanudable: da por buenas las fotos que ya estén en disco y sólo trabaja
+sobre los huecos, que siempre quedan algunos porque Wikipedia devuelve 429 si se
+le pide demasiado seguido. Con `--refresh` lo rehace todo.
+**Ojo con `--names`**: regenera el índice sin fotos, así que después hay que
+volver a lanzarlo sin esa opción para restaurarlo.
+
+- **El cruce con el juego se hace por recaudación, no por título.** El Excel nuevo
+  abrevia los títulos ("Harry Potter: Deathly Hallows P2"), así que sólo 70 de 100
+  coinciden literalmente; la recaudación es un número exacto y único y cruza 98.
+  Si tocas ese cruce, no lo pases a comparar títulos.
+- **Dos películas se quedan sin director:** *Michael* y *The Super Mario Galaxy
+  Movie*, ambas de 2026, que no están en el Excel nuevo.
+- **Los codirectores que comparten apellido** vienen en una sola casilla
+  ("Anthony & Joe Russo"), y hay que copiar el apellido a la primera mitad o
+  Wikipedia no encuentra a nadie. Lo hace `split_directors()`.
+- **Tres fotos son de dúo y las comparten seis personas** (Russo, Daniels, y
+  Boden & Fleck): Wikipedia sólo tiene artículo conjunto para ellos.
+- **Irvin Kershner es la única foto no libre**, sacada de la imagen de su
+  artículo porque `pageimages` omite ese tipo de archivos — el mismo motivo que
+  limita las carátulas.
+- **La identidad se valida siempre, no sólo cuando falta la foto.** Es la razón
+  de ser de `INTERPRETE` y `CINE`: hay artículos de otra persona con el mismo
+  nombre y con imagen, que se colarían sin decir nada. El caso de manual es
+  `Chris Evans`, que en la Wikipedia inglesa es un presentador británico. Si el
+  extracto no habla de cine, se reintenta con `(actor)`, `(director)` y búsqueda.
+- Los actores están a 300 px y no a 400 como los directores: son 641 personas, y
+  a 400 px pasaban de 38 MB.
+- **17 actores no tienen foto y no la van a tener por esta vía**: 4 no tienen
+  artículo en la Wikipedia inglesa (Liu Tongzi, Lü Yanting, Hualālai Chung,
+  Takashi Naitô) y 13 lo tienen sin ninguna imagen — sobre todo voces de anime,
+  el reparto de *Cidade de Deus* y actores infantiles. No es un fallo del
+  script: está comprobado artículo por artículo.
+- Reparto del juego: 93 de las 98 películas cruzadas tienen los cinco actores
+  con foto; 4 tienen cuatro y 1 tiene tres o menos.
+- Al contrario que los pósters, las fotos de personas sí suelen ser libres
+  (Commons), así que aquí no hay techo de resolución: se piden y normalizan al
+  ancho que diga `--width`.
 
 ## Publicar
 

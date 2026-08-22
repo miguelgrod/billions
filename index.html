@@ -19,7 +19,8 @@
        tarjeta recién pulsada. Con la guarda, sólo se pinta si hay ratón de
        verdad y la tarjeta admite clics. */
     @media (hover: hover) {
-      .choice:not(:disabled):hover { border-color: #fbbf24; }   /* amber-400 */
+      .choice:not(:disabled):hover,
+      .yesno:not(:disabled):hover { border-color: #fbbf24; }   /* amber-400 */
     }
 
     /* Cambio de nivel: las tarjetas salen y entra la pareja siguiente */
@@ -81,56 +82,30 @@
     </header>
 
     <!-- Tablero -->
-    <main id="board" class="flex flex-1 flex-col">
-      <p class="mb-3 text-center text-sm text-neutral-400">
-        Elige la película con <span class="font-semibold text-neutral-200">mayor recaudación mundial</span>
-      </p>
+    <main id="board" class="relative flex flex-1 flex-col">
+      <p id="question" class="mb-3 text-balance text-center text-sm text-neutral-400 sm:text-base"></p>
 
-      <div class="relative grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-        <!-- Tarjeta A -->
-        <button data-side="0" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
-          <!-- carátula -->
-          <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
-          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
-          <!-- contenido -->
-          <div class="relative flex flex-col items-center px-5 pb-5 pt-6">
-            <span class="js-year mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm"></span>
-            <span class="js-title display text-2xl leading-tight text-white drop-shadow-lg sm:text-4xl"></span>
-            <span class="js-gross display mt-2 h-8 text-2xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-3xl"></span>
-            <span class="js-hint mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>
-          </div>
-        </button>
+      <div id="cards" class="relative grid flex-1 grid-cols-1 gap-3 sm:gap-4"></div>
 
-        <!-- Separador VS -->
-        <div class="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 sm:block">
-          <div class="display flex h-12 w-12 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 text-lg text-neutral-400">VS</div>
-        </div>
-        <div class="display -my-1 text-center text-sm text-neutral-600 sm:hidden">VS</div>
-
-        <!-- Aviso de acierto o fallo, superpuesto -->
-        <div id="toast" role="status" aria-live="polite"
-             class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
-          <div id="toast-box" class="max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
-            <div id="toast-msg" class="display text-4xl leading-none sm:text-5xl"></div>
-            <div id="toast-sub" class="mt-1 text-balance text-xs font-medium text-neutral-400"></div>
-          </div>
-        </div>
-
-        <!-- Tarjeta B -->
-        <button data-side="1" class="choice group relative flex min-h-[240px] flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default sm:min-h-[380px]">
-          <!-- carátula -->
-          <img loading="eager" decoding="async" class="js-poster absolute inset-0 h-full w-full scale-105 object-cover opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
-          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
-          <!-- contenido -->
-          <div class="relative flex flex-col items-center px-5 pb-5 pt-6">
-            <span class="js-year mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm"></span>
-            <span class="js-title display text-2xl leading-tight text-white drop-shadow-lg sm:text-4xl"></span>
-            <span class="js-gross display mt-2 h-8 text-2xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-3xl"></span>
-            <span class="js-hint mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>
-          </div>
-        </button>
+      <!-- Separador de los duelos -->
+      <div id="vs" class="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2">
+        <div class="display flex h-12 w-12 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 text-lg text-neutral-400">VS</div>
       </div>
 
+      <!-- Respuesta de las preguntas de sí o no -->
+      <div id="answers" class="mt-4 hidden justify-center gap-3">
+        <button data-answer="1" class="yesno display min-w-[120px] rounded-xl border-4 border-neutral-800 bg-neutral-900 px-7 py-3 text-2xl text-neutral-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">Sí</button>
+        <button data-answer="0" class="yesno display min-w-[120px] rounded-xl border-4 border-neutral-800 bg-neutral-900 px-7 py-3 text-2xl text-neutral-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">No</button>
+      </div>
+
+      <!-- Aviso de acierto o fallo, superpuesto -->
+      <div id="toast" role="status" aria-live="polite"
+           class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
+        <div id="toast-box" class="max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
+          <div id="toast-msg" class="display text-4xl leading-none sm:text-5xl"></div>
+          <div id="toast-sub" class="mt-1 text-balance text-xs font-medium text-neutral-400"></div>
+        </div>
+      </div>
     </main>
 
     <!-- Pantalla previa -->
@@ -142,11 +117,11 @@
         <ol class="mt-6 space-y-3 text-left text-sm text-neutral-300">
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">1</span>
-            <span>Te salen <strong class="text-neutral-100">dos películas</strong> enfrentadas.</span>
+            <span>Cada ronda trae una pregunta de cine: <strong class="text-neutral-100">taquilla, estrenos, directores, repartos u Óscars</strong>.</span>
           </li>
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">2</span>
-            <span>Elige la que <strong class="text-neutral-100">más recaudó</strong> en todo el mundo.</span>
+            <span>Responde eligiendo una tarjeta o con <strong class="text-neutral-100">Sí</strong> / <strong class="text-neutral-100">No</strong>.</span>
           </li>
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">3</span>
@@ -182,6 +157,8 @@
 
   <script src="movies.js" defer></script>
   <script src="posters.js" defer></script>
+  <script src="directors.js" defer></script>
+  <script src="actors.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 </html>
