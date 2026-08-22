@@ -1,8 +1,9 @@
 # Billions — juego de taquilla
 
-Quiz web de cine con **tablero tipo trivial**: se tira un dado, se elige casilla
-y su color decide el tipo de pregunta —taquilla, estrenos, directores, repartos
-u Óscars—. Gana quien completa las 20 casillas antes de fallar tres veces. Se permiten dos fallos;
+Quiz web de cine: veinte **burbujas** repartidas por la pantalla, cada una de un
+tipo de pregunta —taquilla, estrenos, directores, repartos u Óscars—. Un sorteo
+las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
+apaga las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
 **https://bonitu.es/billions/**
 
@@ -56,59 +57,63 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 4. **El juego funciona sin carátulas.** Si una imagen falta o falla, la tarjeta se
    queda con fondo liso y el título. No introduzcas dependencias de la imagen.
 
-## El tablero
+## El campo de burbujas
 
-Un anillo de **20 casillas** que es el perímetro de una rejilla 6×6 (6+5+5+4).
-Ese número no es casual: **20 es múltiplo de 5**, así que las cinco categorías
-caen exactamente cuatro veces cada una y el ciclo cierra sin dejar dos iguales
-seguidas. Si cambias `LADO`, comprueba que el perímetro siga siendo múltiplo de 5.
+**Veinte burbujas repartidas por la pantalla**, cuatro por categoría, sin
+recorrido ni ficha ni dado. Cada turno un sorteo las va encendiendo al azar y
+frena hasta pararse en una; esa plantea la pregunta. Acertar apaga la burbuja.
+Se gana al apagarlas todas y se pierde al tercer fallo.
 
-**El objetivo es completar las 20 casillas.** Acertar la pregunta de una casilla
-la marca como resuelta y ya no se vuelve a ella. Se gana al completarlas todas y
-se pierde al tercer fallo; fallar deja la casilla pendiente para más adelante.
+- **Las posiciones son una rejilla 5×4 con desorden**: cada burbuja nace en su
+  celda y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a
+  mano y, a diferencia de sortear posiciones libres, **nunca se solapan**.
+- **El reparto de categorías se baraja en cada partida**, manteniendo cuatro de
+  cada una, así que dos partidas no se ven iguales.
+- **Tiempos del turno en el campo**: `VER_MS` (1,4 s viendo las burbujas),
+  `SORTEO_MS` (3,4 s de sorteo) y `ELEGIDA_MS` (1,1 s luciendo la elegida);
+  5,9 s en total antes de la pregunta.
+- **La duración del sorteo es un dato, no una consecuencia.** `tiemposSorteo()`
+  reparte `SORTEO_MS` entre los saltos con una curva cúbica y **normaliza por la
+  suma**, así que dura exactamente lo previsto por muchos saltos que se den. Si
+  sumara retardos sueltos, cambiar `SALTOS` alteraría la duración sin querer.
+- El sorteo **nunca repite la burbuja inmediatamente anterior**, que si no
+  parecería colgado un instante.
+- **Sólo entran las burbujas pendientes.** Con una sola sin resolver, para en ella.
+- **La burbuja encendida sube de capa** (`z-index`): al crecer invade a sus
+  vecinas y tiene que quedar por encima.
+- **Al pararse el sorteo sale un rótulo** con la temática (`muestraRotulo()`),
+  visible durante `ELEGIDA_MS`, y se retira al abrir la pregunta.
+- **Las burbujas fluyen a la deriva.** El centrado va en `transform` y la deriva
+  en la propiedad `translate`, que es independiente; la escala del resalte vive
+  en la esfera interior con la propiedad `scale`. Si las tres compartieran
+  `transform`, cada una pisaría a las otras. Cada burbuja tiene dirección,
+  amplitud y ritmo propios (20–36 s) y un retardo negativo para que arranquen
+  desfasadas.
+- El campo **no admite clics**: el sorteo arranca solo al volver de una pregunta.
 
-Turno: se tira el dado (1–6) y se iluminan **las dos casillas alcanzables**, una
-en cada sentido del anillo. El jugador pulsa la que quiere y la ficha salta
-casilla a casilla hasta ella; la categoría de la casilla decide la pregunta.
+### Aspecto: lenguaje de Apple TV
 
-- **Las casillas resueltas son transparentes al movimiento**: `avanza()` cuenta
-  sólo las pendientes. Es lo que garantiza que siempre haya jugada — si contaran
-  como casillas normales, una tirada podría dejarte apuntando a dos casillas ya
-  resueltas y la partida se bloquearía. Verificado con 3.000 partidas completas:
-  ni un bloqueo, ni una casilla resuelta ofrecida, y 20 turnos exactos cuando se
-  acierta siempre.
-- Con una sola casilla pendiente, cualquier tirada lleva a ella.
-
-- **Las dos preguntas se preparan al tirar el dado**, una por destino, y se
-  precargan sus imágenes (`state.pendientes`). Así al elegir no hay espera.
-- **Son siempre dos destinos distintos** con un dado de seis caras: coincidirían
-  sólo con una tirada de 10 en un anillo de 20.
-- **Los clics del tablero van por delegación** en `#ring`, tanto los de casilla
-  como el del botón de tirar. El tablero se repinta entero en cada paso de la
-  ficha, así que un manejador puesto sobre el botón se perdería en el primer
-  repintado.
-- **El estado del botón sale de `state.destinos`**, no de una llamada suelta: con
-  una elección pendiente se pinta ya deshabilitado.
-- Fases: `#trivial` (tablero) y `#board` (pregunta) se alternan. El cronómetro
-  sólo corre en la fase de pregunta.
-
-### Aspecto del tablero
-
-- **Cada casilla se rellena entera** con un degradado del color de su categoría
-  (`COLORES`, dos tonos por categoría). Las que no están en juego bajan de
-  intensidad —el color va con alfa— para que las dos elegibles destaquen sin
-  necesidad de otro recurso visual.
-- Los colores van en **estilos en línea, no en clases de Tailwind**, porque hacen
-  falta con alfa variable y compuestos en degradados; con clases habría que
-  declarar una variante por estado y categoría.
-- **El dado pinta puntos de verdad**, no un número: `PUNTOS` mapea cada cara a
-  las casillas de una rejilla 3×3 y `caraHTML()` la dibuja. Sin tirar, muestra
-  una interrogación.
-- **El valor del dado sale de `state.dado`**, nunca de una escritura suelta: el
-  tablero se repinta en cada salto de la ficha y cualquier valor escrito a mano
-  se perdería (fue un fallo real).
-- La leyenda vive **fuera del anillo**, bajo el tablero, y resalta las categorías
-  de las dos casillas elegibles. El centro sólo lleva dado, botón y mensaje.
+- **Tipografía del sistema**: `-apple-system, BlinkMacSystemFont, 'SF Pro Display'`
+  con Inter de reserva. En dispositivos Apple resuelve a San Francisco de verdad;
+  en el resto, Inter es la sustituta más cercana. No hay fuente de titulares
+  aparte: `.display` es la misma familia con más peso y tracking negativo.
+- **Las burbujas son esferas de degradado**, sin borde: tres paradas de color
+  (`ESFERA`: luz, medio y sombra) desde un foco arriba a la izquierda, más una
+  sombra difusa del propio color. Las pequeñas llevan un desenfoque leve que da
+  profundidad de campo; la destacada siempre entra a foco.
+- **Superficies de cristal** (`.glass`, `.glass-fuerte`): fondo translúcido con
+  `backdrop-filter: blur() saturate()` y borde blanco muy tenue.
+- **Foco al modo tvOS** (`.foco`): al señalar, la pieza crece un 5,5 %, se aclara
+  y proyecta sombra, con la curva `cubic-bezier(.2,.8,.2,1)` del sistema.
+- **Paleta**: colores de sistema de Apple en modo oscuro — naranja `#FF9F0A`
+  taquilla, azul `#0A84FF` estrenos, morado `#BF5AF2` dirección, verde `#30D158`
+  reparto y rosa `#FF375F` Óscars. El verde y el rosa hacen además de acierto y
+  fallo.
+- **El acierto y el fallo se marcan con estilo en línea**, no con clases: la
+  superficie de cristal define su propio borde en el CSS y una clase de Tailwind
+  podría quedar por debajo en la cascada.
+- El fondo son tres luces difusas de color sobre negro, fijas, como los del
+  sistema.
 
 ## Los cinco tipos de ronda
 
@@ -144,10 +149,15 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
 ## Detalles del juego
 
 - **Contrato de película:** `{ r: puesto, t: título, g: recaudación mundial, y: año }`.
+- **La pregunta entra con un fundido de `FADE_MS` (1 s)** y durante ese segundo
+  no se puede responder ni corre el reloj: sería injusto descontar tiempo de una
+  pregunta que aún no se lee.
+- **Los enunciados nombran a las películas y a las personas** (`nom()` los
+  resalta), en vez de remitir a las tarjetas con un "esta película".
 - **Ritmo:** `REVEAL_MS` (2800 ms tras acertar) y `GAMEOVER_MS` (3200 ms tras
   fallar) al principio de `main.js`. Son el tiempo para leer las cifras; se
   tocan a menudo, están como constantes con nombre por eso.
-- **Dificultad progresiva (sólo en los duelos):** en taquilla la marca lo
+- **Dificultad progresiva (sólo en los duelos, no en los sí/no):** en taquilla la marca lo
   parecidas que son las dos recaudaciones; en estrenos, los años de diferencia
   (`huecoAnios()`, de 18 años a 2). En las de sí/no lo que sube con el nivel es
   lo plausible que es el intruso. Sobre la taquilla:
@@ -213,10 +223,8 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
   propósito; subirlos desborda el ancho.
 - El alto en `lg` va con `min(px, vh)` para que en pantallas bajas la tarjeta no
   empuje el tablero fuera de la ventana. El recorte lo absorbe `object-cover`.
-- **Cambio de nivel:** `newRound()` saca las tarjetas (`card-out`, `OUT_MS`) y
-  `mountRound()` monta la ronda nueva cuando ya no se ven, con entrada
-  escalonada (`entradaTarjetas()`, `STAGGER_MS`). `state.ronda` vacío significa
-  "no hay ronda anterior que sacar" (primera ronda y reinicio).
+- **Cambio de ronda:** `volverAlTablero()` saca las tarjetas (`card-out`,
+  `OUT_MS`) y devuelve al campo de burbujas cuando ya no se ven.
 - Los bordes de las tarjetas son de 4 px **siempre**, y solo cambia el color
   entre reposo, hover, acierto y fallo. Si cambias el grosor por estado, el
   contenido se desplaza.

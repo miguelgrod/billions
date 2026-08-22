@@ -26,43 +26,51 @@ const ANIOS_INICIAL = 18, ANIOS_SUELO = 2, ANIOS_CAIDA = 0.88;
 // dos actores no coincidieron.
 const HUECO_SEGURO = 12;
 
-// ---- Tablero ----
-// Anillo de 20 casillas: es el perímetro de una rejilla 6x6 (6+5+5+4) y además
-// es múltiplo de 5, así que cada categoría cae exactamente cuatro veces y el
-// ciclo encaja al cerrarse sin repetir dos iguales seguidas.
-const LADO = 6;
-const CASILLAS = 20;
+// ---- Campo de burbujas ----
+// Veinte burbujas repartidas por la pantalla, cuatro de cada categoría. No hay
+// recorrido ni ficha: cada turno un sorteo las va agrandando al azar hasta
+// detenerse en una, y esa plantea la pregunta.
+const BURBUJAS = 20;
 const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar'];
-const TABLERO = Array.from({ length: CASILLAS }, (_, i) => CATEGORIAS[i % CATEGORIAS.length]);
-const CARAS = 6;           // caras del dado
-const PASO_MS = 130;       // lo que tarda la ficha en saltar de casilla a casilla
-const GIRO_MS = 900;       // lo que gira el dado antes de pararse
+const COLUMNAS = 5;
+const FILAS = 4;
+const VER_MS = 1400;       // el tablero se ve un rato antes de sortear
+const SORTEO_MS = 3400;    // lo que dura el sorteo, de principio a fin
+const ELEGIDA_MS = 1100;   // la elegida se luce antes de abrir la pregunta
+const SALTOS = 22;         // cuántas burbujas se encienden antes de parar
 
+// Colores de sistema de Apple en modo oscuro. Cada esfera se pinta con tres
+// paradas —luz, color y sombra— para que tenga volumen sin necesidad de brillos
+// añadidos: es lo que hace que se lean como cuerpos y no como círculos planos.
 const COLORES = {
-  taquilla: { claro: '#fbbf24', oscuro: '#78350f' },
-  anio:     { claro: '#38bdf8', oscuro: '#0c4a6e' },
-  director: { claro: '#a78bfa', oscuro: '#4c1d95' },
-  actores:  { claro: '#34d399', oscuro: '#064e3b' },
-  oscar:    { claro: '#fb7185', oscuro: '#881337' },
+  taquilla: '#FF9F0A',
+  anio:     '#0A84FF',
+  director: '#BF5AF2',
+  actores:  '#30D158',
+  oscar:    '#FF375F',
 };
-const INICIAL = { taquilla: 'T', anio: 'E', director: 'D', actores: 'R', oscar: 'O' };
-
-// Caras del dado como puntos, en una rejilla de 3x3
-const PUNTOS = {
-  1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9],
-  5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9],
+const ESFERA = {
+  taquilla: { luz: '#FFE3B0', medio: '#FF9F0A', hondo: '#C2600A' },
+  anio:     { luz: '#BEDCFF', medio: '#0A84FF', hondo: '#0A46B4' },
+  director: { luz: '#EBCCFF', medio: '#BF5AF2', hondo: '#7B2BB0' },
+  actores:  { luz: '#B8F5CC', medio: '#30D158', hondo: '#12833A' },
+  oscar:    { luz: '#FFC2CF', medio: '#FF375F', hondo: '#B01038' },
 };
+const FADE_MS = 1000;      // fundido de entrada de la pregunta
 
 const els = {
   trivial: document.getElementById('trivial'),
-  ring: document.getElementById('ring'),
+  burbujas: document.getElementById('burbujas'),
+  rotulo: document.getElementById('rotulo'),
+  rotuloCaja: document.getElementById('rotulo-caja'),
+  rotuloTxt: document.getElementById('rotulo-txt'),
+  estado: document.getElementById('estado'),
   leyenda: document.getElementById('leyenda'),
   ask: document.getElementById('ask'),
   board: document.getElementById('board'),
   question: document.getElementById('question'),
   kind: document.getElementById('round-kind'),
   cards: document.getElementById('cards'),
-  vs: document.getElementById('vs'),
   answers: document.getElementById('answers'),
   score: document.getElementById('score'),
   points: document.getElementById('points'),
@@ -96,11 +104,11 @@ const state = {
   ultima: '',           // firma de la ronda anterior, para no repetirla
   newRecord: false,
   timer: null,
-  casilla: 0,           // dónde está la ficha
-  completadas: new Set(),   // casillas ya acertadas: no se vuelve a ellas
-  dado: 0,              // último número sacado
-  destinos: [],         // las dos casillas a las que se puede ir
-  pendientes: {},       // ronda ya preparada para cada destino
+  campo: [],            // posición, tamaño y categoría de cada burbuja
+  completadas: new Set(),   // burbujas ya acertadas: se apagan
+  actual: null,         // burbuja que ha salido en el sorteo
+  resaltada: null,      // burbuja encendida durante el sorteo
+  sorteando: false,
   t0: 0,                // instante en que arrancó la ronda
   corriendo: false,     // bandera propia: t0 puede valer 0 y ser válido
   raf: 0,               // identificador de la animación de la barra
@@ -148,6 +156,10 @@ function huecoAnios(level) {
     Math.round(ANIOS_SUELO + (ANIOS_INICIAL - ANIOS_SUELO) * Math.pow(ANIOS_CAIDA, level - 1)));
 }
 
+// Los nombres propios van resaltados dentro del enunciado: la pregunta dice de
+// qué película o de quién habla, en vez de remitir a las tarjetas.
+const nom = (t) => `<b class="font-semibold text-white">${t}</b>`;
+
 const cartaPeli = (m, opts = {}) => ({
   img: posterOf(m),
   titulo: m.t,
@@ -172,7 +184,7 @@ function rondaTaquilla(level) {
       const [x, y] = coin() ? [a, b] : [b, a];
       return {
         tipo: 'taquilla',
-        pregunta: '¿Cuál recaudó más en todo el mundo?',
+        pregunta: `¿Qué recaudó más en todo el mundo, ${nom(x.t)} o ${nom(y.t)}?`,
         modo: 'elige',
         cartas: [cartaPeli(x, { valor: x.g, dinero: true }),
                  cartaPeli(y, { valor: y.g, dinero: true })],
@@ -199,7 +211,7 @@ function rondaAnio(level) {
       const [x, y] = coin() ? [a, b] : [b, a];
       return {
         tipo: 'anio',
-        pregunta: '¿Cuál se estrenó antes?',
+        pregunta: `¿Qué se estrenó antes, ${nom(x.t)} o ${nom(y.t)}?`,
         modo: 'elige',
         // el año va oculto: es justo lo que hay que adivinar
         cartas: [cartaPeli(x, { sinAnio: true, valor: x.y }),
@@ -233,7 +245,7 @@ function rondaDirector(level) {
   const real = m.d.length > 1 ? `La dirigieron ${m.d.join(' y ')}` : `La dirigió ${m.d[0]}`;
   return {
     tipo: 'director',
-    pregunta: `¿Dirigió <b class="text-amber-400">${nombre}</b> esta película?`,
+    pregunta: `¿Dirigió ${nom(nombre)} la película ${nom(m.t)}?`,
     modo: 'sino',
     cartas: [cartaPeli(m), cartaPersona(nombre, directorPhoto(nombre), 'Director')],
     correcta: verdadero,
@@ -261,7 +273,7 @@ function rondaActores(level) {
   if (!a || !b) return null;
   return {
     tipo: 'actores',
-    pregunta: '¿Coincidieron estos dos actores en esta película?',
+    pregunta: `¿Coincidieron ${nom(a)} y ${nom(b)} en ${nom(m.t)}?`,
     modo: 'sino',
     cartas: [cartaPeli(m),
              cartaPersona(a, actorPhoto(a), 'Reparto'),
@@ -281,7 +293,7 @@ function rondaOscar() {
   const m = pick(pool);
   return {
     tipo: 'oscar',
-    pregunta: '¿Ganó esta película algún Óscar?',
+    pregunta: `¿Ganó ${nom(m.t)} algún Óscar?`,
     modo: 'sino',
     cartas: [cartaPeli(m)],
     correcta: m.o > 0,
@@ -300,7 +312,7 @@ const TIPOS = [
   { id: 'oscar', peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
 ];
 
-// `categoria` la impone la casilla del tablero; sin ella se sortea por peso
+// `categoria` la impone la burbuja que sale en el sorteo; sin ella se sortea por peso
 function nuevaRonda(level, categoria) {
   const disponibles = TIPOS.filter((t) => t.hay());
   const forzado = categoria && TIPOS.find((t) => t.id === categoria && t.hay());
@@ -340,26 +352,25 @@ const ETIQUETAS = {
 
 function cartaHTML(c, i, clicable) {
   const etiqueta = clicable ? 'button' : 'div';
-  const extra = clicable
-    ? 'choice cursor-pointer'
-    : 'pointer-events-none';
-  // En móvil la tarjeta ocupa el ancho y se estira. De tablet hacia arriba va a
-  // tamaño fijo con proporción 2:3, la del cartel de cine. El tamaño de tablet es
-  // el que permite tres tarjetas (rondas de reparto) sin desbordar los 640 px.
-  // El alto lleva un tope en vh para que en pantallas bajas la tarjeta no
-  // empuje el tablero fuera de la ventana; el recorte lo absorbe object-cover.
   const alto = c.retrato
-    ? 'min-h-[200px] sm:h-[270px] sm:w-[180px] lg:h-[min(510px,56vh)] lg:w-[340px] sm:justify-self-center'
-    : 'min-h-[220px] sm:h-[280px] sm:w-[186px] lg:h-[min(525px,58vh)] lg:w-[350px] sm:justify-self-center';
+    ? 'min-h-[200px] sm:h-[270px] sm:w-[180px] lg:h-[405px] lg:w-[270px] sm:justify-self-center'
+    : 'min-h-[220px] sm:h-[280px] sm:w-[186px] lg:h-[min(500px,56vh)] lg:w-[334px] sm:justify-self-center';
   return `
-    <${etiqueta} ${clicable ? `data-index="${i}"` : ''} class="carta ${extra} group relative flex ${alto} flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">
-      <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? 'object-top' : ''} opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
+    <${etiqueta} ${clicable ? `data-index="${i}"` : ''}
+      class="carta ${clicable ? 'choice foco cursor-pointer' : 'pointer-events-none'}
+             group relative flex ${alto} flex-col justify-end overflow-hidden rounded-[26px]
+             border border-white/10 bg-white/[.06] text-center shadow-[0_18px_50px_rgba(0,0,0,.55)]">
+      <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? 'object-top' : ''}
+                  opacity-0 brightness-[.62] saturate-[.95] transition-all duration-500
+                  group-hover:brightness-90 group-hover:saturate-100"
+           alt="" aria-hidden="true" />
+      <div class="pointer-events-none absolute inset-0"
+           style="background:linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.1) 100%)"></div>
       <div class="relative flex flex-col items-center px-4 pb-5 pt-6">
-        ${c.sub ? `<span class="mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm">${c.sub}</span>` : ''}
-        <span class="display text-xl leading-tight text-white drop-shadow-lg sm:text-lg lg:text-2xl">${c.titulo}</span>
-        <span class="js-valor display mt-2 h-7 text-xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-lg lg:text-2xl"></span>
-        ${clicable ? '<span class="mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>' : ''}
+        ${c.sub ? `<span class="mb-2 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur-sm">${c.sub}</span>` : ''}
+        <span class="tight text-lg font-semibold leading-tight text-white lg:text-2xl">${c.titulo}</span>
+        <span class="js-valor display mt-2 h-7 text-lg leading-none text-[#FF9F0A] opacity-0 transition-opacity duration-300 lg:text-2xl"></span>
+        ${clicable ? '<span class="mt-1 text-[11px] text-white/45 transition group-hover:text-white/80">Pulsa para elegir</span>' : ''}
       </div>
     </${etiqueta}>`;
 }
@@ -367,6 +378,7 @@ function cartaHTML(c, i, clicable) {
 function pintaRonda(r) {
   const clicable = r.modo === 'elige';
   els.kind.textContent = ETIQUETAS[r.tipo] || '';
+  els.kind.style.color = COLORES[r.tipo] || '#fff';
   els.question.innerHTML = r.pregunta;
   els.ask.classList.remove('ask-in');
   void els.ask.offsetWidth;
@@ -374,7 +386,7 @@ function pintaRonda(r) {
   // sm:w-fit + mx-auto: las columnas se ajustan a la tarjeta y el grupo queda
   // centrado. Sin esto las tarjetas, ya pequeñas, se irían a los extremos.
   els.cards.className =
-    'relative grid flex-1 grid-cols-1 gap-3 sm:mx-auto sm:w-fit sm:items-center sm:gap-4 lg:gap-6 ' +
+    'relative grid flex-1 grid-cols-1 gap-3 sm:mx-auto sm:w-fit sm:items-center sm:gap-4 lg:gap-5 ' +
     (COLS[r.cartas.length] || 'sm:grid-cols-2');
   els.cards.innerHTML = r.cartas.map((c, i) => cartaHTML(c, i, clicable)).join('');
 
@@ -385,16 +397,11 @@ function pintaRonda(r) {
     img.src = url;
   });
 
-  // 'hidden' se queda siempre puesto: 'sm:block' lo levanta sólo de tablet
-  // hacia arriba, que es donde las dos tarjetas están una al lado de la otra
-  els.vs.classList.toggle('sm:block', clicable && r.cartas.length === 2);
   els.answers.classList.toggle('hidden', clicable);
   els.answers.classList.toggle('flex', !clicable);
   botones().forEach((b) => {
     b.disabled = false;
-    b.classList.remove('border-emerald-400', 'border-red-500', 'bg-emerald-500/10',
-      'bg-red-500/10', 'opacity-50');
-    b.classList.add('border-neutral-800');
+    desmarca(b);
   });
   entradaTarjetas();
 }
@@ -422,8 +429,22 @@ function countUp(el, target, dinero) {
   requestAnimationFrame(frame);
 }
 
-const GANA = ['border-emerald-400', 'bg-emerald-500/10'];
-const PIERDE = ['border-red-500', 'bg-red-500/10'];
+const COLOR_OK = '#30D158';
+const COLOR_MAL = '#FF375F';
+
+// El borde se marca con estilo en línea y no con clases: la superficie de
+// cristal define su propio borde en el CSS y una clase de Tailwind podría
+// quedar por debajo en la cascada.
+function marca(el, ok) {
+  el.style.borderColor = ok ? COLOR_OK : COLOR_MAL;
+  el.style.background = ok ? 'rgba(48,209,88,.16)' : 'rgba(255,55,95,.16)';
+}
+
+function desmarca(el) {
+  el.style.borderColor = '';
+  el.style.background = '';
+  el.style.opacity = '';
+}
 
 function revelaCartas(r) {
   tarjetas().forEach((card, i) => {
@@ -436,111 +457,107 @@ function revelaCartas(r) {
   });
 }
 
-/* ---------- tablero ---------- */
+/* ---------- campo de burbujas ---------- */
 
-// Perímetro de la rejilla en sentido horario, empezando arriba a la izquierda
-function perimetro(n) {
-  const pos = [];
-  for (let c = 1; c <= n; c++) pos.push([1, c]);
-  for (let r = 2; r <= n; r++) pos.push([r, n]);
-  for (let c = n - 1; c >= 1; c--) pos.push([n, c]);
-  for (let r = n - 1; r >= 2; r--) pos.push([r, 1]);
-  return pos;
+// Rejilla con desorden: cada burbuja nace en su celda y se desplaza un poco al
+// azar. Se ve repartido por la pantalla y, a diferencia de un sorteo libre de
+// posiciones, nunca se solapan.
+function reparteBurbujas() {
+  const cats = [];
+  for (let i = 0; i < BURBUJAS; i++) cats.push(CATEGORIAS[i % CATEGORIAS.length]);
+  barajaEnSitio(cats);
+
+  const campo = [];
+  for (let f = 0; f < FILAS; f++) {
+    for (let c = 0; c < COLUMNAS; c++) {
+      const i = f * COLUMNAS + c;
+      campo.push({
+        cat: cats[i],
+        x: ((c + 0.5) / COLUMNAS) * 100 + (Math.random() - 0.5) * 6,
+        y: ((f + 0.5) / FILAS) * 100 + (Math.random() - 0.5) * 9,
+        escala: 0.8 + Math.random() * 0.42,
+        // deriva: dirección y ritmo propios, lentos, para que el campo fluya
+        dx: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 14),
+        dy: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 14),
+        dur: 20 + Math.random() * 16,
+        retardo: -Math.random() * 20,
+      });
+    }
+  }
+  return campo;
 }
 
-const POSICIONES = perimetro(LADO);
+function barajaEnSitio(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rnd(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
 
-function pintaTablero() {
-  els.ring.innerHTML = POSICIONES.map((rc, i) => {
-    const cat = TABLERO[i];
-    const { claro, oscuro } = COLORES[cat];
-    const aqui = i === state.casilla;
+function pintaBurbujas() {
+  els.burbujas.innerHTML = state.campo.map((b, i) => {
+    const { luz, medio, hondo } = ESFERA[b.cat];
     const hecha = state.completadas.has(i);
-    const elegible = state.destinos.includes(i);
-    // La casilla se rellena entera con el color de su categoría. Las que no
-    // están en juego bajan de intensidad para que las dos elegibles canten, y
-    // las ya resueltas pierden el color del todo.
+    const encendida = i === state.resaltada;
+    const elegida = i === state.actual;
+    const destacada = encendida || elegida;
+    // Las pequeñas se desenfocan un poco: da profundidad, como en una foto con
+    // poca distancia de enfoque. La destacada siempre entra a foco.
+    const desenfoque = destacada ? 0 : Math.max(0, (1.08 - b.escala) * 6).toFixed(1);
+    const escala = elegida ? 1.5 : encendida ? 1.3 : 1;
     const fondo = hecha
-      ? 'linear-gradient(155deg, #1c1c1c, #0d0d0d)'
-      : elegible
-        ? `linear-gradient(155deg, ${claro}, ${oscuro})`
-        : `linear-gradient(155deg, ${claro}59, ${oscuro}b3)`;
+      ? 'radial-gradient(circle at 32% 26%, rgba(255,255,255,.16), rgba(255,255,255,.05) 70%)'
+      : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
+    const sombra = hecha
+      ? '0 18px 40px -18px rgba(0,0,0,.6)'
+      : `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
     return `
-      <button data-casilla="${i}" ${elegible ? '' : 'disabled'}
-        style="grid-row:${rc[0]};grid-column:${rc[1]};background:${fondo};--glow:${claro}99;
-               border-color:${hecha ? '#2a2a2a' : elegible ? 'rgba(255,255,255,.75)' : claro + '3d'}"
-        class="casilla group relative flex items-center justify-center overflow-hidden rounded-xl
-               border transition duration-200
-               ${elegible ? 'casilla-elegible cursor-pointer' : 'cursor-default'}
-               focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        aria-label="${ETIQUETAS[cat]}${hecha ? ', completada' : ''}${aqui ? ', tu ficha está aquí' : ''}${elegible ? ', puedes ir aquí' : ''}">
-        ${hecha ? '' : '<span class="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-xl bg-white/15"></span>'}
-        <span class="display relative text-sm leading-none sm:text-lg"
-              style="color:${hecha ? '#3f9d6a' : elegible ? 'rgba(0,0,0,.5)' : claro + 'cc'}">${hecha ? '✓' : INICIAL[cat]}</span>
-        ${aqui ? fichaHTML() : ''}
-      </button>`;
-  }).join('') + centroHTML();
+      <div class="burbuja deriva absolute"
+           style="left:${b.x}%;top:${b.y}%;--dx:${b.dx}px;--dy:${b.dy}px;
+                  --dur:${b.dur}s;--retardo:${b.retardo}s;
+                  z-index:${elegida ? 30 : encendida ? 20 : 10}">
+        <div data-burbuja="${i}"
+             class="esfera ${elegida ? 'esfera-elegida' : ''}"
+             style="width:clamp(52px, ${11 * b.escala}vw, ${112 * b.escala}px);aspect-ratio:1;
+                    background:${fondo};
+                    --sombra:${sombra};--halo:${medio}55;
+                    box-shadow:${sombra};
+                    scale:${escala};
+                    filter:blur(${desenfoque}px);
+                    opacity:${hecha ? .28 : destacada ? 1 : .92}"
+             role="img" aria-label="${ETIQUETAS[b.cat]}${hecha ? ', completada' : ''}"></div>
+      </div>`;
+  }).join('');
   pintaLeyenda();
 }
 
-// Ficha del jugador: un disco claro que se ve sobre cualquiera de los colores
-const fichaHTML = () => `
-  <span class="absolute inset-0 flex items-center justify-center">
-    <span class="h-4 w-4 rounded-full bg-white ring-2 ring-neutral-900/50 sm:h-5 sm:w-5"
-          style="box-shadow:0 0 14px rgba(255,255,255,.85)"></span>
-  </span>`;
-
-function caraHTML(valor) {
-  if (!valor) {
-    return '<span class="display text-3xl text-neutral-500 sm:text-4xl">?</span>';
-  }
-  const puntos = PUNTOS[valor] || [];
-  return `<span class="grid h-full w-full grid-cols-3 grid-rows-3 gap-0.5 p-2">` +
-    Array.from({ length: 9 }, (_, k) =>
-      `<span class="flex items-center justify-center">${
-        puntos.includes(k + 1)
-          ? '<span class="h-1.5 w-1.5 rounded-full bg-neutral-900 sm:h-2 sm:w-2"></span>'
-          : ''}</span>`).join('') + '</span>';
+// Rótulo con la temática de la burbuja que ha salido
+function muestraRotulo(cat) {
+  els.rotuloTxt.textContent = ETIQUETAS[cat];
+  els.rotuloTxt.style.color = COLORES[cat];
+  els.rotulo.classList.remove('hidden');
+  els.rotulo.classList.add('flex');
+  els.rotuloCaja.classList.remove('rotulo-in');
+  void els.rotuloCaja.offsetWidth;
+  els.rotuloCaja.classList.add('rotulo-in');
 }
 
-function centroHTML() {
-  return `
-    <div style="grid-row:2/${LADO};grid-column:2/${LADO}"
-         class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-neutral-800
-                bg-neutral-950/70 p-3 backdrop-blur-sm">
-      <div id="dado"
-           class="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 sm:h-20 sm:w-20
-                  ${state.dado ? 'pop' : ''}"
-           style="box-shadow:0 8px 24px rgba(0,0,0,.6), inset 0 -4px 0 rgba(0,0,0,.12)"
-           aria-label="${state.dado ? 'Has sacado ' + state.dado : 'Dado sin tirar'}">
-        ${caraHTML(state.dado)}
-      </div>
-      <button id="tirar" ${state.destinos.length ? 'disabled' : ''}
-              class="rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-neutral-900 shadow-lg
-                     shadow-amber-500/20 transition hover:bg-amber-300 focus:outline-none
-                     focus-visible:ring-2 focus-visible:ring-amber-200
-                     disabled:cursor-default disabled:opacity-40 disabled:shadow-none">
-        Tirar el dado
-      </button>
-      <p id="tablero-msg" class="text-balance px-1 text-center text-xs leading-snug text-neutral-400"></p>
-      <p class="text-[11px] font-semibold text-neutral-500">
-        <span class="text-amber-400">${state.completadas.size}</span> / ${CASILLAS} completadas
-      </p>
-    </div>`;
+function ocultaRotulo() {
+  els.rotulo.classList.add('hidden');
+  els.rotulo.classList.remove('flex');
 }
 
 function pintaLeyenda() {
   els.leyenda.innerHTML = CATEGORIAS.map((cat) => {
-    const { claro } = COLORES[cat];
-    const activa = state.destinos.some((i) => TABLERO[i] === cat);
-    const total = TABLERO.filter((c) => c === cat).length;
-    const hechas = TABLERO.filter((c, i) => c === cat && state.completadas.has(i)).length;
-    const listo = hechas === total;
-    return `<span class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
-      style="border-color:${claro}${activa ? 'cc' : '33'};background:${claro}${activa ? '2e' : '14'};
-             color:${claro};opacity:${listo ? '.4' : '1'}">
-      <span class="h-2 w-2 rounded-full" style="background:${claro}"></span>${ETIQUETAS[cat]}
-      <span class="tabular-nums opacity-70">${hechas}/${total}</span></span>`;
+    const color = COLORES[cat];
+    const total = state.campo.filter((b) => b.cat === cat).length;
+    const hechas = state.campo.filter((b, i) => b.cat === cat && state.completadas.has(i)).length;
+    const listo = total && hechas === total;
+    return `<span class="glass flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
+      style="opacity:${listo ? '.35' : '1'}">
+      <span class="h-2 w-2 rounded-full" style="background:${color}"></span>
+      <span class="text-white/80">${ETIQUETAS[cat]}</span>
+      <span class="tabular-nums text-white/40">${hechas}/${total}</span></span>`;
   }).join('');
 }
 
@@ -549,84 +566,66 @@ function muestraTablero() {
   els.trivial.classList.add('flex');
   els.board.classList.add('hidden');
   els.board.classList.remove('flex');
-  state.destinos = [];
-  pintaTablero();
-  const quedan = CASILLAS - state.completadas.size;
-  mensajeTablero(quedan === 1
-    ? '¡Queda una casilla! Tira el dado.'
-    : `Tira el dado. Quedan ${quedan} casillas.`);
+  state.actual = null;
+  state.resaltada = null;
+  ocultaRotulo();
+  pintaBurbujas();
+  const quedan = BURBUJAS - state.completadas.size;
+  els.estado.textContent = quedan === 1
+    ? 'Queda una burbuja…'
+    : `Quedan ${quedan} burbujas…`;
+  // el sorteo arranca solo: no hay nada que pulsar
+  state.timer = setTimeout(sorteo, VER_MS);
 }
 
-const mensajeTablero = (t) => {
-  const el = document.getElementById('tablero-msg');
-  if (el) el.textContent = t;
-};
-
-// Las casillas completadas son transparentes al movimiento: el dado cuenta sólo
-// las pendientes. Así siempre queda jugada posible, que es lo que se rompería si
-// una tirada pudiera dejarte apuntando a casillas ya resueltas.
-function avanza(desde, pasos, sentido) {
-  let i = desde, contadas = 0;
-  const tope = CASILLAS * (pasos + 1);
-  for (let n = 0; n < tope && contadas < pasos; n++) {
-    i = (i + sentido + CASILLAS) % CASILLAS;
-    if (!state.completadas.has(i)) contadas++;
-  }
-  return contadas === pasos ? i : null;
+// Reparte SORTEO_MS entre los saltos con una curva cúbica: rápido al principio
+// y muy lento al final. Al normalizar por la suma, el sorteo dura exactamente lo
+// previsto por muchos saltos que se den.
+function tiemposSorteo() {
+  const pesos = Array.from({ length: SALTOS },
+    (_, n) => 1 + Math.pow((n + 1) / SALTOS, 3) * 6);
+  const suma = pesos.reduce((a, b) => a + b, 0);
+  return pesos.map((p) => (p / suma) * SORTEO_MS);
 }
 
-// Las dos casillas alcanzables, una por sentido. Es lo que convierte la tirada
-// en una decisión y no en un trámite.
-function destinosDe(desde, pasos) {
-  const a = avanza(desde, pasos, 1);
-  const b = avanza(desde, pasos, -1);
-  const unicos = [...new Set([a, b].filter((x) => x !== null))];
-  return unicos;
-}
+// Va encendiendo burbujas al azar y frena hasta pararse en una. Sólo entran las
+// pendientes: las ya acertadas están fuera del sorteo.
+function sorteo() {
+  const pendientes = state.campo
+    .map((_, i) => i)
+    .filter((i) => !state.completadas.has(i));
+  if (!pendientes.length) return victoria();
 
-function tiraDado() {
-  const boton = document.getElementById('tirar');
-  const dado = document.getElementById('dado');
-  if (!boton || boton.disabled || state.destinos.length) return;
-  boton.disabled = true;
-  boton.classList.add('opacity-40');
-  dado.classList.add('dado-gira');
-  mensajeTablero('…');
-
-  const giro = setInterval(() => { dado.innerHTML = caraHTML(1 + rnd(CARAS)); }, 80);
-  setTimeout(() => {
-    clearInterval(giro);
-    dado.classList.remove('dado-gira');
-    state.dado = 1 + rnd(CARAS);
-    state.destinos = destinosDe(state.casilla, state.dado);
-    pintaTablero();          // el número lo pinta el estado, no este trozo
-    mensajeTablero(`Has sacado ${state.dado}. Elige hacia dónde ir.`);
-    // se preparan las dos preguntas posibles para que al elegir no haya espera
-    state.pendientes = {};
-    state.destinos.forEach((i) => {
-      const r = nuevaRonda(state.score + 1, TABLERO[i]);
-      state.pendientes[i] = r;
-      precarga(r);
-    });
-  }, GIRO_MS);
-}
-
-function eligeCasilla(destino) {
-  if (!state.destinos.includes(destino)) return;
-  const ronda = state.pendientes[destino];
-  state.destinos = [];
-  // la ficha recorre el camino paso a paso para que se vea por dónde va
-  const sentido = avanza(state.casilla, state.dado, 1) === destino ? 1 : -1;
-  const salto = () => {
-    state.casilla = (state.casilla + sentido + CASILLAS) % CASILLAS;
-    pintaTablero();
-    if (state.casilla !== destino) return setTimeout(salto, PASO_MS);
-    setTimeout(() => lanzaPregunta(ronda), PASO_MS * 2);
+  state.sorteando = true;
+  els.estado.textContent = 'Eligiendo pregunta…';
+  const tiempos = tiemposSorteo();
+  let n = 0;
+  const paso = () => {
+    let siguiente;
+    do { siguiente = pick(pendientes); }
+    while (pendientes.length > 1 && siguiente === state.resaltada);
+    state.resaltada = siguiente;
+    pintaBurbujas();
+    if (++n < SALTOS) {
+      state.timer = setTimeout(paso, tiempos[n]);
+    } else {
+      state.sorteando = false;
+      state.actual = state.resaltada;
+      state.resaltada = null;
+      pintaBurbujas();
+      const cat = state.campo[state.actual].cat;
+      els.estado.textContent = ETIQUETAS[cat];
+      muestraRotulo(cat);
+      const ronda = nuevaRonda(state.score + 1, state.campo[state.actual].cat);
+      precarga(ronda);
+      state.timer = setTimeout(() => lanzaPregunta(ronda), ELEGIDA_MS);
+    }
   };
-  salto();
+  paso();
 }
 
 function lanzaPregunta(ronda) {
+  ocultaRotulo();
   els.trivial.classList.add('hidden');
   els.trivial.classList.remove('flex');
   els.board.classList.remove('hidden');
@@ -674,11 +673,9 @@ function paraCronometro() {
 
 function pintaBarra(fraccion) {
   els.bar.style.transform = `scaleX(${fraccion})`;
-  const color = fraccion > 0.5 ? 'bg-amber-400'
-    : fraccion > 0.25 ? 'bg-orange-500'
-    : 'bg-red-500';
-  els.bar.className =
-    `h-full w-full origin-left rounded-full transition-colors duration-200 ${color}`;
+  els.bar.style.background = fraccion > 0.5 ? '#30D158'
+    : fraccion > 0.25 ? '#FF9F0A'
+    : '#FF375F';
 }
 
 // Responder al instante vale PUNTOS_MAX; agotar el tiempo, 0
@@ -694,8 +691,8 @@ function pintaVidas(perdida) {
   for (let i = 0; i < VIDAS; i++) {
     const viva = i < state.vidas;
     const d = document.createElement('span');
-    d.className = 'h-2.5 w-2.5 rounded-full border-2 transition-colors duration-300 ' +
-      (viva ? 'border-amber-400 bg-amber-400' : 'border-neutral-700 bg-transparent');
+    d.className = 'h-2 w-2 rounded-full transition-colors duration-300 ' +
+      (viva ? 'bg-white' : 'bg-white/20');
     if (perdida && i === state.vidas) d.classList.add('life-out');
     els.lives.appendChild(d);
   }
@@ -707,8 +704,8 @@ function pintaVidas(perdida) {
 
 const ACIERTOS = ['¡Correcto!', '¡Bien!', '¡Eso es!', '¡Exacto!', '¡Muy bien!'];
 const TOAST_STYLES = {
-  ok:   { box: ['border-emerald-400/40', 'shadow-emerald-500/20'], msg: 'text-emerald-400' },
-  fail: { box: ['border-red-400/40', 'shadow-red-500/20'], msg: 'text-red-400' },
+  ok:   { borde: 'rgba(48,209,88,.45)',  msg: '#30D158' },
+  fail: { borde: 'rgba(255,55,95,.45)', msg: '#FF375F' },
 };
 
 // Sube de 0 a los puntos ganados. Frena al final (misma curva que el contador
@@ -729,10 +726,8 @@ function cuentaPuntos(total) {
 
 function showToast(kind, msg, sub, puntos) {
   const style = TOAST_STYLES[kind];
-  els.toastBox.className =
-    'max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center ' +
-    'shadow-2xl backdrop-blur-md ' + style.box.join(' ');
-  els.toastMsg.className = 'display text-4xl leading-none sm:text-5xl ' + style.msg;
+  els.toastBox.style.borderColor = style.borde;
+  els.toastMsg.style.color = style.msg;
   els.toastMsg.textContent = msg;
   els.toastSub.textContent = sub || '';
   els.toastPoints.classList.add('hidden');
@@ -770,17 +765,15 @@ function resuelve(correcto, ms, agotado) {
 
   if (r.modo === 'elige') {
     tarjetas().forEach((card, i) => {
-      card.classList.remove('border-neutral-800');
-      card.classList.add(...(i === r.correcta ? GANA : PIERDE));
+      marca(card, i === r.correcta);
       card.classList.add(i === r.correcta ? 'pop' : 'shake');
-      if (i !== r.correcta) card.classList.add('opacity-60');
+      if (i !== r.correcta) card.style.opacity = '.55';
     });
   } else {
     botones().forEach((b) => {
       const esta = b.dataset.answer === '1';
-      b.classList.remove('border-neutral-800');
-      b.classList.add(...(esta === r.correcta ? GANA : PIERDE));
-      if (esta !== r.correcta) b.classList.add('opacity-50');
+      marca(b, esta === r.correcta);
+      if (esta !== r.correcta) b.style.opacity = '.45';
     });
     tarjetas().forEach((c) => c.classList.add(correcto ? 'pop' : 'shake'));
   }
@@ -807,9 +800,9 @@ function resuelve(correcto, ms, agotado) {
       hito ? `¡${state.score} seguidas!` : ACIERTOS[state.score % ACIERTOS.length],
       detalle,
       ganados);
-    state.completadas.add(state.casilla);
+    state.completadas.add(state.actual);
     state.timer = setTimeout(
-      state.completadas.size === CASILLAS ? victoria : volverAlTablero, REVEAL_MS);
+      state.completadas.size === BURBUJAS ? victoria : volverAlTablero, REVEAL_MS);
   } else {
     state.vidas--;
     pintaVidas(true);
@@ -839,9 +832,17 @@ function mountRound() {
   hideToast();
   state.round = state.score + 1;
   pintaRonda(state.ronda);
-  state.locked = false;
   pintaBarra(1);
-  arrancaCronometro();
+  // Durante el fundido no se puede responder ni corre el reloj: sería injusto
+  // descontar tiempo de una pregunta que todavía no se lee.
+  state.locked = true;
+  els.board.classList.remove('fundido');
+  void els.board.offsetWidth;
+  els.board.classList.add('fundido');
+  state.timer = setTimeout(() => {
+    state.locked = false;
+    arrancaCronometro();
+  }, FADE_MS);
 }
 
 function precarga(r) {
@@ -853,15 +854,15 @@ function victoria() {
   clearTimeout(state.timer);
   hideToast();
   els.goTitle.textContent = '¡Tablero completo!';
-  els.goTitle.className = 'display text-xl text-emerald-400';
+  els.goTitle.className = 'text-sm font-medium text-[#30D158]';
   els.goScore.textContent = state.puntos;
-  els.goLabel.textContent = `puntos · las ${CASILLAS} casillas completadas`;
+  els.goLabel.textContent = `puntos · las ${BURBUJAS} burbujas completadas`;
   els.goDetail.innerHTML =
-    `Has completado el tablero con <strong class="text-neutral-100">${state.vidas}</strong> ` +
+    `Has vaciado la pantalla con <strong class="text-white">${state.vidas}</strong> ` +
     `${state.vidas === 1 ? 'vida' : 'vidas'} de sobra.` +
     (state.newRecord
-      ? '<br><span class="text-emerald-400">¡Nuevo récord!</span>'
-      : `<br><span class="text-neutral-500">Tu récord: ${state.best} puntos</span>`);
+      ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
+      : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
   els.gameover.classList.remove('hidden');
   els.gameover.classList.add('flex');
   els.restart.focus();
@@ -870,14 +871,14 @@ function victoria() {
 function gameOver(detalle) {
   paraCronometro();
   els.goTitle.textContent = 'Fin de la partida';
-  els.goTitle.className = 'display text-xl text-neutral-400';
+  els.goTitle.className = 'text-sm font-medium text-white/50';
   els.goScore.textContent = state.puntos;
   els.goLabel.textContent =
-    `puntos · ${state.completadas.size} de ${CASILLAS} casillas`;
+    `puntos · ${state.completadas.size} de ${BURBUJAS} burbujas`;
   els.goDetail.innerHTML = detalle +
     (state.newRecord
-      ? '<br><span class="text-emerald-400">¡Nuevo récord!</span>'
-      : `<br><span class="text-neutral-500">Tu récord: ${state.best} puntos</span>`);
+      ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
+      : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
   els.gameover.classList.remove('hidden');
   els.gameover.classList.add('flex');
   els.restart.focus();
@@ -892,11 +893,10 @@ function startGame() {
   state.ronda = null;
   state.next = null;
   state.ultima = '';
-  state.casilla = 0;
+  state.campo = reparteBurbujas();
   state.completadas = new Set();
-  state.dado = 0;
-  state.destinos = [];
-  state.pendientes = {};
+  state.actual = null;
+  state.resaltada = null;
   state.ronda = null;
   state.newRecord = false;
   els.score.textContent = '0';
@@ -908,12 +908,6 @@ function startGame() {
 }
 
 /* ---------- eventos ---------- */
-
-els.ring.addEventListener('click', (e) => {
-  if (e.target.closest('#tirar')) return tiraDado();
-  const casilla = e.target.closest('.casilla');
-  if (casilla && !casilla.disabled) eligeCasilla(Number(casilla.dataset.casilla));
-});
 
 els.cards.addEventListener('click', (e) => {
   const card = e.target.closest('.choice');
@@ -947,10 +941,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
     return;
   }
-  if (!els.trivial.classList.contains('hidden')) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tiraDado(); }
-    return;
-  }
+  if (!els.trivial.classList.contains('hidden')) return;   // el sorteo va solo
   const r = state.ronda;
   if (!r) return;
   if (r.modo === 'elige') {

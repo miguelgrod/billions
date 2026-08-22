@@ -3,209 +3,240 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Billions · ¿Cuál recaudó más?</title>
-  <meta name="description" content="Juego de comparación: adivina cuál de las dos películas recaudó más en todo el mundo." />
+  <title>Billions · ¿Cuánto sabes de cine?</title>
+  <meta name="description" content="Juego de cine: taquilla, estrenos, directores, repartos y Óscars." />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .display { font-family: 'Bebas Neue', 'Inter', sans-serif; letter-spacing: .02em; }
-    @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.035); } 100% { transform: scale(1); } }
-    .pop { animation: pop .45s ease-out; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
-    .shake { animation: shake .45s ease-out; }
-    /* El hover de Tailwind no distingue puntero de dedo: en táctil se queda
-       pegado al último elemento tocado, y en escritorio persiste sobre la
-       tarjeta recién pulsada. Con la guarda, sólo se pinta si hay ratón de
-       verdad y la tarjeta admite clics. */
+    /* En dispositivos Apple esto resuelve a San Francisco de verdad; en el resto,
+       Inter, que es la sustituta más cercana. */
+    :root {
+      --sf: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+            'Inter', system-ui, sans-serif;
+    }
+    body {
+      font-family: var(--sf);
+      background: #000;
+      -webkit-font-smoothing: antialiased;
+    }
+    .display { font-family: var(--sf); font-weight: 700; letter-spacing: -.022em; }
+    .tight { letter-spacing: -.015em; }
+
+    /* Superficie translúcida del ecosistema tvOS */
+    .glass {
+      background: rgba(255,255,255,.07);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .glass-fuerte {
+      background: rgba(28,28,30,.72);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    /* El foco de tvOS: la pieza crece, se aclara y proyecta sombra */
+    .foco { transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s, background .38s; }
     @media (hover: hover) {
-      .choice:not(:disabled):hover,
-      .yesno:not(:disabled):hover { border-color: #fbbf24; }   /* amber-400 */
+      .foco:not(:disabled):hover {
+        transform: scale(1.055);
+        box-shadow: 0 26px 60px rgba(0,0,0,.65);
+        background: rgba(255,255,255,.14);
+      }
+    }
+    .foco:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.85), 0 26px 60px rgba(0,0,0,.65);
     }
 
-    /* Cambio de nivel: las tarjetas salen y entra la pareja siguiente */
-    @keyframes cardOut {
-      to { opacity: 0; transform: translateY(10px) scale(.985); }
+    /* --- Burbujas ---
+       El centrado va en `transform` y la deriva en la propiedad `translate`, que
+       es independiente: así una no pisa a la otra. La escala del resalte vive en
+       la esfera interior, por el mismo motivo. */
+    .burbuja { transform: translate(-50%, -50%); }
+    @keyframes deriva {
+      0%, 100% { translate: 0 0; }
+      25%  { translate: var(--dx) var(--dy); }
+      50%  { translate: calc(var(--dx) * -0.7) calc(var(--dy) * 1.15); }
+      75%  { translate: calc(var(--dx) * 0.85) calc(var(--dy) * -0.95); }
     }
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(18px) scale(.985); }
-    }
-    .card-out { animation: cardOut .26s ease-in forwards; }
-    .card-in  { animation: cardIn .42s cubic-bezier(.2,.8,.25,1) both; }
+    .deriva { animation: deriva var(--dur, 26s) ease-in-out infinite; animation-delay: var(--retardo, 0s); }
 
-    /* La pregunta entra en cada ronda: es lo primero que hay que leer */
-    @keyframes askIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: none; }
+    .esfera {
+      border-radius: 50%;
+      transition: scale .5s cubic-bezier(.2,.8,.2,1), filter .5s, opacity .5s, box-shadow .5s;
     }
-    .ask-in { animation: askIn .4s ease-out both; }
-
-    /* Casillas a las que se puede ir con la tirada */
-    @keyframes dadoGira {
-      0%   { transform: rotate(0deg) scale(1); }
-      50%  { transform: rotate(180deg) scale(1.15); }
-      100% { transform: rotate(360deg) scale(1); }
+    @keyframes latido {
+      0%, 100% { box-shadow: var(--sombra), 0 0 0 0 var(--halo); }
+      55%      { box-shadow: var(--sombra), 0 0 0 22px transparent; }
     }
-    .dado-gira { animation: dadoGira .45s linear infinite; }
+    .esfera-elegida { animation: latido 1.1s ease-out 2; }
 
-    /* Brillo que recorre la casilla elegible */
-    @keyframes casillaBrillo {
-      0%, 100% { box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 14px 2px var(--glow); }
-      50%      { box-shadow: 0 0 0 3px rgba(255,255,255,.9),  0 0 26px 6px var(--glow); }
+    /* Rótulo de la temática al salir la burbuja */
+    @keyframes rotuloIn {
+      0%   { opacity: 0; transform: scale(.82); filter: blur(6px); }
+      55%  { opacity: 1; transform: scale(1.03); filter: blur(0); }
+      100% { opacity: 1; transform: scale(1); }
     }
-    .casilla-elegible { animation: casillaBrillo 1.2s ease-in-out infinite; }
+    .rotulo-in { animation: rotuloIn .6s cubic-bezier(.2,.8,.2,1) both; }
 
-    @keyframes lifeOut {
-      0%   { transform: scale(1); }
-      35%  { transform: scale(1.5); }
-      100% { transform: scale(1); }
-    }
-    .life-out { animation: lifeOut .5s ease-out; }
+    /* La pregunta entra con un fundido de un segundo */
+    @keyframes fundido { from { opacity: 0; } to { opacity: 1; } }
+    .fundido { animation: fundido 1s ease-out both; }
 
-    @keyframes scoreBump {
-      0% { transform: scale(1); }
-      40% { transform: scale(1.28); color: #34d399; }
-      100% { transform: scale(1); }
-    }
-    .score-bump { animation: scoreBump .5s ease-out; }
-
+    @keyframes aparecer { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+    .aparece { animation: aparecer .5s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes askIn { from { opacity: 0; transform: translateY(-8px); } }
+    .ask-in { animation: askIn .45s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(22px) scale(.96); } }
+    .card-in { animation: cardIn .5s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes cardOut { to { opacity: 0; transform: translateY(12px) scale(.98); } }
+    .card-out { animation: cardOut .3s ease-in forwards; }
     @keyframes toastPop {
-      0%   { opacity: 0; transform: translateY(10px) scale(.85); }
-      6%   { opacity: 1; transform: translateY(0) scale(1.05); }
-      11%  { transform: scale(1); }
+      0%   { opacity: 0; transform: translateY(14px) scale(.94); }
+      6%   { opacity: 1; transform: translateY(0) scale(1); }
       88%  { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-8px) scale(.98); }
+      100% { opacity: 0; transform: translateY(-10px) scale(.99); }
     }
-    /* La duración la fija el JS (TOAST_MS): el aviso y la pausa de la ronda
-       tienen que ir acompasados, y así el número vive en un solo sitio. */
-    .toast-show { animation: toastPop 3s ease-out forwards; }
+    .toast-show { animation: toastPop 3s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes bump { 40% { transform: scale(1.22); } }
+    .score-bump { animation: bump .5s cubic-bezier(.2,.8,.2,1); }
+    @keyframes lifeOut { 35% { transform: scale(1.55); } }
+    .life-out { animation: lifeOut .5s ease-out; }
+    @keyframes shake {
+      20% { transform: translateX(-7px); } 40% { transform: translateX(7px); }
+      60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
+    }
+    .shake { animation: shake .45s ease-out; }
+    @keyframes pop { 45% { transform: scale(1.03); } }
+    .pop { animation: pop .45s cubic-bezier(.2,.8,.2,1); }
+
     @media (prefers-reduced-motion: reduce) {
-      .toast-show { animation: none; opacity: 1; }
-      .pop, .shake, .card-out, .card-in, .score-bump, .life-out,
-      .ask-in, .casilla-elegible, .dado-gira { animation: none; }
+      .flota, .burbuja-elegida, .aparece, .ask-in, .card-in, .card-out,
+      .score-bump, .life-out, .shake, .pop { animation: none; }
+      .foco { transition: none; }
     }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-    .fade-up { animation: fadeUp .35s ease-out both; }
   </style>
 </head>
-<body class="antialiased min-h-screen bg-neutral-950 text-neutral-100 selection:bg-amber-400 selection:text-neutral-900">
+<body class="min-h-screen text-white antialiased selection:bg-white/25">
 
-  <div class="pointer-events-none fixed inset-0 opacity-60"
-       style="background:radial-gradient(60% 50% at 50% 0%, rgba(245,158,11,.13), transparent 70%)"></div>
+  <!-- Fondo con luz difusa, al modo de tvOS -->
+  <div class="pointer-events-none fixed inset-0 -z-10"
+       style="background:
+         radial-gradient(60% 45% at 18% 12%, rgba(255,159,10,.13), transparent 60%),
+         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.13), transparent 60%),
+         radial-gradient(60% 50% at 50% 92%, rgba(191,90,242,.12), transparent 60%),
+         #000"></div>
 
-  <div id="app" class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-5 sm:px-6">
+  <div id="app" class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-8 sm:py-6">
 
     <!-- Cabecera -->
-    <header class="mb-4 flex items-center justify-between gap-4">
-      <div class="flex items-baseline gap-2">
-        <h1 class="display text-3xl leading-none text-amber-400 sm:text-4xl">BILLIONS</h1>
-        <span class="hidden text-xs font-medium text-neutral-500 sm:inline">¿cuál recaudó más?</span>
-      </div>
-      <div class="flex items-center gap-2 sm:gap-3">
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
-          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Nivel</div>
-          <div id="score" class="display text-2xl leading-none text-neutral-100">0</div>
+    <header class="mb-5 flex items-center justify-between gap-4">
+      <h1 class="display text-2xl leading-none sm:text-[28px]">Billions</h1>
+      <div class="flex items-center gap-2">
+        <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
+          <span class="text-[11px] font-medium uppercase tracking-wide text-white/45">Nivel</span>
+          <span id="score" class="display text-base leading-none">0</span>
         </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
-          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Vidas</div>
-          <div id="lives" class="flex h-6 items-center justify-center gap-1.5" aria-live="polite"></div>
+        <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
+          <span class="text-[11px] font-medium uppercase tracking-wide text-white/45">Puntos</span>
+          <span id="points" class="display text-base leading-none text-[#FF9F0A]">0</span>
         </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
-          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Puntos</div>
-          <div id="points" class="display text-2xl leading-none text-amber-400">0</div>
+        <div class="glass flex items-center gap-2 rounded-full px-3.5 py-1.5">
+          <span id="lives" class="flex h-4 items-center gap-1.5" aria-live="polite"></span>
         </div>
       </div>
     </header>
 
-    <!-- Tablero de juego: el dado y las casillas los pinta main.js -->
-    <section id="trivial" class="relative flex flex-1 flex-col items-center justify-center gap-4">
-      <div class="pointer-events-none absolute inset-0 opacity-70"
-           style="background:radial-gradient(50% 45% at 50% 50%, rgba(245,158,11,.10), transparent 70%)"></div>
-      <div id="ring" class="relative grid aspect-square w-full max-w-[min(88vw,30rem)] grid-cols-6 grid-rows-6 gap-1.5 sm:gap-2"></div>
-      <div id="leyenda" class="relative flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5"></div>
+    <!-- Campo de burbujas -->
+    <section id="trivial" class="relative flex flex-1 flex-col">
+      <div id="burbujas" class="relative min-h-[380px] flex-1">
+        <div id="rotulo" class="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center">
+          <div id="rotulo-caja" class="glass-fuerte rotulo-in rounded-[28px] px-9 py-6 text-center shadow-2xl">
+            <div class="text-[11px] font-semibold uppercase tracking-[.2em] text-white/45">Pregunta de</div>
+            <div id="rotulo-txt" class="display mt-1 text-4xl leading-none sm:text-5xl"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-col items-center gap-3">
+        <p id="estado" class="h-5 text-center text-sm font-medium text-white/55"></p>
+        <div id="leyenda" class="flex flex-wrap items-center justify-center gap-2"></div>
+      </div>
     </section>
 
-    <!-- Zona de pregunta -->
+    <!-- Pregunta -->
     <main id="board" class="relative hidden flex-1 flex-col">
-      <div id="ask" class="mb-4 flex flex-col items-center gap-2">
-        <span id="round-kind" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[.18em] text-amber-400"></span>
-        <p id="question" class="text-balance text-center text-lg font-semibold leading-snug text-neutral-50 sm:text-2xl"></p>
+      <div id="ask" class="mb-4 flex flex-col items-center gap-2.5">
+        <span id="round-kind" class="glass rounded-full px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[.14em]"></span>
+        <p id="question" class="tight text-balance text-center text-xl font-semibold leading-tight sm:text-3xl"></p>
       </div>
 
-      <!-- Cuenta atrás -->
-      <div class="mx-auto mb-3 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-neutral-800/80">
-        <div id="timer-bar" class="h-full w-full origin-left rounded-full bg-amber-400"
-             role="timer" aria-label="Tiempo restante"></div>
+      <div class="mx-auto mb-4 h-1 w-full max-w-sm overflow-hidden rounded-full bg-white/12">
+        <div id="timer-bar" class="h-full w-full origin-left rounded-full" role="timer" aria-label="Tiempo restante"></div>
       </div>
 
-      <div id="cards" class="relative grid flex-1 grid-cols-1 gap-3 sm:gap-4"></div>
+      <div id="cards" class="relative grid flex-1 grid-cols-1 gap-3"></div>
 
-      <!-- Separador de los duelos -->
-      <div id="vs" class="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2">
-        <div class="display flex h-12 w-12 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 text-lg text-neutral-400">VS</div>
+      <div id="answers" class="mt-5 hidden justify-center gap-3">
+        <button data-answer="1" class="yesno glass foco display min-w-[128px] rounded-2xl px-8 py-3.5 text-xl">Sí</button>
+        <button data-answer="0" class="yesno glass foco display min-w-[128px] rounded-2xl px-8 py-3.5 text-xl">No</button>
       </div>
 
-      <!-- Respuesta de las preguntas de sí o no -->
-      <div id="answers" class="mt-4 hidden justify-center gap-3">
-        <button data-answer="1" class="yesno display min-w-[120px] rounded-xl border-4 border-neutral-800 bg-neutral-900 px-7 py-3 text-2xl text-neutral-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">Sí</button>
-        <button data-answer="0" class="yesno display min-w-[120px] rounded-xl border-4 border-neutral-800 bg-neutral-900 px-7 py-3 text-2xl text-neutral-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">No</button>
-      </div>
-
-      <!-- Aviso de acierto o fallo, superpuesto -->
       <div id="toast" role="status" aria-live="polite"
            class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
-        <div id="toast-box" class="max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
-          <div id="toast-msg" class="display text-4xl leading-none sm:text-5xl"></div>
-          <div id="toast-points" class="display mt-1 hidden text-3xl leading-none text-amber-400 sm:text-4xl"></div>
-          <div id="toast-sub" class="mt-1 text-balance text-xs font-medium text-neutral-400"></div>
+        <div id="toast-box" class="glass-fuerte max-w-[86%] rounded-[28px] px-8 py-5 text-center shadow-2xl">
+          <div id="toast-msg" class="display text-3xl leading-none sm:text-4xl"></div>
+          <div id="toast-points" class="display mt-1 hidden text-4xl leading-none text-[#FF9F0A] sm:text-5xl"></div>
+          <div id="toast-sub" class="mt-1.5 text-balance text-xs font-medium text-white/55"></div>
         </div>
       </div>
     </main>
 
     <!-- Pantalla previa -->
-    <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-neutral-950/90 p-4 backdrop-blur">
-      <div class="fade-up w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-7 text-center shadow-2xl">
-        <h2 class="display text-4xl leading-none text-amber-400">BILLIONS</h2>
-        <p class="mt-2 text-sm text-neutral-400">El juego de la taquilla</p>
-
-        <ol class="mt-6 space-y-3 text-left text-sm text-neutral-300">
-          <li class="flex gap-3">
-            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">1</span>
-            <span>Tira el dado y <strong class="text-neutral-100">elige a qué casilla vas</strong>: cada color es un tipo de pregunta.</span>
+    <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
+      <div class="glass-fuerte aparece w-full max-w-md rounded-[32px] p-8 text-center shadow-2xl">
+        <h2 class="display text-4xl leading-none">Billions</h2>
+        <p class="mt-2 text-sm text-white/55">El juego de la taquilla</p>
+        <ol class="mt-7 space-y-4 text-left text-[15px] leading-snug text-white/80">
+          <li class="flex gap-3.5">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
+            <span>Las burbujas crecen al azar hasta detenerse en una.</span>
           </li>
-          <li class="flex gap-3">
-            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">2</span>
-            <span>Tienes <strong class="text-neutral-100">10 segundos</strong> para responder: cuanto antes, más puntos.</span>
+          <li class="flex gap-3.5">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">2</span>
+            <span>Su color decide la pregunta: taquilla, estrenos, dirección, reparto u Óscars.</span>
           </li>
-          <li class="flex gap-3">
-            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">3</span>
-            <span>Acertar completa la casilla. Gana quien <strong class="text-neutral-100">complete las 20</strong>; al tercer fallo pierdes.</span>
+          <li class="flex gap-3.5">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">3</span>
+            <span>Tienes <b class="text-white">10 segundos</b>. Acertar apaga la burbuja; al tercer fallo pierdes.</span>
           </li>
         </ol>
-
-        <button id="play" class="mt-7 w-full rounded-xl bg-amber-400 px-5 py-3 font-semibold text-neutral-900 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
+        <button id="play" class="foco mt-8 w-full rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-black">
           Empezar a jugar
         </button>
-        <p id="intro-best" class="mt-3 h-4 text-xs text-neutral-500"></p>
+        <p id="intro-best" class="mt-3 h-4 text-xs text-white/40"></p>
       </div>
     </div>
 
     <!-- Fin de partida -->
-    <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-neutral-950/85 p-4 backdrop-blur">
-      <div class="fade-up w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-7 text-center shadow-2xl">
-        <div id="go-title" class="display text-xl text-neutral-400">Fin de la partida</div>
-        <div id="go-score" class="display my-2 text-7xl leading-none text-amber-400">0</div>
-        <p id="go-label" class="text-sm text-neutral-400">niveles superados</p>
-        <p id="go-detail" class="mt-4 text-sm leading-relaxed text-neutral-300"></p>
-        <button id="restart" class="mt-6 w-full rounded-xl bg-amber-400 px-5 py-3 font-semibold text-neutral-900 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200">
+    <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
+      <div class="glass-fuerte aparece w-full max-w-sm rounded-[32px] p-8 text-center shadow-2xl">
+        <div id="go-title" class="text-sm font-medium text-white/50">Fin de la partida</div>
+        <div id="go-score" class="display my-2 text-[68px] leading-none text-[#FF9F0A]">0</div>
+        <p id="go-label" class="text-sm text-white/55"></p>
+        <p id="go-detail" class="mt-5 text-sm leading-relaxed text-white/75"></p>
+        <button id="restart" class="foco mt-7 w-full rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-black">
           Jugar otra vez
         </button>
       </div>
     </div>
 
-    <footer class="mt-4 text-center text-[11px] leading-relaxed text-neutral-600">
-      Recaudación mundial en USD sin ajustar por inflación · Fuente: The Numbers · Datos a agosto de 2026<br />
-      Carátulas: Wikipedia · uso ilustrativo, los derechos pertenecen a sus respectivos estudios
+    <footer class="mt-5 text-center text-[11px] leading-relaxed text-white/25">
+      Recaudación mundial en USD sin ajustar por inflación · The Numbers y Filmaffinity · Datos a agosto de 2026<br />
+      Carátulas y fotografías: Wikipedia · uso ilustrativo, los derechos pertenecen a sus titulares
     </footer>
   </div>
 
