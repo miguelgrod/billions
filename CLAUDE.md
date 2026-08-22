@@ -1,8 +1,9 @@
 # Billions — juego de taquilla
 
-Quiz web de cine: cada ronda plantea una pregunta —taquilla, estrenos,
-directores, repartos u Óscars— y se encadenan niveles hasta el primer fallo.
-En producción:
+Quiz web de cine con **tablero tipo trivial**: se tira un dado, se elige casilla
+y su color decide el tipo de pregunta —taquilla, estrenos, directores, repartos
+u Óscars—. Gana quien completa las 20 casillas antes de fallar tres veces. Se permiten dos fallos;
+al tercero se acaba la partida. En producción:
 **https://bonitu.es/billions/**
 
 Vive dentro del repo de **Bonitu Plays** y se despliega con él, pero es un
@@ -54,6 +55,60 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
    de `MOVIES`, las carátulas siguen cuadrando; si cambian los puestos, no.
 4. **El juego funciona sin carátulas.** Si una imagen falta o falla, la tarjeta se
    queda con fondo liso y el título. No introduzcas dependencias de la imagen.
+
+## El tablero
+
+Un anillo de **20 casillas** que es el perímetro de una rejilla 6×6 (6+5+5+4).
+Ese número no es casual: **20 es múltiplo de 5**, así que las cinco categorías
+caen exactamente cuatro veces cada una y el ciclo cierra sin dejar dos iguales
+seguidas. Si cambias `LADO`, comprueba que el perímetro siga siendo múltiplo de 5.
+
+**El objetivo es completar las 20 casillas.** Acertar la pregunta de una casilla
+la marca como resuelta y ya no se vuelve a ella. Se gana al completarlas todas y
+se pierde al tercer fallo; fallar deja la casilla pendiente para más adelante.
+
+Turno: se tira el dado (1–6) y se iluminan **las dos casillas alcanzables**, una
+en cada sentido del anillo. El jugador pulsa la que quiere y la ficha salta
+casilla a casilla hasta ella; la categoría de la casilla decide la pregunta.
+
+- **Las casillas resueltas son transparentes al movimiento**: `avanza()` cuenta
+  sólo las pendientes. Es lo que garantiza que siempre haya jugada — si contaran
+  como casillas normales, una tirada podría dejarte apuntando a dos casillas ya
+  resueltas y la partida se bloquearía. Verificado con 3.000 partidas completas:
+  ni un bloqueo, ni una casilla resuelta ofrecida, y 20 turnos exactos cuando se
+  acierta siempre.
+- Con una sola casilla pendiente, cualquier tirada lleva a ella.
+
+- **Las dos preguntas se preparan al tirar el dado**, una por destino, y se
+  precargan sus imágenes (`state.pendientes`). Así al elegir no hay espera.
+- **Son siempre dos destinos distintos** con un dado de seis caras: coincidirían
+  sólo con una tirada de 10 en un anillo de 20.
+- **Los clics del tablero van por delegación** en `#ring`, tanto los de casilla
+  como el del botón de tirar. El tablero se repinta entero en cada paso de la
+  ficha, así que un manejador puesto sobre el botón se perdería en el primer
+  repintado.
+- **El estado del botón sale de `state.destinos`**, no de una llamada suelta: con
+  una elección pendiente se pinta ya deshabilitado.
+- Fases: `#trivial` (tablero) y `#board` (pregunta) se alternan. El cronómetro
+  sólo corre en la fase de pregunta.
+
+### Aspecto del tablero
+
+- **Cada casilla se rellena entera** con un degradado del color de su categoría
+  (`COLORES`, dos tonos por categoría). Las que no están en juego bajan de
+  intensidad —el color va con alfa— para que las dos elegibles destaquen sin
+  necesidad de otro recurso visual.
+- Los colores van en **estilos en línea, no en clases de Tailwind**, porque hacen
+  falta con alfa variable y compuestos en degradados; con clases habría que
+  declarar una variante por estado y categoría.
+- **El dado pinta puntos de verdad**, no un número: `PUNTOS` mapea cada cara a
+  las casillas de una rejilla 3×3 y `caraHTML()` la dibuja. Sin tirar, muestra
+  una interrogación.
+- **El valor del dado sale de `state.dado`**, nunca de una escritura suelta: el
+  tablero se repinta en cada salto de la ficha y cualquier valor escrito a mano
+  se perdería (fue un fallo real).
+- La leyenda vive **fuera del anillo**, bajo el tablero, y resalta las categorías
+  de las dos casillas elegibles. El centro sólo lleva dado, botón y mensaje.
 
 ## Los cinco tipos de ronda
 
@@ -112,11 +167,52 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
 - **Avisos:** un único elemento `#toast` superpuesto al tablero, con estilo por
   tipo en `TOAST_STYLES` (`ok` / `fail`). Se oculta solo con la animación CSS;
   no hay temporizador. Para añadir un tipo basta una entrada más en la tabla.
+  Lleva tres líneas: el mensaje, el contador de puntos y la explicación.
+- **El aviso dura `TOAST_MS` (3 s).** La duración se le pone al elemento desde
+  JS, no en el CSS, porque tiene que ir acompasada con `REVEAL_MS` y
+  `GAMEOVER_MS`: si el aviso durase más que la pausa, se cortaría al cambiar la
+  ronda. Los porcentajes de `@keyframes toastPop` reparten esa duración.
+- **El contador de puntos del aviso** (`cuentaPuntos()`) sube de 0 a lo ganado en
+  700 ms, dentro de los 3 s que dura el aviso. Sólo se pinta cuando a
+  `showToast()` se le pasa un número; en los fallos queda oculto.
 - **Teclado:** `←`/`1` y `→`/`2` eligen; `Enter` o espacio arranca y reinicia.
+- **Cuenta atrás y puntos:** `TIEMPO = 10000` ms por ronda y `PUNTOS_MAX = 100`.
+  Los puntos bajan linealmente con lo que se tarda: instantáneo 100, a los 5 s
+  50, agotado 0. Quedarse sin tiempo cuenta como fallo y descuenta vida.
+- **La barra se pinta a mano en cada fotograma**, no con una transición CSS,
+  porque el mismo reloj decide los puntos: así lo que se ve y lo que se cobra
+  salen del mismo sitio. Cambia de ámbar a naranja y a rojo por debajo del 50 %
+  y del 25 %.
+- **El reloj no corre con la pantalla previa abierta**: `mountRound()` lo arranca
+  sólo si la intro está cerrada, y `closeIntro()` lo arranca al descubrir el
+  tablero. Sin eso, la primera ronda se agotaría mientras se lee la explicación.
+- **`state.corriendo` es una bandera aparte y no un `if (state.t0)`**: `t0` puede
+  valer 0 legítimamente y entonces el cronómetro se daría por parado, cobrando 0
+  puntos en cada respuesta.
+- **El récord pasó a medirse en puntos** y usa una clave nueva
+  (`billions.best.points`), porque los valores guardados con el sistema anterior
+  eran niveles y no son comparables.
+- **Vidas:** `VIDAS = 3` en `main.js`. Fallar descuenta una y la ronda sigue; sólo
+  el fallo que deja `state.vidas` a cero abre la pantalla de fin. Los tres puntos
+  de la cabecera los pinta `pintaVidas()`, que recibe si se acaba de perder una
+  para hacerla latir al apagarse.
+- **Un fallo no sube de nivel pero tampoco lo baja:** `state.round` se deriva de
+  `state.score`, así que tras fallar se repite la dificultad del mismo nivel.
 - **Récord:** `localStorage`, clave `billions.best`, siempre entre `try/catch`
   (modo privado del navegador).
 - **Las tarjetas las genera el JS** (`cartaHTML()` en `#cards`), porque una ronda
   tiene una, dos o tres según el tipo. El HTML ya no lleva tarjetas fijas.
+- **Tamaño de las tarjetas:** en móvil ocupan el ancho y se estiran; de tablet
+  hacia arriba van a tamaño fijo con proporción 2:3 (186×280 en `sm`, 350×525 en
+  `lg`) y la rejilla se ajusta al contenido con `sm:w-fit sm:mx-auto`. Sin el
+  `w-fit`, las columnas seguirían ocupando media pantalla cada una y las tarjetas
+  se irían a los extremos.
+- **El límite de tamaño lo pone la ronda de reparto**, que alinea una carátula y
+  dos retratos. Los topes reales, con sus separaciones: 190 px por tarjeta en
+  tablet y 358 px en escritorio. Los valores actuales dejan un margen pequeño a
+  propósito; subirlos desborda el ancho.
+- El alto en `lg` va con `min(px, vh)` para que en pantallas bajas la tarjeta no
+  empuje el tablero fuera de la ventana. El recorte lo absorbe `object-cover`.
 - **Cambio de nivel:** `newRound()` saca las tarjetas (`card-out`, `OUT_MS`) y
   `mountRound()` monta la ronda nueva cuando ya no se ven, con entrada
   escalonada (`entradaTarjetas()`, `STAGGER_MS`). `state.ronda` vacío significa

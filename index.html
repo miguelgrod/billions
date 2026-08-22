@@ -33,6 +33,35 @@
     .card-out { animation: cardOut .26s ease-in forwards; }
     .card-in  { animation: cardIn .42s cubic-bezier(.2,.8,.25,1) both; }
 
+    /* La pregunta entra en cada ronda: es lo primero que hay que leer */
+    @keyframes askIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .ask-in { animation: askIn .4s ease-out both; }
+
+    /* Casillas a las que se puede ir con la tirada */
+    @keyframes dadoGira {
+      0%   { transform: rotate(0deg) scale(1); }
+      50%  { transform: rotate(180deg) scale(1.15); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    .dado-gira { animation: dadoGira .45s linear infinite; }
+
+    /* Brillo que recorre la casilla elegible */
+    @keyframes casillaBrillo {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 14px 2px var(--glow); }
+      50%      { box-shadow: 0 0 0 3px rgba(255,255,255,.9),  0 0 26px 6px var(--glow); }
+    }
+    .casilla-elegible { animation: casillaBrillo 1.2s ease-in-out infinite; }
+
+    @keyframes lifeOut {
+      0%   { transform: scale(1); }
+      35%  { transform: scale(1.5); }
+      100% { transform: scale(1); }
+    }
+    .life-out { animation: lifeOut .5s ease-out; }
+
     @keyframes scoreBump {
       0% { transform: scale(1); }
       40% { transform: scale(1.28); color: #34d399; }
@@ -42,15 +71,18 @@
 
     @keyframes toastPop {
       0%   { opacity: 0; transform: translateY(10px) scale(.85); }
-      14%  { opacity: 1; transform: translateY(0) scale(1.05); }
-      24%  { transform: scale(1); }
-      72%  { opacity: 1; }
+      6%   { opacity: 1; transform: translateY(0) scale(1.05); }
+      11%  { transform: scale(1); }
+      88%  { opacity: 1; }
       100% { opacity: 0; transform: translateY(-8px) scale(.98); }
     }
-    .toast-show { animation: toastPop 1.4s ease-out forwards; }
+    /* La duración la fija el JS (TOAST_MS): el aviso y la pausa de la ronda
+       tienen que ir acompasados, y así el número vive en un solo sitio. */
+    .toast-show { animation: toastPop 3s ease-out forwards; }
     @media (prefers-reduced-motion: reduce) {
       .toast-show { animation: none; opacity: 1; }
-      .pop, .shake, .card-out, .card-in, .score-bump { animation: none; }
+      .pop, .shake, .card-out, .card-in, .score-bump, .life-out,
+      .ask-in, .casilla-elegible, .dado-gira { animation: none; }
     }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
     .fade-up { animation: fadeUp .35s ease-out both; }
@@ -75,15 +107,36 @@
           <div id="score" class="display text-2xl leading-none text-neutral-100">0</div>
         </div>
         <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
-          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Récord</div>
-          <div id="best" class="display text-2xl leading-none text-amber-400">0</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Vidas</div>
+          <div id="lives" class="flex h-6 items-center justify-center gap-1.5" aria-live="polite"></div>
+        </div>
+        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 text-center">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Puntos</div>
+          <div id="points" class="display text-2xl leading-none text-amber-400">0</div>
         </div>
       </div>
     </header>
 
-    <!-- Tablero -->
-    <main id="board" class="relative flex flex-1 flex-col">
-      <p id="question" class="mb-3 text-balance text-center text-sm text-neutral-400 sm:text-base"></p>
+    <!-- Tablero de juego: el dado y las casillas los pinta main.js -->
+    <section id="trivial" class="relative flex flex-1 flex-col items-center justify-center gap-4">
+      <div class="pointer-events-none absolute inset-0 opacity-70"
+           style="background:radial-gradient(50% 45% at 50% 50%, rgba(245,158,11,.10), transparent 70%)"></div>
+      <div id="ring" class="relative grid aspect-square w-full max-w-[min(88vw,30rem)] grid-cols-6 grid-rows-6 gap-1.5 sm:gap-2"></div>
+      <div id="leyenda" class="relative flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5"></div>
+    </section>
+
+    <!-- Zona de pregunta -->
+    <main id="board" class="relative hidden flex-1 flex-col">
+      <div id="ask" class="mb-4 flex flex-col items-center gap-2">
+        <span id="round-kind" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[.18em] text-amber-400"></span>
+        <p id="question" class="text-balance text-center text-lg font-semibold leading-snug text-neutral-50 sm:text-2xl"></p>
+      </div>
+
+      <!-- Cuenta atrás -->
+      <div class="mx-auto mb-3 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-neutral-800/80">
+        <div id="timer-bar" class="h-full w-full origin-left rounded-full bg-amber-400"
+             role="timer" aria-label="Tiempo restante"></div>
+      </div>
 
       <div id="cards" class="relative grid flex-1 grid-cols-1 gap-3 sm:gap-4"></div>
 
@@ -103,6 +156,7 @@
            class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
         <div id="toast-box" class="max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
           <div id="toast-msg" class="display text-4xl leading-none sm:text-5xl"></div>
+          <div id="toast-points" class="display mt-1 hidden text-3xl leading-none text-amber-400 sm:text-4xl"></div>
           <div id="toast-sub" class="mt-1 text-balance text-xs font-medium text-neutral-400"></div>
         </div>
       </div>
@@ -117,15 +171,15 @@
         <ol class="mt-6 space-y-3 text-left text-sm text-neutral-300">
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">1</span>
-            <span>Cada ronda trae una pregunta de cine: <strong class="text-neutral-100">taquilla, estrenos, directores, repartos u Óscars</strong>.</span>
+            <span>Tira el dado y <strong class="text-neutral-100">elige a qué casilla vas</strong>: cada color es un tipo de pregunta.</span>
           </li>
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">2</span>
-            <span>Responde eligiendo una tarjeta o con <strong class="text-neutral-100">Sí</strong> / <strong class="text-neutral-100">No</strong>.</span>
+            <span>Tienes <strong class="text-neutral-100">10 segundos</strong> para responder: cuanto antes, más puntos.</span>
           </li>
           <li class="flex gap-3">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-amber-400">3</span>
-            <span>Aciertas y subes de nivel: cada uno más ajustado. <strong class="text-neutral-100">Un fallo y se acaba.</strong></span>
+            <span>Acertar completa la casilla. Gana quien <strong class="text-neutral-100">complete las 20</strong>; al tercer fallo pierdes.</span>
           </li>
         </ol>
 
@@ -139,7 +193,7 @@
     <!-- Fin de partida -->
     <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-neutral-950/85 p-4 backdrop-blur">
       <div class="fade-up w-full max-w-sm rounded-2xl border border-neutral-800 bg-neutral-900 p-7 text-center shadow-2xl">
-        <div class="display text-xl text-neutral-400">Fin de la partida</div>
+        <div id="go-title" class="display text-xl text-neutral-400">Fin de la partida</div>
         <div id="go-score" class="display my-2 text-7xl leading-none text-amber-400">0</div>
         <p id="go-label" class="text-sm text-neutral-400">niveles superados</p>
         <p id="go-detail" class="mt-4 text-sm leading-relaxed text-neutral-300"></p>

@@ -1,9 +1,15 @@
 // Billions — preguntas de cine: taquilla, estrenos, directores, repartos y Óscars
 // Datos en movies.js · imágenes en posters.js, directors.js y actors.js
 
-const BEST_KEY = 'billions.best';
-const REVEAL_MS = 2800;    // tiempo para leer la respuesta antes de la ronda siguiente
-const GAMEOVER_MS = 3200;  // tiempo para leerla antes de la pantalla de fin
+// Clave nueva: el récord pasa a medirse en puntos, no en niveles, así que no
+// puede heredar los valores guardados con el sistema anterior.
+const BEST_KEY = 'billions.best.points';
+const VIDAS = 3;           // se permiten dos fallos; el tercero acaba la partida
+const TIEMPO = 10000;      // milisegundos para responder
+const PUNTOS_MAX = 100;    // se cobran enteros al instante y bajan hasta 0
+const TOAST_MS = 3000;     // lo que el aviso de resultado permanece visible
+const REVEAL_MS = 3200;    // tiempo para leer la respuesta antes de la ronda siguiente
+const GAMEOVER_MS = 3500;  // tiempo para leerla antes de la pantalla de fin
 const COUNT_MS = 900;      // duración del contador de recaudación
 const OUT_MS = 260;        // salida de las tarjetas al cambiar de nivel
 const STAGGER_MS = 70;     // desfase entre tarjetas al entrar
@@ -20,14 +26,50 @@ const ANIOS_INICIAL = 18, ANIOS_SUELO = 2, ANIOS_CAIDA = 0.88;
 // dos actores no coincidieron.
 const HUECO_SEGURO = 12;
 
+// ---- Tablero ----
+// Anillo de 20 casillas: es el perímetro de una rejilla 6x6 (6+5+5+4) y además
+// es múltiplo de 5, así que cada categoría cae exactamente cuatro veces y el
+// ciclo encaja al cerrarse sin repetir dos iguales seguidas.
+const LADO = 6;
+const CASILLAS = 20;
+const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar'];
+const TABLERO = Array.from({ length: CASILLAS }, (_, i) => CATEGORIAS[i % CATEGORIAS.length]);
+const CARAS = 6;           // caras del dado
+const PASO_MS = 130;       // lo que tarda la ficha en saltar de casilla a casilla
+const GIRO_MS = 900;       // lo que gira el dado antes de pararse
+
+const COLORES = {
+  taquilla: { claro: '#fbbf24', oscuro: '#78350f' },
+  anio:     { claro: '#38bdf8', oscuro: '#0c4a6e' },
+  director: { claro: '#a78bfa', oscuro: '#4c1d95' },
+  actores:  { claro: '#34d399', oscuro: '#064e3b' },
+  oscar:    { claro: '#fb7185', oscuro: '#881337' },
+};
+const INICIAL = { taquilla: 'T', anio: 'E', director: 'D', actores: 'R', oscar: 'O' };
+
+// Caras del dado como puntos, en una rejilla de 3x3
+const PUNTOS = {
+  1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9],
+  5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9],
+};
+
 const els = {
+  trivial: document.getElementById('trivial'),
+  ring: document.getElementById('ring'),
+  leyenda: document.getElementById('leyenda'),
+  ask: document.getElementById('ask'),
+  board: document.getElementById('board'),
   question: document.getElementById('question'),
+  kind: document.getElementById('round-kind'),
   cards: document.getElementById('cards'),
   vs: document.getElementById('vs'),
   answers: document.getElementById('answers'),
   score: document.getElementById('score'),
-  best: document.getElementById('best'),
+  points: document.getElementById('points'),
+  bar: document.getElementById('timer-bar'),
+  lives: document.getElementById('lives'),
   gameover: document.getElementById('gameover'),
+  goTitle: document.getElementById('go-title'),
   goScore: document.getElementById('go-score'),
   goLabel: document.getElementById('go-label'),
   goDetail: document.getElementById('go-detail'),
@@ -38,12 +80,15 @@ const els = {
   toast: document.getElementById('toast'),
   toastBox: document.getElementById('toast-box'),
   toastMsg: document.getElementById('toast-msg'),
+  toastPoints: document.getElementById('toast-points'),
   toastSub: document.getElementById('toast-sub'),
 };
 
 const state = {
   score: 0,
+  puntos: 0,
   best: 0,
+  vidas: VIDAS,
   round: 1,
   ronda: null,          // la ronda en juego
   next: null,           // ronda precargada para la siguiente
@@ -51,6 +96,14 @@ const state = {
   ultima: '',           // firma de la ronda anterior, para no repetirla
   newRecord: false,
   timer: null,
+  casilla: 0,           // dónde está la ficha
+  completadas: new Set(),   // casillas ya acertadas: no se vuelve a ellas
+  dado: 0,              // último número sacado
+  destinos: [],         // las dos casillas a las que se puede ir
+  pendientes: {},       // ronda ya preparada para cada destino
+  t0: 0,                // instante en que arrancó la ronda
+  corriendo: false,     // bandera propia: t0 puede valer 0 y ser válido
+  raf: 0,               // identificador de la animación de la barra
 };
 
 /* ---------- utilidades ---------- */
@@ -180,7 +233,7 @@ function rondaDirector(level) {
   const real = m.d.length > 1 ? `La dirigieron ${m.d.join(' y ')}` : `La dirigió ${m.d[0]}`;
   return {
     tipo: 'director',
-    pregunta: `¿Dirigió <b class="text-neutral-100">${nombre}</b> esta película?`,
+    pregunta: `¿Dirigió <b class="text-amber-400">${nombre}</b> esta película?`,
     modo: 'sino',
     cartas: [cartaPeli(m), cartaPersona(nombre, directorPhoto(nombre), 'Director')],
     correcta: verdadero,
@@ -240,18 +293,19 @@ function rondaOscar() {
 }
 
 const TIPOS = [
-  { peso: 3, crea: rondaTaquilla, hay: () => PELIS.length > 1 },
-  { peso: 2, crea: rondaAnio, hay: () => PELIS.length > 1 },
-  { peso: 2, crea: rondaDirector, hay: () => CON_DIRECTOR.length > 1 },
-  { peso: 2, crea: rondaActores, hay: () => CON_REPARTO.length > 1 },
-  { peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
+  { id: 'taquilla', peso: 3, crea: rondaTaquilla, hay: () => PELIS.length > 1 },
+  { id: 'anio', peso: 2, crea: rondaAnio, hay: () => PELIS.length > 1 },
+  { id: 'director', peso: 2, crea: rondaDirector, hay: () => CON_DIRECTOR.length > 1 },
+  { id: 'actores', peso: 2, crea: rondaActores, hay: () => CON_REPARTO.length > 1 },
+  { id: 'oscar', peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
 ];
 
-function nuevaRonda(level) {
+// `categoria` la impone la casilla del tablero; sin ella se sortea por peso
+function nuevaRonda(level, categoria) {
   const disponibles = TIPOS.filter((t) => t.hay());
+  const forzado = categoria && TIPOS.find((t) => t.id === categoria && t.hay());
   for (let intento = 0; intento < 30; intento++) {
-    // la primera ronda es siempre de taquilla: es la que explica la mecánica
-    const tipo = level === 1 ? TIPOS[0] : porPeso(disponibles);
+    const tipo = forzado || porPeso(disponibles);
     const r = tipo.crea(level);
     if (r && r.firma !== state.ultima) {
       state.ultima = r.firma;
@@ -275,20 +329,36 @@ function porPeso(tipos) {
 
 const COLS = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3' };
 
+// Con cinco tipos de ronda conviene decir de qué va antes de leer la pregunta
+const ETIQUETAS = {
+  taquilla: 'Taquilla',
+  anio: 'Estrenos',
+  director: 'Dirección',
+  actores: 'Reparto',
+  oscar: 'Óscars',
+};
+
 function cartaHTML(c, i, clicable) {
   const etiqueta = clicable ? 'button' : 'div';
   const extra = clicable
     ? 'choice cursor-pointer'
     : 'pointer-events-none';
-  const alto = c.retrato ? 'min-h-[200px] sm:min-h-[320px]' : 'min-h-[220px] sm:min-h-[360px]';
+  // En móvil la tarjeta ocupa el ancho y se estira. De tablet hacia arriba va a
+  // tamaño fijo con proporción 2:3, la del cartel de cine. El tamaño de tablet es
+  // el que permite tres tarjetas (rondas de reparto) sin desbordar los 640 px.
+  // El alto lleva un tope en vh para que en pantallas bajas la tarjeta no
+  // empuje el tablero fuera de la ventana; el recorte lo absorbe object-cover.
+  const alto = c.retrato
+    ? 'min-h-[200px] sm:h-[270px] sm:w-[180px] lg:h-[min(510px,56vh)] lg:w-[340px] sm:justify-self-center'
+    : 'min-h-[220px] sm:h-[280px] sm:w-[186px] lg:h-[min(525px,58vh)] lg:w-[350px] sm:justify-self-center';
   return `
     <${etiqueta} ${clicable ? `data-index="${i}"` : ''} class="carta ${extra} group relative flex ${alto} flex-col justify-end overflow-hidden rounded-2xl border-4 border-neutral-800 bg-neutral-900 text-center transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-default">
       <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? 'object-top' : ''} opacity-0 blur-[1px] brightness-[.55] saturate-[.9] transition-all duration-500 group-hover:brightness-75 group-hover:saturate-100" alt="" aria-hidden="true" />
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-neutral-950/20"></div>
       <div class="relative flex flex-col items-center px-4 pb-5 pt-6">
         ${c.sub ? `<span class="mb-2 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-xs font-medium text-neutral-300 backdrop-blur-sm">${c.sub}</span>` : ''}
-        <span class="display text-xl leading-tight text-white drop-shadow-lg sm:text-3xl">${c.titulo}</span>
-        <span class="js-valor display mt-2 h-7 text-xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-2xl"></span>
+        <span class="display text-xl leading-tight text-white drop-shadow-lg sm:text-lg lg:text-2xl">${c.titulo}</span>
+        <span class="js-valor display mt-2 h-7 text-xl leading-none text-amber-400 opacity-0 transition-opacity duration-300 sm:text-lg lg:text-2xl"></span>
         ${clicable ? '<span class="mt-1 text-xs text-neutral-400 transition group-hover:text-amber-400">Pulsa para elegir</span>' : ''}
       </div>
     </${etiqueta}>`;
@@ -296,9 +366,16 @@ function cartaHTML(c, i, clicable) {
 
 function pintaRonda(r) {
   const clicable = r.modo === 'elige';
+  els.kind.textContent = ETIQUETAS[r.tipo] || '';
   els.question.innerHTML = r.pregunta;
+  els.ask.classList.remove('ask-in');
+  void els.ask.offsetWidth;
+  els.ask.classList.add('ask-in');
+  // sm:w-fit + mx-auto: las columnas se ajustan a la tarjeta y el grupo queda
+  // centrado. Sin esto las tarjetas, ya pequeñas, se irían a los extremos.
   els.cards.className =
-    `relative grid flex-1 grid-cols-1 gap-3 sm:gap-4 ${COLS[r.cartas.length] || 'sm:grid-cols-2'}`;
+    'relative grid flex-1 grid-cols-1 gap-3 sm:mx-auto sm:w-fit sm:items-center sm:gap-4 lg:gap-6 ' +
+    (COLS[r.cartas.length] || 'sm:grid-cols-2');
   els.cards.innerHTML = r.cartas.map((c, i) => cartaHTML(c, i, clicable)).join('');
 
   [...els.cards.querySelectorAll('.js-img')].forEach((img, i) => {
@@ -359,6 +436,273 @@ function revelaCartas(r) {
   });
 }
 
+/* ---------- tablero ---------- */
+
+// Perímetro de la rejilla en sentido horario, empezando arriba a la izquierda
+function perimetro(n) {
+  const pos = [];
+  for (let c = 1; c <= n; c++) pos.push([1, c]);
+  for (let r = 2; r <= n; r++) pos.push([r, n]);
+  for (let c = n - 1; c >= 1; c--) pos.push([n, c]);
+  for (let r = n - 1; r >= 2; r--) pos.push([r, 1]);
+  return pos;
+}
+
+const POSICIONES = perimetro(LADO);
+
+function pintaTablero() {
+  els.ring.innerHTML = POSICIONES.map((rc, i) => {
+    const cat = TABLERO[i];
+    const { claro, oscuro } = COLORES[cat];
+    const aqui = i === state.casilla;
+    const hecha = state.completadas.has(i);
+    const elegible = state.destinos.includes(i);
+    // La casilla se rellena entera con el color de su categoría. Las que no
+    // están en juego bajan de intensidad para que las dos elegibles canten, y
+    // las ya resueltas pierden el color del todo.
+    const fondo = hecha
+      ? 'linear-gradient(155deg, #1c1c1c, #0d0d0d)'
+      : elegible
+        ? `linear-gradient(155deg, ${claro}, ${oscuro})`
+        : `linear-gradient(155deg, ${claro}59, ${oscuro}b3)`;
+    return `
+      <button data-casilla="${i}" ${elegible ? '' : 'disabled'}
+        style="grid-row:${rc[0]};grid-column:${rc[1]};background:${fondo};--glow:${claro}99;
+               border-color:${hecha ? '#2a2a2a' : elegible ? 'rgba(255,255,255,.75)' : claro + '3d'}"
+        class="casilla group relative flex items-center justify-center overflow-hidden rounded-xl
+               border transition duration-200
+               ${elegible ? 'casilla-elegible cursor-pointer' : 'cursor-default'}
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        aria-label="${ETIQUETAS[cat]}${hecha ? ', completada' : ''}${aqui ? ', tu ficha está aquí' : ''}${elegible ? ', puedes ir aquí' : ''}">
+        ${hecha ? '' : '<span class="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-xl bg-white/15"></span>'}
+        <span class="display relative text-sm leading-none sm:text-lg"
+              style="color:${hecha ? '#3f9d6a' : elegible ? 'rgba(0,0,0,.5)' : claro + 'cc'}">${hecha ? '✓' : INICIAL[cat]}</span>
+        ${aqui ? fichaHTML() : ''}
+      </button>`;
+  }).join('') + centroHTML();
+  pintaLeyenda();
+}
+
+// Ficha del jugador: un disco claro que se ve sobre cualquiera de los colores
+const fichaHTML = () => `
+  <span class="absolute inset-0 flex items-center justify-center">
+    <span class="h-4 w-4 rounded-full bg-white ring-2 ring-neutral-900/50 sm:h-5 sm:w-5"
+          style="box-shadow:0 0 14px rgba(255,255,255,.85)"></span>
+  </span>`;
+
+function caraHTML(valor) {
+  if (!valor) {
+    return '<span class="display text-3xl text-neutral-500 sm:text-4xl">?</span>';
+  }
+  const puntos = PUNTOS[valor] || [];
+  return `<span class="grid h-full w-full grid-cols-3 grid-rows-3 gap-0.5 p-2">` +
+    Array.from({ length: 9 }, (_, k) =>
+      `<span class="flex items-center justify-center">${
+        puntos.includes(k + 1)
+          ? '<span class="h-1.5 w-1.5 rounded-full bg-neutral-900 sm:h-2 sm:w-2"></span>'
+          : ''}</span>`).join('') + '</span>';
+}
+
+function centroHTML() {
+  return `
+    <div style="grid-row:2/${LADO};grid-column:2/${LADO}"
+         class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-neutral-800
+                bg-neutral-950/70 p-3 backdrop-blur-sm">
+      <div id="dado"
+           class="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 sm:h-20 sm:w-20
+                  ${state.dado ? 'pop' : ''}"
+           style="box-shadow:0 8px 24px rgba(0,0,0,.6), inset 0 -4px 0 rgba(0,0,0,.12)"
+           aria-label="${state.dado ? 'Has sacado ' + state.dado : 'Dado sin tirar'}">
+        ${caraHTML(state.dado)}
+      </div>
+      <button id="tirar" ${state.destinos.length ? 'disabled' : ''}
+              class="rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-neutral-900 shadow-lg
+                     shadow-amber-500/20 transition hover:bg-amber-300 focus:outline-none
+                     focus-visible:ring-2 focus-visible:ring-amber-200
+                     disabled:cursor-default disabled:opacity-40 disabled:shadow-none">
+        Tirar el dado
+      </button>
+      <p id="tablero-msg" class="text-balance px-1 text-center text-xs leading-snug text-neutral-400"></p>
+      <p class="text-[11px] font-semibold text-neutral-500">
+        <span class="text-amber-400">${state.completadas.size}</span> / ${CASILLAS} completadas
+      </p>
+    </div>`;
+}
+
+function pintaLeyenda() {
+  els.leyenda.innerHTML = CATEGORIAS.map((cat) => {
+    const { claro } = COLORES[cat];
+    const activa = state.destinos.some((i) => TABLERO[i] === cat);
+    const total = TABLERO.filter((c) => c === cat).length;
+    const hechas = TABLERO.filter((c, i) => c === cat && state.completadas.has(i)).length;
+    const listo = hechas === total;
+    return `<span class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
+      style="border-color:${claro}${activa ? 'cc' : '33'};background:${claro}${activa ? '2e' : '14'};
+             color:${claro};opacity:${listo ? '.4' : '1'}">
+      <span class="h-2 w-2 rounded-full" style="background:${claro}"></span>${ETIQUETAS[cat]}
+      <span class="tabular-nums opacity-70">${hechas}/${total}</span></span>`;
+  }).join('');
+}
+
+function muestraTablero() {
+  els.trivial.classList.remove('hidden');
+  els.trivial.classList.add('flex');
+  els.board.classList.add('hidden');
+  els.board.classList.remove('flex');
+  state.destinos = [];
+  pintaTablero();
+  const quedan = CASILLAS - state.completadas.size;
+  mensajeTablero(quedan === 1
+    ? '¡Queda una casilla! Tira el dado.'
+    : `Tira el dado. Quedan ${quedan} casillas.`);
+}
+
+const mensajeTablero = (t) => {
+  const el = document.getElementById('tablero-msg');
+  if (el) el.textContent = t;
+};
+
+// Las casillas completadas son transparentes al movimiento: el dado cuenta sólo
+// las pendientes. Así siempre queda jugada posible, que es lo que se rompería si
+// una tirada pudiera dejarte apuntando a casillas ya resueltas.
+function avanza(desde, pasos, sentido) {
+  let i = desde, contadas = 0;
+  const tope = CASILLAS * (pasos + 1);
+  for (let n = 0; n < tope && contadas < pasos; n++) {
+    i = (i + sentido + CASILLAS) % CASILLAS;
+    if (!state.completadas.has(i)) contadas++;
+  }
+  return contadas === pasos ? i : null;
+}
+
+// Las dos casillas alcanzables, una por sentido. Es lo que convierte la tirada
+// en una decisión y no en un trámite.
+function destinosDe(desde, pasos) {
+  const a = avanza(desde, pasos, 1);
+  const b = avanza(desde, pasos, -1);
+  const unicos = [...new Set([a, b].filter((x) => x !== null))];
+  return unicos;
+}
+
+function tiraDado() {
+  const boton = document.getElementById('tirar');
+  const dado = document.getElementById('dado');
+  if (!boton || boton.disabled || state.destinos.length) return;
+  boton.disabled = true;
+  boton.classList.add('opacity-40');
+  dado.classList.add('dado-gira');
+  mensajeTablero('…');
+
+  const giro = setInterval(() => { dado.innerHTML = caraHTML(1 + rnd(CARAS)); }, 80);
+  setTimeout(() => {
+    clearInterval(giro);
+    dado.classList.remove('dado-gira');
+    state.dado = 1 + rnd(CARAS);
+    state.destinos = destinosDe(state.casilla, state.dado);
+    pintaTablero();          // el número lo pinta el estado, no este trozo
+    mensajeTablero(`Has sacado ${state.dado}. Elige hacia dónde ir.`);
+    // se preparan las dos preguntas posibles para que al elegir no haya espera
+    state.pendientes = {};
+    state.destinos.forEach((i) => {
+      const r = nuevaRonda(state.score + 1, TABLERO[i]);
+      state.pendientes[i] = r;
+      precarga(r);
+    });
+  }, GIRO_MS);
+}
+
+function eligeCasilla(destino) {
+  if (!state.destinos.includes(destino)) return;
+  const ronda = state.pendientes[destino];
+  state.destinos = [];
+  // la ficha recorre el camino paso a paso para que se vea por dónde va
+  const sentido = avanza(state.casilla, state.dado, 1) === destino ? 1 : -1;
+  const salto = () => {
+    state.casilla = (state.casilla + sentido + CASILLAS) % CASILLAS;
+    pintaTablero();
+    if (state.casilla !== destino) return setTimeout(salto, PASO_MS);
+    setTimeout(() => lanzaPregunta(ronda), PASO_MS * 2);
+  };
+  salto();
+}
+
+function lanzaPregunta(ronda) {
+  els.trivial.classList.add('hidden');
+  els.trivial.classList.remove('flex');
+  els.board.classList.remove('hidden');
+  els.board.classList.add('flex');
+  state.ronda = ronda;
+  mountRound();
+}
+
+function volverAlTablero() {
+  clearTimeout(state.timer);
+  tarjetas().forEach((card) => card.classList.add('card-out'));
+  state.timer = setTimeout(() => {
+    hideToast();
+    muestraTablero();
+  }, OUT_MS);
+}
+
+/* ---------- cuenta atrás ---------- */
+
+// La barra se pinta a mano en cada fotograma en vez de con una transición CSS
+// porque el mismo reloj decide los puntos: así lo que se ve y lo que se cobra
+// salen del mismo sitio y no pueden desincronizarse.
+function arrancaCronometro() {
+  paraCronometro();
+  state.t0 = performance.now();
+  state.corriendo = true;
+  pintaBarra(1);
+  const paso = (ahora) => {
+    const queda = Math.max(0, 1 - (ahora - state.t0) / TIEMPO);
+    pintaBarra(queda);
+    if (queda <= 0) return tiempoAgotado();
+    state.raf = requestAnimationFrame(paso);
+  };
+  state.raf = requestAnimationFrame(paso);
+}
+
+// Devuelve los milisegundos consumidos y detiene la cuenta
+function paraCronometro() {
+  if (state.raf) cancelAnimationFrame(state.raf);
+  state.raf = 0;
+  const ms = state.corriendo ? performance.now() - state.t0 : TIEMPO;
+  state.corriendo = false;
+  return ms;
+}
+
+function pintaBarra(fraccion) {
+  els.bar.style.transform = `scaleX(${fraccion})`;
+  const color = fraccion > 0.5 ? 'bg-amber-400'
+    : fraccion > 0.25 ? 'bg-orange-500'
+    : 'bg-red-500';
+  els.bar.className =
+    `h-full w-full origin-left rounded-full transition-colors duration-200 ${color}`;
+}
+
+// Responder al instante vale PUNTOS_MAX; agotar el tiempo, 0
+const puntosPor = (ms) =>
+  Math.max(0, Math.round(PUNTOS_MAX * (1 - Math.min(ms, TIEMPO) / TIEMPO)));
+
+/* ---------- vidas ---------- */
+
+// Tres puntos: los gastados quedan como aro vacío. `perdida` late al apagarse
+// para que el fallo se note también arriba, no sólo en el tablero.
+function pintaVidas(perdida) {
+  els.lives.innerHTML = '';
+  for (let i = 0; i < VIDAS; i++) {
+    const viva = i < state.vidas;
+    const d = document.createElement('span');
+    d.className = 'h-2.5 w-2.5 rounded-full border-2 transition-colors duration-300 ' +
+      (viva ? 'border-amber-400 bg-amber-400' : 'border-neutral-700 bg-transparent');
+    if (perdida && i === state.vidas) d.classList.add('life-out');
+    els.lives.appendChild(d);
+  }
+  els.lives.setAttribute('aria-label',
+    `${state.vidas} de ${VIDAS} vidas`);
+}
+
 /* ---------- aviso superpuesto ---------- */
 
 const ACIERTOS = ['¡Correcto!', '¡Bien!', '¡Eso es!', '¡Exacto!', '¡Muy bien!'];
@@ -367,7 +711,23 @@ const TOAST_STYLES = {
   fail: { box: ['border-red-400/40', 'shadow-red-500/20'], msg: 'text-red-400' },
 };
 
-function showToast(kind, msg, sub) {
+// Sube de 0 a los puntos ganados. Frena al final (misma curva que el contador
+// de recaudación) y cabe de sobra en lo que dura el aviso.
+const PUNTOS_MS = 700;
+
+function cuentaPuntos(total) {
+  const el = els.toastPoints;
+  el.classList.remove('hidden');
+  const inicio = performance.now();
+  const paso = (ahora) => {
+    const p = Math.min((ahora - inicio) / PUNTOS_MS, 1);
+    el.textContent = '+' + Math.round(total * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+
+function showToast(kind, msg, sub, puntos) {
   const style = TOAST_STYLES[kind];
   els.toastBox.className =
     'max-w-[85%] rounded-2xl border bg-neutral-950/85 px-7 py-4 text-center ' +
@@ -375,9 +735,13 @@ function showToast(kind, msg, sub) {
   els.toastMsg.className = 'display text-4xl leading-none sm:text-5xl ' + style.msg;
   els.toastMsg.textContent = msg;
   els.toastSub.textContent = sub || '';
+  els.toastPoints.classList.add('hidden');
+  els.toastPoints.textContent = '';
   els.toast.classList.remove('toast-show');
   void els.toast.offsetWidth;
+  els.toast.style.animationDuration = `${TOAST_MS}ms`;
   els.toast.classList.add('toast-show');
+  if (typeof puntos === 'number') cuentaPuntos(puntos);
 }
 
 const hideToast = () => els.toast.classList.remove('toast-show');
@@ -386,9 +750,19 @@ const hideToast = () => els.toast.classList.remove('toast-show');
 
 function responde(eleccion) {
   if (state.locked) return;
+  resuelve(eleccion === state.ronda.correcta, paraCronometro());
+}
+
+function tiempoAgotado() {
+  if (state.locked) return;
+  paraCronometro();
+  pintaBarra(0);
+  resuelve(false, TIEMPO, true);
+}
+
+function resuelve(correcto, ms, agotado) {
   state.locked = true;
   const r = state.ronda;
-  const correcto = eleccion === r.correcta;
 
   tarjetas().forEach((c) => (c.disabled = true));
   botones().forEach((b) => (b.disabled = true));
@@ -413,24 +787,41 @@ function responde(eleccion) {
 
   const detalle = r.explica || explicaDuelo(r);
   if (correcto) {
+    const ganados = puntosPor(ms);
     state.score++;
+    state.puntos += ganados;
     els.score.textContent = state.score;
-    if (state.score > state.best) {
-      state.best = state.score;
+    els.points.textContent = state.puntos;
+    if (state.puntos > state.best) {
+      state.best = state.puntos;
       state.newRecord = true;
-      els.best.textContent = state.best;
       try { localStorage.setItem(BEST_KEY, String(state.best)); } catch (e) { /* modo privado */ }
     }
-    els.score.classList.remove('score-bump');
-    void els.score.offsetWidth;
-    els.score.classList.add('score-bump');
+    [els.points, els.score].forEach((el) => {
+      el.classList.remove('score-bump');
+      void el.offsetWidth;
+      el.classList.add('score-bump');
+    });
     const hito = state.score % 5 === 0;
-    showToast('ok', hito ? `¡${state.score} seguidas!` : ACIERTOS[state.score % ACIERTOS.length],
-      detalle);
-    state.timer = setTimeout(newRound, REVEAL_MS);
+    showToast('ok',
+      hito ? `¡${state.score} seguidas!` : ACIERTOS[state.score % ACIERTOS.length],
+      detalle,
+      ganados);
+    state.completadas.add(state.casilla);
+    state.timer = setTimeout(
+      state.completadas.size === CASILLAS ? victoria : volverAlTablero, REVEAL_MS);
   } else {
-    showToast('fail', '¡Fallaste!', detalle);
-    state.timer = setTimeout(() => gameOver(detalle), GAMEOVER_MS);
+    state.vidas--;
+    pintaVidas(true);
+    const titulo = agotado ? '¡Tiempo!' : '¡Fallaste!';
+    if (state.vidas > 0) {
+      const quedan = state.vidas === 1 ? 'Te queda 1 vida' : `Te quedan ${state.vidas} vidas`;
+      showToast('fail', titulo, `${detalle} · ${quedan}`);
+      state.timer = setTimeout(volverAlTablero, GAMEOVER_MS);
+    } else {
+      showToast('fail', 'Sin vidas', detalle);
+      state.timer = setTimeout(() => gameOver(detalle), GAMEOVER_MS);
+    }
   }
 }
 
@@ -444,23 +835,13 @@ function explicaDuelo(r) {
   return `${gana.titulo} se estrenó en ${gana.valor}.`;
 }
 
-function newRound() {
-  clearTimeout(state.timer);
-  if (!state.ronda) return mountRound();
-  tarjetas().forEach((card) => card.classList.add('card-out'));
-  state.timer = setTimeout(mountRound, OUT_MS);
-}
-
 function mountRound() {
   hideToast();
   state.round = state.score + 1;
-  state.ronda = state.next || nuevaRonda(state.round);
-  state.next = null;
   pintaRonda(state.ronda);
   state.locked = false;
-
-  state.next = nuevaRonda(state.round + 1);
-  precarga(state.next);
+  pintaBarra(1);
+  arrancaCronometro();
 }
 
 function precarga(r) {
@@ -468,32 +849,71 @@ function precarga(r) {
   r.cartas.forEach((c) => { if (c.img) new Image().src = c.img; });
 }
 
+function victoria() {
+  clearTimeout(state.timer);
+  hideToast();
+  els.goTitle.textContent = '¡Tablero completo!';
+  els.goTitle.className = 'display text-xl text-emerald-400';
+  els.goScore.textContent = state.puntos;
+  els.goLabel.textContent = `puntos · las ${CASILLAS} casillas completadas`;
+  els.goDetail.innerHTML =
+    `Has completado el tablero con <strong class="text-neutral-100">${state.vidas}</strong> ` +
+    `${state.vidas === 1 ? 'vida' : 'vidas'} de sobra.` +
+    (state.newRecord
+      ? '<br><span class="text-emerald-400">¡Nuevo récord!</span>'
+      : `<br><span class="text-neutral-500">Tu récord: ${state.best} puntos</span>`);
+  els.gameover.classList.remove('hidden');
+  els.gameover.classList.add('flex');
+  els.restart.focus();
+}
+
 function gameOver(detalle) {
-  els.goScore.textContent = state.score;
-  els.goLabel.textContent = state.score === 1 ? 'nivel superado' : 'niveles superados';
+  paraCronometro();
+  els.goTitle.textContent = 'Fin de la partida';
+  els.goTitle.className = 'display text-xl text-neutral-400';
+  els.goScore.textContent = state.puntos;
+  els.goLabel.textContent =
+    `puntos · ${state.completadas.size} de ${CASILLAS} casillas`;
   els.goDetail.innerHTML = detalle +
     (state.newRecord
       ? '<br><span class="text-emerald-400">¡Nuevo récord!</span>'
-      : `<br><span class="text-neutral-500">Tu récord: ${state.best}</span>`);
+      : `<br><span class="text-neutral-500">Tu récord: ${state.best} puntos</span>`);
   els.gameover.classList.remove('hidden');
   els.gameover.classList.add('flex');
   els.restart.focus();
 }
 
 function startGame() {
+  paraCronometro();
   state.score = 0;
+  state.puntos = 0;
+  state.vidas = VIDAS;
   state.round = 1;
   state.ronda = null;
   state.next = null;
   state.ultima = '';
+  state.casilla = 0;
+  state.completadas = new Set();
+  state.dado = 0;
+  state.destinos = [];
+  state.pendientes = {};
+  state.ronda = null;
   state.newRecord = false;
   els.score.textContent = '0';
+  els.points.textContent = '0';
+  pintaVidas(false);
   els.gameover.classList.add('hidden');
   els.gameover.classList.remove('flex');
-  newRound();
+  muestraTablero();
 }
 
 /* ---------- eventos ---------- */
+
+els.ring.addEventListener('click', (e) => {
+  if (e.target.closest('#tirar')) return tiraDado();
+  const casilla = e.target.closest('.casilla');
+  if (casilla && !casilla.disabled) eligeCasilla(Number(casilla.dataset.casilla));
+});
 
 els.cards.addEventListener('click', (e) => {
   const card = e.target.closest('.choice');
@@ -512,7 +932,8 @@ const introVisible = () => !els.intro.classList.contains('hidden');
 function closeIntro() {
   els.intro.classList.add('hidden');
   els.intro.classList.remove('flex');
-  entradaTarjetas();
+  // El reloj sólo corre durante una pregunta, y al cerrar la intro lo que
+  // aparece es el tablero.
 }
 
 els.play.addEventListener('click', closeIntro);
@@ -524,6 +945,10 @@ document.addEventListener('keydown', (e) => {
   }
   if (!els.gameover.classList.contains('hidden')) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
+    return;
+  }
+  if (!els.trivial.classList.contains('hidden')) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tiraDado(); }
     return;
   }
   const r = state.ronda;
@@ -540,8 +965,7 @@ document.addEventListener('keydown', (e) => {
 try {
   state.best = Number(localStorage.getItem(BEST_KEY)) || 0;
 } catch (e) { state.best = 0; }
-els.best.textContent = state.best;
-els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} niveles` : '';
+els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';
 
 // Prepara la primera ronda por detrás: al cerrar la intro el tablero ya está listo
 startGame();
