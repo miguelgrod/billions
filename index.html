@@ -21,6 +21,10 @@
       background: #000;
       -webkit-font-smoothing: antialiased;
     }
+    /* dvh es el alto que de verdad se ve: en móvil, 100vh incluye la barra de
+       direcciones y deja parte de la interfaz fuera de pantalla. La primera
+       declaración queda de reserva para navegadores sin dvh. */
+    .alto-ventana { min-height: 100vh; min-height: 100dvh; }
     .display { font-family: var(--sf); font-weight: 700; letter-spacing: -.022em; }
     .tight { letter-spacing: -.015em; }
 
@@ -71,6 +75,12 @@
     .deriva-y {
       animation: derivaY var(--ty) cubic-bezier(.45,0,.55,1) infinite alternate;
       animation-delay: var(--ry);
+    }
+    /* En móvil el campo es más pequeño y el mismo recorrido se percibe más
+       lento: se acorta la duración un 22 %. */
+    @media (max-width: 639px) {
+      .deriva-x { animation-duration: calc(var(--tx) * .78); }
+      .deriva-y { animation-duration: calc(var(--ty) * .78); }
     }
 
     .esfera {
@@ -154,7 +164,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen text-white antialiased selection:bg-white/25">
+<body class="alto-ventana text-white antialiased selection:bg-white/25">
 
   <!-- Fondo: la fotografía al 25 % sobre negro y, encima, las luces difusas
        del modo tvOS. Va en un div fijo y no como background-attachment, que en
@@ -169,7 +179,7 @@
          radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.10), transparent 60%),
          radial-gradient(60% 50% at 50% 92%, rgba(191,90,242,.09), transparent 60%)"></div>
 
-  <div id="app" class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-8 sm:py-6">
+  <div id="app" class="alto-ventana relative mx-auto flex max-w-6xl flex-col px-4 py-4 sm:px-8 sm:py-6">
 
     <!-- Cabecera -->
     <header class="mb-5 flex items-center justify-between gap-4">
@@ -187,13 +197,13 @@
           <span id="lives" class="flex h-4 items-center gap-1.5" aria-live="polite"></span>
         </div>
         <button id="sonido" class="glass foco flex h-9 w-9 items-center justify-center rounded-full"
-                aria-label="Silenciar música" aria-pressed="false"></button>
+                aria-label="Silenciar sonido" aria-pressed="false"></button>
       </div>
     </header>
 
     <!-- Campo de burbujas -->
     <section id="trivial" class="relative flex flex-1 flex-col">
-      <div id="burbujas" class="relative min-h-[380px] flex-1">
+      <div id="burbujas" class="relative min-h-[300px] flex-1">
         <div id="rotulo" class="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center">
           <div id="rotulo-caja" class="glass-fuerte rotulo-in rounded-[28px] px-9 py-6 text-center shadow-2xl">
             <div id="rotulo-icono" class="mx-auto mb-3 h-11 w-11 sm:h-12 sm:w-12"></div>
@@ -278,10 +288,6 @@
     </footer>
   </div>
 
-  <audio id="musica" loop preload="none">
-    <source src="audio/bg_music.m4a" type="audio/mp4" />
-    <source src="audio/bg_music.mp3" type="audio/mpeg" />
-  </audio>
   <!-- Efectos: pesan poco y se precargan para que suenen sin retardo -->
   <audio id="sfx-clic" src="audio/clic.mp3" preload="auto"></audio>
   <audio id="sfx-acierto" src="audio/acierto.mp3" preload="auto"></audio>

@@ -64,9 +64,19 @@ recorrido ni ficha ni dado. **El jugador pulsa la que quiere** y esa plantea la
 pregunta de su categoría. Acertar apaga la burbuja. Se gana al apagarlas todas y
 se pierde al tercer fallo.
 
-- **Las posiciones son una rejilla 5×4 con desorden**: cada burbuja nace en su
-  celda y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a
-  mano y, a diferencia de sortear posiciones libres, **nunca se solapan**.
+- **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
+  y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
+  a diferencia de sortear posiciones libres, no se amontonan.
+- **La rejilla se pone de pie en pantalla estrecha**: 4×5 por debajo de 640 px y
+  5×4 por encima. Un móvil vertical no tiene sitio para cinco columnas de
+  burbujas grandes.
+- **El tamaño de la burbuja es `clamp(34·escala px, 17.9·escala vw, 118·escala px)`.**
+  Los tres términos llevan la escala: cuando el mínimo era un valor fijo (56 px),
+  en móvil **ganaba siempre y todas las burbujas salían del mismo tamaño**, sin la
+  variedad que se ve en escritorio.
+- **En móvil la deriva va un 22 % más rápida** (media query sobre
+  `animation-duration`): el campo es más pequeño y el mismo recorrido se percibe
+  más lento.
 - **El reparto de categorías se baraja en cada partida**, manteniendo cuatro de
   cada una, así que dos partidas no se ven iguales.
 - **Cada burbuja lleva de fondo una foto de su temática al ~50 %**, sacada de los
@@ -334,29 +344,16 @@ volver a lanzarlo sin esa opción para restaurarlo.
 
 ## Sonido
 
-`audio/bg_music.m4a` (3,3 MB, AAC 96 kbps) suena en bucle de fondo, con el
-`.mp3` original de reserva en un segundo `<source>`. Tres efectos cortos
-acompañan al juego: `clic.mp3` al elegir burbuja, `acierto.mp3` y `error.mp3`
-al resolver.
+**El juego no lleva música de fondo** (se quitó a petición de Miguel el
+2026-08-22 y sus archivos se borraron). Sólo hay tres efectos cortos:
+`clic.mp3` al elegir burbuja, `acierto.mp3` y `error.mp3` al resolver.
 
-- **La música de fondo no se detiene nunca** salvo que el jugador la silencie:
-  los efectos suenan por encima, sin tocarla. Nada en el código la pausa.
-- Los efectos van a `VOL_SFX` (0,7), por encima de la música, y se rebobinan
-  antes de sonar para que dos seguidos no se pisen.
-- **El botón de silencio manda sobre todo**, música y efectos.
-
-- **Arranca al cerrar la pantalla previa, no al cargar**: ningún navegador deja
-  sonar audio antes de que el usuario interactúe, y ese botón es su primer clic.
-- **El volumen sube de 0 a `VOLUMEN` (0,32) en dos segundos**, para no dar un
-  golpe de sonido al empezar.
-- `preload="none"` en la música: no se descarga hasta que hace falta. Los
-  efectos sí van con `preload="auto"`, porque pesan poco y tienen que sonar sin
-  retardo.
-- Botón de silencio en la cabecera, con la preferencia guardada en
-  `localStorage` (`billions.sonido`). El `play()` va con `catch`: si el navegador
-  lo bloquea, el juego sigue sin enterarse.
-- El `.mp3` original venía a 320 kbps y pesaba 7,7 MB, demasiado para servirlo en
-  cada partida; el `.m4a` es la versión de uso.
+- Van a `VOL_SFX` (0,7) y se rebobinan antes de sonar, para que dos seguidos no
+  se pisen.
+- `preload="auto"`: pesan poco y tienen que sonar sin retardo.
+- El botón de la cabecera silencia los efectos y guarda la preferencia en
+  `localStorage` (`billions.sonido`).
+- El `play()` va con `catch`: si el navegador lo bloquea, el juego sigue igual.
 
 ## Publicar
 

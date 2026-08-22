@@ -32,8 +32,12 @@ const HUECO_SEGURO = 12;
 // plantea la pregunta de su categoría.
 const BURBUJAS = 20;
 const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar'];
-const COLUMNAS = 5;
-const FILAS = 4;
+// En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
+// filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
+const REJILLA_ANCHA = { columnas: 5, filas: 4 };
+const REJILLA_ALTA = { columnas: 4, filas: 5 };
+const esEstrecha = () =>
+  typeof window !== 'undefined' && window.innerWidth ? window.innerWidth < 640 : false;
 const ELEGIDA_MS = 1100;   // la elegida se luce antes de abrir la pregunta
 
 // Colores de sistema de Apple en modo oscuro. Cada esfera se pinta con tres
@@ -58,9 +62,7 @@ const ESFERA = {
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
 const SONIDO_KEY = 'billions.sonido';
-const VOLUMEN = 0.32;      // la música acompaña, no manda
-const VOL_SFX = 0.7;       // los efectos van por encima de ella
-const SUBIDA_MS = 2000;    // el volumen sube poco a poco al empezar
+const VOL_SFX = 0.7;       // volumen de los efectos
 
 // Un icono por categoría, dibujado a trazo sobre una rejilla de 24. Va dentro de
 // la esfera a muy poca opacidad: se lee como un relieve, no como un adorno.
@@ -119,7 +121,6 @@ const els = {
   introBest: document.getElementById('intro-best'),
   toast: document.getElementById('toast'),
   toastBox: document.getElementById('toast-box'),
-  musica: document.getElementById('musica'),
   sfx: {
     clic: document.getElementById('sfx-clic'),
     acierto: document.getElementById('sfx-acierto'),
@@ -543,14 +544,15 @@ function reparteBurbujas() {
 
   const campo = [];
   const usadas = new Set();
-  for (let f = 0; f < FILAS; f++) {
-    for (let c = 0; c < COLUMNAS; c++) {
-      const i = f * COLUMNAS + c;
+  const { columnas, filas } = esEstrecha() ? REJILLA_ALTA : REJILLA_ANCHA;
+  for (let f = 0; f < filas; f++) {
+    for (let c = 0; c < columnas; c++) {
+      const i = f * columnas + c;
       campo.push({
         cat: cats[i],
         img: imagenPara(cats[i], usadas),
-        x: ((c + 0.5) / COLUMNAS) * 100 + (Math.random() - 0.5) * 6,
-        y: ((f + 0.5) / FILAS) * 100 + (Math.random() - 0.5) * 9,
+        x: ((c + 0.5) / columnas) * 100 + (Math.random() - 0.5) * 6,
+        y: ((f + 0.5) / filas) * 100 + (Math.random() - 0.5) * 9,
         escala: 0.74 + Math.random() * 0.52,
         // Dos ejes con periodos largos y distintos: la trayectoria resultante no
         // se repite a la vista y el movimiento nunca se detiene salvo en los
@@ -601,7 +603,7 @@ function pintaBurbujas() {
         <div class="deriva-y relative" style="--dy:${b.dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
         <button data-burbuja="${i}" ${hecha ? 'disabled' : ''}
              class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${hecha ? 'cursor-default' : 'esfera-tocable'}"
-             style="width:clamp(56px, ${11.5 * b.escala}vw, ${118 * b.escala}px);aspect-ratio:1;
+             style="width:clamp(${(34 * b.escala).toFixed(1)}px, ${(17.9 * b.escala).toFixed(2)}vw, ${(118 * b.escala).toFixed(0)}px);aspect-ratio:1;
                     background:${fondo};
                     --sombra:${sombra};--halo:${medio}55;
                     box-shadow:${sombra};
@@ -705,31 +707,10 @@ function pintaBotonSonido() {
     </svg>`;
   els.sonido.style.opacity = state.sonido ? '1' : '.45';
   els.sonido.setAttribute('aria-pressed', String(!state.sonido));
-  els.sonido.setAttribute('aria-label', state.sonido ? 'Silenciar música' : 'Activar música');
+  els.sonido.setAttribute('aria-label', state.sonido ? 'Silenciar sonido' : 'Activar sonido');
 }
 
-// El navegador no deja sonar nada hasta que el usuario interactúa, así que la
-// música arranca al cerrar la pantalla previa, que es su primer clic.
-function arrancaMusica() {
-  if (!state.sonido || !els.musica) return;
-  els.musica.volume = 0;
-  const intento = els.musica.play();
-  if (intento && intento.catch) intento.catch(() => { /* el navegador la ha bloqueado */ });
-  subeVolumen();
-}
-
-function subeVolumen() {
-  const t0 = performance.now();
-  const paso = (ahora) => {
-    const p = Math.min((ahora - t0) / SUBIDA_MS, 1);
-    els.musica.volume = VOLUMEN * p;
-    if (p < 1 && state.sonido) requestAnimationFrame(paso);
-  };
-  requestAnimationFrame(paso);
-}
-
-// Los efectos suenan por encima de la música, sin tocarla: la de fondo no se
-// detiene nunca salvo que el jugador la silencie.
+// Los efectos son lo único que suena; el juego no lleva música de fondo.
 function suena(nombre) {
   const a = els.sfx[nombre];
   if (!a || !state.sonido) return;
@@ -743,9 +724,6 @@ function alternaSonido() {
   state.sonido = !state.sonido;
   try { localStorage.setItem(SONIDO_KEY, state.sonido ? '1' : '0'); } catch (e) { /* modo privado */ }
   pintaBotonSonido();
-  if (!els.musica) return;
-  if (state.sonido) arrancaMusica();
-  else els.musica.pause();
 }
 
 /* ---------- cuenta atrás ---------- */
@@ -1037,9 +1015,7 @@ const introVisible = () => !els.intro.classList.contains('hidden');
 function closeIntro() {
   els.intro.classList.add('hidden');
   els.intro.classList.remove('flex');
-  // Primer clic del usuario: es el único momento en que el navegador deja
-  // arrancar el sonido. El reloj, en cambio, sólo corre durante una pregunta.
-  arrancaMusica();
+  // El reloj sólo corre durante una pregunta; aquí lo que aparece es el campo.
 }
 
 els.play.addEventListener('click', closeIntro);
