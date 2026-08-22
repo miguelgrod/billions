@@ -43,6 +43,23 @@ def split_people(celda):
     return [p if len(p.split()) > 1 else f'{p} {apellido}' for p in partes]
 
 
+def categorias_oscar(celda):
+    """'Mejor Actor de Reparto (Heath Ledger)' -> 'Mejor Actor de Reparto'.
+
+    El nombre entre paréntesis sobra para preguntar por la categoría, y además
+    impediría reconocer que dos películas ganaron la misma.
+    """
+    texto = (celda or '').strip()
+    if not texto or texto in ('—', '-', 'N/D'):
+        return []
+    fuera = []
+    for c in texto.split(','):
+        c = re.sub(r'\s*\([^)]*\)', '', c).strip()
+        if c and c not in fuera:
+            fuera.append(c)
+    return fuera
+
+
 def main():
     base = rows(BASE, 'sheet1.xml')
     extra = {int(f['G']): f for f in rows(AMPLIADO, 'sheet3.xml') if f.get('G', '').isdigit()}
@@ -57,6 +74,12 @@ def main():
             m['o'] = int(amp['F']) if amp.get('F', '').isdigit() else 0
             m['d'] = split_people(amp.get('D', ''))
             m['a'] = [amp.get(c, '').strip() for c in 'HIJKL' if amp.get(c, '').strip()]
+            nota = amp.get('E', '').strip()
+            try:
+                m['fa'] = round(float(nota), 1)      # el Excel trae ruido decimal
+            except ValueError:
+                pass                                  # 'N/D' en los estrenos recientes
+            m['oc'] = categorias_oscar(amp.get('N', ''))
         else:
             sin_extra.append(f['B'])
         peliculas.append(m)
@@ -69,8 +92,12 @@ def main():
                   f"g: {m['g']}", f"y: {m['y']}"]
         if 'o' in m:
             campos.append(f"o: {m['o']}")
+            if 'fa' in m:
+                campos.append(f"fa: {m['fa']}")
             campos.append('d: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['d']) + ']')
             campos.append('a: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['a']) + ']')
+            if m.get('oc'):
+                campos.append('oc: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['oc']) + ']')
         return '  { ' + ', '.join(campos) + ' },'
 
     with open(os.path.join(ROOT, 'movies.js'), 'w', encoding='utf-8') as f:
@@ -79,6 +106,7 @@ def main():
         f.write('// Taquilla y año: The Numbers · Director, reparto y Óscars: Filmaffinity\n')
         f.write('// r = puesto · t = título · g = recaudación · y = año\n')
         f.write('// o = Óscars ganados · d = director(es) · a = reparto principal\n')
+        f.write('// fa = nota de FilmAffinity · oc = categorías de Óscar ganadas\n')
         f.write('// Sin o/d/a: la película no está en el Excel ampliado\n')
         f.write('const MOVIES = [\n')
         for m in peliculas:

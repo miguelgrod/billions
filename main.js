@@ -30,12 +30,14 @@ const HUECO_SEGURO = 12;
 // Veinte burbujas repartidas por la pantalla, cuatro de cada categoría. No hay
 // recorrido ni ficha ni dado: el jugador pulsa la burbuja que quiere y esa
 // plantea la pregunta de su categoría.
-const BURBUJAS = 20;
-const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar'];
+// 21 y no 20: con siete categorías, es el múltiplo que reparte tres de cada una
+const BURBUJAS = 21;
+const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat', 'critica'];
 // En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
 // filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
-const REJILLA_ANCHA = { columnas: 5, filas: 4 };
-const REJILLA_ALTA = { columnas: 4, filas: 5 };
+const REJILLA_ANCHA = { columnas: 7, filas: 3 };
+const REJILLA_ALTA = { columnas: 3, filas: 7 };
+let campoRejilla = { columnas: 7, filas: 3 };
 const esEstrecha = () =>
   typeof window !== 'undefined' && window.innerWidth ? window.innerWidth < 640 : false;
 const ELEGIDA_MS = 1100;   // la elegida se luce antes de abrir la pregunta
@@ -44,21 +46,25 @@ const ELEGIDA_MS = 1100;   // la elegida se luce antes de abrir la pregunta
 // paradas —luz, color y sombra— para que tenga volumen sin necesidad de brillos
 // añadidos: es lo que hace que se lean como cuerpos y no como círculos planos.
 const COLORES = {
-  oscar:    '#F49BDD',   // rosa
+  oscarcat: '#F49BB4',   // rosa
+  oscar:    '#F49BDD',   // magenta
   taquilla: '#D49BF4',   // orquídea
   director: '#AC9BF4',   // lila
   actores:  '#9BB4F4',   // azul violáceo
   anio:     '#7FCDF2',   // azul cielo
+  critica:  '#7FE3E0',   // turquesa
 };
 // Cinco tonos repartidos por igual entre el rosa y el azul cielo: es la gama de
 // la referencia, y el paso regular de tono es lo que los mantiene distinguibles
 // pese a ser todos pasteles de la misma familia.
 const ESFERA = {
+  oscarcat: { luz: '#FFDCE6', medio: '#F49BB4', hondo: '#C7658A' },
   oscar:    { luz: '#FFDCF6', medio: '#F49BDD', hondo: '#C765B4' },
   taquilla: { luz: '#F3DCFF', medio: '#D49BF4', hondo: '#9E63C4' },
   director: { luz: '#E4DEFF', medio: '#AC9BF4', hondo: '#7565C9' },
   actores:  { luz: '#DCE7FF', medio: '#9BB4F4', hondo: '#6480C9' },
   anio:     { luz: '#D6F0FF', medio: '#7FCDF2', hondo: '#4A97C2' },
+  critica:  { luz: '#D6FBFA', medio: '#7FE3E0', hondo: '#3F9E9B' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
 const SONIDO_KEY = 'billions.sonido';
@@ -82,6 +88,10 @@ const ICONOS = {
   oscar:    '<path d="M8 3.5h8v5.2a4 4 0 0 1-8 0z"/>' +
             '<path d="M8 5.2H5.6a2.6 2.6 0 0 0 2.8 4.2M16 5.2h2.4a2.6 2.6 0 0 1-2.8 4.2"/>' +
             '<path d="M12 12.7v3.1"/><path d="M9.4 15.8h5.2l.9 4.7H8.5z"/>',
+  oscarcat: '<circle cx="12" cy="14.5" r="5.5"/>' +
+            '<path d="M8.5 9.6 6 3.5h4.4L12 7M15.5 9.6 18 3.5h-4.4"/>' +
+            '<path d="m12 12 .9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
+  critica:  '<path d="m12 3.5 2.7 5.6 6 .9-4.4 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.3 10l6-.9z"/>',
 };
 
 const iconoHTML = (cat, opts = {}) => `
@@ -180,6 +190,9 @@ const PELIS = MOVIES.filter(posterOf);
 const CON_DIRECTOR = PELIS.filter((m) => (m.d || []).length && m.d.every(directorPhoto));
 const CON_REPARTO = PELIS.filter((m) => reparto(m).length >= 2);
 const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
+const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
+const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
+const CATEGORIAS_OSCAR = [...new Set(CON_CATEGORIA.flatMap((m) => m.oc))];
 const DIRECTORES = [...new Set(CON_DIRECTOR.flatMap((m) => m.d))];
 
 function reparto(m) {
@@ -200,6 +213,13 @@ function bandaRatio(level) {
   return [lo, lo * BANDA];
 }
 
+// Diferencia de nota exigida: empieza holgada y se estrecha hasta dos décimas
+const NOTA_INICIAL = 1.4, NOTA_SUELO = 0.2, NOTA_CAIDA = 0.86;
+
+function huecoNota(level) {
+  return NOTA_SUELO + (NOTA_INICIAL - NOTA_SUELO) * Math.pow(NOTA_CAIDA, level - 1);
+}
+
 function huecoAnios(level) {
   return Math.max(ANIOS_SUELO,
     Math.round(ANIOS_SUELO + (ANIOS_INICIAL - ANIOS_SUELO) * Math.pow(ANIOS_CAIDA, level - 1)));
@@ -215,6 +235,7 @@ const cartaPeli = (m, opts = {}) => ({
   sub: opts.sinAnio ? null : String(m.y),
   valor: opts.valor,
   dinero: !!opts.dinero,
+  decimal: !!opts.decimal,
 });
 
 const cartaPersona = (nombre, foto, rol) => ({
@@ -360,12 +381,61 @@ function rondaOscar() {
   };
 }
 
+// ---- Crítica: ¿cuál tiene mejor nota en FilmAffinity? ----
+function rondaCritica(level) {
+  const hueco = huecoNota(level);
+  const pool = frescas(CON_NOTA);
+  for (let i = 0; i < 40; i++) {
+    const a = pick(pool);
+    const rivales = pool.filter((b) => {
+      const d = Math.abs(a.fa - b.fa);
+      return d >= hueco && d <= hueco * 2.6;
+    });
+    if (rivales.length) {
+      const b = pick(rivales);
+      const [x, y] = coin() ? [a, b] : [b, a];
+      return {
+        tipo: 'critica',
+        pregunta: `¿Cuál tiene mejor nota en FilmAffinity, ${nom(x.t)} o ${nom(y.t)}?`,
+        modo: 'elige',
+        cartas: [cartaPeli(x, { valor: x.fa, decimal: true }),
+                 cartaPeli(y, { valor: y.fa, decimal: true })],
+        correcta: x.fa > y.fa ? 0 : 1,
+        pelis: [x, y],
+        firma: `fa-${[x.r, y.r].sort((p, q) => p - q).join('-')}`,
+      };
+    }
+  }
+  return null;
+}
+
+// ---- Categoría: ¿ganó el Óscar a tal cosa? ----
+function rondaCategoria() {
+  const m = pick(frescas(CON_CATEGORIA, 6));
+  const acertada = coin();
+  const ajenas = CATEGORIAS_OSCAR.filter((c) => !m.oc.includes(c));
+  const cat = acertada ? pick(m.oc) : pick(ajenas);
+  if (!cat) return null;
+  return {
+    tipo: 'oscarcat',
+    pregunta: `¿Ganó ${nom(m.t)} el Óscar a ${nom(cat)}?`,
+    modo: 'sino',
+    cartas: [cartaPeli(m)],
+    correcta: acertada,
+    pelis: [m],
+    explica: `Ganó ${m.oc.length === 1 ? 'el Óscar a' : 'los Óscars a'} ${m.oc.join(', ')}.`,
+    firma: `cat-${m.r}-${cat}`,
+  };
+}
+
 const TIPOS = [
   { id: 'taquilla', peso: 3, crea: rondaTaquilla, hay: () => PELIS.length > 1 },
   { id: 'anio', peso: 2, crea: rondaAnio, hay: () => PELIS.length > 1 },
   { id: 'director', peso: 2, crea: rondaDirector, hay: () => CON_DIRECTOR.length > 1 },
   { id: 'actores', peso: 2, crea: rondaActores, hay: () => CON_REPARTO.length > 1 },
   { id: 'oscar', peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
+  { id: 'oscarcat', peso: 2, crea: rondaCategoria, hay: () => CON_CATEGORIA.length > 1 },
+  { id: 'critica', peso: 2, crea: rondaCritica, hay: () => CON_NOTA.length > 1 },
 ];
 
 // `categoria` la impone la burbuja elegida; sin ella se sortea por peso
@@ -411,6 +481,8 @@ const ETIQUETAS = {
   director: 'Dirección',
   actores: 'Reparto',
   oscar: 'Óscars',
+  oscarcat: 'Categoría',
+  critica: 'Crítica',
 };
 
 function cartaHTML(c, i, clicable, anchaEnMovil) {
@@ -484,13 +556,15 @@ function entradaTarjetas() {
 }
 
 // Cuenta ascendente hasta la cifra real
-function countUp(el, target, dinero) {
+function countUp(el, target, dinero, decimal) {
   const start = performance.now();
   function frame(now) {
     const p = Math.min((now - start) / COUNT_MS, 1);
     const eased = 1 - Math.pow(1 - p, 3);
-    const v = Math.round(target * eased);
-    el.textContent = dinero ? fmtMoney(v) : String(v);
+    const v = target * eased;
+    el.textContent = dinero ? fmtMoney(Math.round(v))
+      : decimal ? v.toFixed(1).replace('.', ',')
+      : String(Math.round(v));
     if (p < 1) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -519,7 +593,7 @@ function revelaCartas(r) {
     if (c.valor === undefined) return;
     const v = card.querySelector('.js-valor');
     v.classList.remove('opacity-0');
-    if (c.dinero || r.tipo === 'anio') countUp(v, c.valor, c.dinero);
+    if (c.dinero || c.decimal || r.tipo === 'anio') countUp(v, c.valor, c.dinero, c.decimal);
     else v.textContent = c.valor;
   });
 }
@@ -537,6 +611,7 @@ const ES_PERSONA = new Set(['director', 'actores']);
 const TOP_TAQUILLA = PELIS.slice(0, 45);
 const CLASICAS = PELIS.filter((m) => m.y <= 2012);
 const PREMIADAS = PELIS.filter((m) => (m.o || 0) >= 1);
+const MEJOR_VALORADAS = [...CON_NOTA].sort((a, b) => b.fa - a.fa).slice(0, 40);
 
 function imagenPara(cat, usadas) {
   const fuentes = {
@@ -565,15 +640,19 @@ function reparteBurbujas() {
 
   const campo = [];
   const usadas = new Set();
-  const { columnas, filas } = esEstrecha() ? REJILLA_ALTA : REJILLA_ANCHA;
+  const rejilla = esEstrecha() ? REJILLA_ALTA : REJILLA_ANCHA;
+  const { columnas, filas } = rejilla;
+  campoRejilla = rejilla;
   for (let f = 0; f < filas; f++) {
     for (let c = 0; c < columnas; c++) {
       const i = f * columnas + c;
       campo.push({
         cat: cats[i],
         img: imagenPara(cats[i], usadas),
-        x: ((c + 0.5) / columnas) * 100 + (Math.random() - 0.5) * 6,
-        y: ((f + 0.5) / filas) * 100 + (Math.random() - 0.5) * 9,
+        // el desorden se mide en fracción de celda: con rejillas distintas, un
+        // valor fijo en porcentaje de pantalla se come filas enteras
+        x: ((c + 0.5) / columnas) * 100 + (Math.random() - 0.5) * (100 / columnas) * 0.3,
+        y: ((f + 0.5) / filas) * 100 + (Math.random() - 0.5) * (100 / filas) * 0.3,
         escala: 0.74 + Math.random() * 0.52,
         // Dos ejes con periodos largos y distintos: la trayectoria resultante no
         // se repite a la vista y el movimiento nunca se detiene salvo en los
@@ -597,7 +676,18 @@ function barajaEnSitio(a) {
   }
 }
 
+// El diámetro se calcula midiendo el contenedor. Sacarlo sólo del ancho (vw)
+// ignoraba el alto, y con siete filas en un móvil corto las burbujas se
+// solapaban verticalmente.
+function diametroBase() {
+  const w = els.burbujas.clientWidth || 1104;
+  const h = els.burbujas.clientHeight || 700;
+  const celda = Math.min(w / campoRejilla.columnas, h / campoRejilla.filas);
+  return Math.max(30, Math.min(150, celda * 0.78));
+}
+
 function pintaBurbujas() {
+  const base = diametroBase();
   els.burbujas.innerHTML = state.campo.map((b, i) => {
     const { luz, medio, hondo } = ESFERA[b.cat];
     const hecha = state.completadas.has(i);
@@ -628,7 +718,7 @@ function pintaBurbujas() {
         <div class="deriva-y relative" style="--dy:${b.dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
         <button data-burbuja="${i}" ${hecha ? 'disabled' : ''}
              class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${hecha ? 'cursor-default' : 'esfera-tocable'}"
-             style="width:clamp(${(34 * b.escala).toFixed(1)}px, ${(17.9 * b.escala).toFixed(2)}vw, ${(118 * b.escala).toFixed(0)}px);aspect-ratio:1;
+             style="width:${(base * b.escala).toFixed(1)}px;aspect-ratio:1;
                     background:${fondo};
                     --sombra:${sombra};--halo:${medio}55;
                     box-shadow:${sombra};
@@ -936,6 +1026,9 @@ function explicaDuelo(r) {
     const diff = Math.abs(a.valor - b.valor);
     return `${gana.titulo} recaudó ${fmtMoney(diff)} más.`;
   }
+  if (r.tipo === 'critica') {
+    return `${gana.titulo} tiene un ${gana.valor.toFixed(1).replace('.', ',')} en FilmAffinity.`;
+  }
   return `${gana.titulo} se estrenó en ${gana.valor}.`;
 }
 
@@ -1034,6 +1127,14 @@ els.answers.addEventListener('click', (e) => {
   const b = e.target.closest('.yesno');
   if (b) responde(b.dataset.answer === '1');
 });
+
+// El tamaño de la burbuja depende del contenedor, así que hay que repintar
+// cuando cambia la ventana. Protegido como el resto de accesos a `window`.
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    if (!els.trivial.classList.contains('hidden')) pintaBurbujas();
+  });
+}
 
 els.restart.addEventListener('click', startGame);
 els.sonido.addEventListener('click', alternaSonido);

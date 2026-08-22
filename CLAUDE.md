@@ -67,13 +67,17 @@ se pierde al tercer fallo.
 - **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
   y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
   a diferencia de sortear posiciones libres, no se amontonan.
-- **La rejilla se pone de pie en pantalla estrecha**: 4×5 por debajo de 640 px y
-  5×4 por encima. Un móvil vertical no tiene sitio para cinco columnas de
+- **21 burbujas, tres por categoría.** Con siete categorías, 21 es el múltiplo
+  que reparte por igual; con 20 quedaba una categoría coja.
+- **La rejilla se pone de pie en pantalla estrecha**: 3×7 por debajo de 640 px y
+  7×3 por encima. Un móvil vertical no tiene sitio para cinco columnas de
   burbujas grandes.
-- **El tamaño de la burbuja es `clamp(34·escala px, 17.9·escala vw, 118·escala px)`.**
-  Los tres términos llevan la escala: cuando el mínimo era un valor fijo (56 px),
-  en móvil **ganaba siempre y todas las burbujas salían del mismo tamaño**, sin la
-  variedad que se ve en escritorio.
+- **El diámetro se calcula midiendo el contenedor** (`diametroBase()`): celda =
+  mín(ancho/columnas, alto/filas), por 0,78. Sacarlo del ancho de la ventana
+  ignoraba el alto, y con siete filas en un móvil corto las burbujas se solapaban
+  verticalmente. Por eso el campo se repinta al cambiar el tamaño de la ventana.
+- **El desorden de las posiciones va en fracción de celda**, no en porcentaje de
+  pantalla: con rejillas distintas, un valor fijo se come filas enteras.
 - **En móvil la deriva va un 22 % más rápida** (media query sobre
   `animation-duration`): el campo es más pequeño y el mismo recorrido se percibe
   más lento.
@@ -157,15 +161,25 @@ se pierde al tercer fallo.
   fijo y no con `background-attachment: fixed`, que en iOS da problemas. Las
   luces se bajaron al 9–10 % al añadir la foto para que no la enturbiaran.
 
-## Los cinco tipos de ronda
+## Los siete tipos de ronda
 
-| Tipo | Pregunta | Respuesta |
-|---|---|---|
-| `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta |
-| `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta |
-| `director` | ¿Dirigió *X* esta película? | Sí / No |
-| `actores` | ¿Coincidieron estos dos actores en esta película? | Sí / No |
-| `oscar` | ¿Ganó esta película algún Óscar? | Sí / No |
+| Tipo | Pregunta | Respuesta | Depósito |
+|---|---|---|---|
+| `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta | 100 |
+| `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta | 100 |
+| `critica` | ¿Cuál tiene mejor nota en FilmAffinity? | Elegir tarjeta | 89 |
+| `director` | ¿Dirigió *X* la película *Y*? | Sí / No | 98 |
+| `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 98 |
+| `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
+| `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 27 |
+
+- **`oscarcat` tira de un depósito pequeño** (27 películas con desglose de
+  premios, 18 categorías). Su umbral en `frescas()` está bajado a 6 por eso.
+- **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae
+  «Mejor Actor de Reparto (Heath Ledger)», y sin limpiarlo no se reconocería que
+  dos películas ganaron la misma categoría.
+- **Nueve estrenos recientes no tienen nota de FilmAffinity** («N/D» en el Excel)
+  y quedan fuera de las rondas de crítica.
 
 Cada tipo es una función `ronda*(level)` que devuelve un objeto con `pregunta`,
 `modo` (`elige` o `sino`), `cartas`, `correcta` y `firma` (para no repetir ronda).
