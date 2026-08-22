@@ -30,13 +30,12 @@ const HUECO_SEGURO = 12;
 // Veinte burbujas repartidas por la pantalla, cuatro de cada categoría. No hay
 // recorrido ni ficha ni dado: el jugador pulsa la burbuja que quiere y esa
 // plantea la pregunta de su categoría.
-// 21 y no 20: con siete categorías, es el múltiplo que reparte tres de cada una
-const BURBUJAS = 21;
+const BURBUJAS = 20;
 const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat', 'critica'];
 // En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
 // filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
-const REJILLA_ANCHA = { columnas: 7, filas: 3 };
-const REJILLA_ALTA = { columnas: 3, filas: 7 };
+const REJILLA_ANCHA = { columnas: 5, filas: 4 };
+const REJILLA_ALTA = { columnas: 4, filas: 5 };
 let campoRejilla = { columnas: 7, filas: 3 };
 const esEstrecha = () =>
   typeof window !== 'undefined' && window.innerWidth ? window.innerWidth < 640 : false;
@@ -67,8 +66,6 @@ const ESFERA = {
   critica:  { luz: '#D6FBFA', medio: '#7FE3E0', hondo: '#3F9E9B' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
-const SONIDO_KEY = 'billions.sonido';
-const VOL_SFX = 0.7;       // volumen de los efectos
 
 // Un icono por categoría, dibujado a trazo sobre una rejilla de 24. Va dentro de
 // la esfera a muy poca opacidad: se lee como un relieve, no como un adorno.
@@ -110,7 +107,6 @@ const els = {
   rotuloTxt: document.getElementById('rotulo-txt'),
   rotuloIcono: document.getElementById('rotulo-icono'),
   estado: document.getElementById('estado'),
-  creditos: document.getElementById('creditos'),
   ask: document.getElementById('ask'),
   board: document.getElementById('board'),
   question: document.getElementById('question'),
@@ -123,21 +119,18 @@ const els = {
   lives: document.getElementById('lives'),
   gameover: document.getElementById('gameover'),
   goTitle: document.getElementById('go-title'),
+  goFiesta: document.getElementById('go-fiesta'),
   goScore: document.getElementById('go-score'),
   goLabel: document.getElementById('go-label'),
   goDetail: document.getElementById('go-detail'),
   restart: document.getElementById('restart'),
   intro: document.getElementById('intro'),
+  introBurbujas: document.getElementById('intro-burbujas'),
+  introCats: document.getElementById('intro-cats'),
   play: document.getElementById('play'),
   introBest: document.getElementById('intro-best'),
   toast: document.getElementById('toast'),
   toastBox: document.getElementById('toast-box'),
-  sfx: {
-    clic: document.getElementById('sfx-clic'),
-    acierto: document.getElementById('sfx-acierto'),
-    error: document.getElementById('sfx-error'),
-  },
-  sonido: document.getElementById('sonido'),
   toastMsg: document.getElementById('toast-msg'),
   toastPoints: document.getElementById('toast-points'),
   toastSub: document.getElementById('toast-sub'),
@@ -148,7 +141,6 @@ const state = {
   puntos: 0,
   best: 0,
   vidas: VIDAS,
-  sonido: true,
   round: 1,
   vistas: new Set(),    // películas ya preguntadas en esta partida
   ronda: null,          // la ronda en juego
@@ -602,6 +594,42 @@ function revelaCartas(r) {
   });
 }
 
+/* ---------- pantalla previa ---------- */
+
+// La portada se dibuja con las mismas piezas que el juego: esferas de las siete
+// categorías y sus iconos. Así lo primero que se ve ya explica de qué va.
+function pintaIntro() {
+  // Siete esferas, una por categoría, repartidas para que ninguna quede cortada
+  // por el borde superior y el conjunto no forme una línea recta.
+  const reparto = [
+    { cat: 'oscarcat', x: 10, y: 62, d: 40, dur: 5.5, r: 0 },
+    { cat: 'taquilla', x: 25, y: 36, d: 58, dur: 6.5, r: -1.2 },
+    { cat: 'director', x: 42, y: 68, d: 34, dur: 5,   r: -2.4 },
+    { cat: 'critica',  x: 56, y: 34, d: 50, dur: 7,   r: -0.6 },
+    { cat: 'actores',  x: 72, y: 64, d: 38, dur: 6,   r: -3 },
+    { cat: 'oscar',    x: 88, y: 38, d: 52, dur: 6.8, r: -1.8 },
+    { cat: 'anio',     x: 34, y: 22, d: 26, dur: 5.2, r: -2 },
+  ];
+  els.introBurbujas.innerHTML = reparto.map((b) => {
+    const { luz, medio, hondo } = ESFERA[b.cat];
+    return `
+      <span class="flota-intro absolute rounded-full"
+            style="left:${b.x}%;top:${b.y}%;width:${b.d}px;height:${b.d}px;
+                   transform:translate(-50%,-50%);--dur:${b.dur}s;--retardo:${b.r}s;
+                   background:radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%);
+                   box-shadow:0 12px 26px -8px ${medio}66, inset 0 1px 0 rgba(255,255,255,.4)"></span>`;
+  }).join('') +
+    '<span class="pointer-events-none absolute inset-0" ' +
+    'style="background:linear-gradient(to bottom, transparent 40%, rgba(20,20,24,.85) 100%)"></span>';
+
+  els.introCats.innerHTML = CATEGORIAS.map((cat) => {
+    const color = COLORES[cat];
+    return `<span class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+      style="background:${color}1f;color:${color}">
+      ${iconoHTML(cat, { clase: 'h-3.5 w-3.5 shrink-0', color, grosor: 1.8 })}${ETIQUETAS[cat]}</span>`;
+  }).join('');
+}
+
 /* ---------- campo de burbujas ---------- */
 
 // Cada burbuja lleva de fondo una foto de su temática, sacada de los archivos
@@ -638,8 +666,13 @@ function imagenPara(cat, usadas) {
 // azar. Se ve repartido por la pantalla y, a diferencia de sortear posiciones
 // libres, nunca se solapan.
 function reparteBurbujas() {
+  // Veinte burbujas entre siete categorías no reparten exacto: seis salen tres
+  // veces y una, dos. La que se queda corta se sortea en cada partida, así que
+  // no es siempre la misma la que aparece menos.
   const cats = [];
-  for (let i = 0; i < BURBUJAS; i++) cats.push(CATEGORIAS[i % CATEGORIAS.length]);
+  CATEGORIAS.forEach((c) => cats.push(c, c, c));
+  cats.splice(rnd(cats.length), 1);
+  while (cats.length > BURBUJAS) cats.splice(rnd(cats.length), 1);
   barajaEnSitio(cats);
 
   const campo = [];
@@ -770,7 +803,6 @@ function muestraTablero() {
   els.board.classList.remove('flex');
   state.actual = null;
   ocultaRotulo();
-  els.creditos.classList.add('hidden');
   pintaBurbujas();
   if (state.completadas.size === BURBUJAS) return victoria();
   const quedan = BURBUJAS - state.completadas.size;
@@ -783,7 +815,6 @@ function muestraTablero() {
 // rótulo y a continuación se abre la pregunta de su categoría.
 function eligeBurbuja(i) {
   if (state.actual !== null || state.completadas.has(i)) return;
-  suena('clic');
   const previo = state.actual;
   state.actual = i;
   // Actualiza sólo las burbujas afectadas para evitar re-render completo
@@ -830,7 +861,6 @@ function updateBubbleSelection(prevIndex, newIndex) {
 
 function lanzaPregunta(ronda) {
   ocultaRotulo();
-  els.creditos.classList.remove('hidden');
   els.trivial.classList.add('hidden');
   els.trivial.classList.remove('flex');
   els.board.classList.remove('hidden');
@@ -846,42 +876,6 @@ function volverAlTablero() {
     hideToast();
     muestraTablero();
   }, OUT_MS);
-}
-
-/* ---------- música ---------- */
-
-const ALTAVOZ = {
-  on:  '<path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/>' +
-       '<path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.3 6.6a8 8 0 0 1 0 10.8"/>',
-  off: '<path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/>' +
-       '<path d="M16 9.5l5 5M21 9.5l-5 5"/>',
-};
-
-function pintaBotonSonido() {
-  els.sonido.innerHTML = `
-    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      ${state.sonido ? ALTAVOZ.on : ALTAVOZ.off}
-    </svg>`;
-  els.sonido.style.opacity = state.sonido ? '1' : '.45';
-  els.sonido.setAttribute('aria-pressed', String(!state.sonido));
-  els.sonido.setAttribute('aria-label', state.sonido ? 'Silenciar sonido' : 'Activar sonido');
-}
-
-// Los efectos son lo único que suena; el juego no lleva música de fondo.
-function suena(nombre) {
-  const a = els.sfx[nombre];
-  if (!a || !state.sonido) return;
-  try { a.currentTime = 0; } catch (e) { /* aún no ha cargado */ }
-  a.volume = VOL_SFX;
-  const intento = a.play();
-  if (intento && intento.catch) intento.catch(() => { /* bloqueado por el navegador */ });
-}
-
-function alternaSonido() {
-  state.sonido = !state.sonido;
-  try { localStorage.setItem(SONIDO_KEY, state.sonido ? '1' : '0'); } catch (e) { /* modo privado */ }
-  pintaBotonSonido();
 }
 
 /* ---------- cuenta atrás ---------- */
@@ -1020,7 +1014,6 @@ function resuelve(correcto, ms, agotado) {
   }
 
   const detalle = r.explica || explicaDuelo(r);
-  suena(correcto ? 'acierto' : 'error');
   if (correcto) {
     const ganados = puntosPor(ms);
     state.score++;
@@ -1095,16 +1088,39 @@ function precarga(r) {
   r.cartas.forEach((c) => { if (c.img) new Image().src = c.img; });
 }
 
+// Esferas subiendo tras el título: la celebración se hace con las piezas del
+// propio juego, no con un confeti genérico.
+function pintaFiesta() {
+  const n = 14;
+  els.goFiesta.innerHTML = Array.from({ length: n }, (_, i) => {
+    const cat = CATEGORIAS[i % CATEGORIAS.length];
+    const { luz, medio, hondo } = ESFERA[cat];
+    const d = 8 + rnd(14);
+    return `<span class="sube absolute rounded-full"
+      style="left:${(3 + (i * 94) / n + rnd(6)).toFixed(1)}%;bottom:-16px;
+             width:${d}px;height:${d}px;animation-delay:${(-Math.random() * 2.2).toFixed(2)}s;
+             background:radial-gradient(circle at 32% 26%, ${luz}, ${medio} 55%, ${hondo})"></span>`;
+  }).join('');
+  els.goFiesta.classList.remove('hidden');
+}
+
 function victoria() {
   clearTimeout(state.timer);
   hideToast();
-  els.goTitle.textContent = '¡Tablero completo!';
-  els.goTitle.className = 'text-sm font-medium text-[#30D158]';
+  pintaFiesta();
+  els.goTitle.innerHTML =
+    '<span class="destello inline-block text-4xl">🎉</span>' +
+    '<div class="display mt-2 text-3xl leading-none text-white">¡Enhorabuena!</div>' +
+    `<div class="mt-1.5 text-sm font-normal text-[#30D158]">Has completado las ${BURBUJAS} burbujas</div>`;
+  els.goTitle.className = 'relative';
   els.goScore.textContent = state.puntos;
-  els.goLabel.textContent = `puntos · las ${BURBUJAS} burbujas completadas`;
+  els.goLabel.textContent = 'puntos conseguidos';
+  const sinFallos = state.vidas === VIDAS;
   els.goDetail.innerHTML =
-    `Has vaciado la pantalla con <strong class="text-white">${state.vidas}</strong> ` +
-    `${state.vidas === 1 ? 'vida' : 'vidas'} de sobra.` +
+    (sinFallos
+      ? 'Y además <strong class="text-white">sin fallar ni una vez</strong>.'
+      : `Te ${state.vidas === 1 ? 'quedaba' : 'quedaban'} <strong class="text-white">${state.vidas}</strong> ` +
+        `${state.vidas === 1 ? 'vida' : 'vidas'}.`) +
     (state.newRecord
       ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
       : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
@@ -1115,8 +1131,9 @@ function victoria() {
 
 function gameOver(detalle) {
   paraCronometro();
-  els.goTitle.textContent = 'Fin de la partida';
-  els.goTitle.className = 'text-sm font-medium text-white/50';
+  els.goFiesta.classList.add('hidden');     // por si la anterior fue victoria
+  els.goTitle.innerHTML = 'Fin de la partida';   // borra el marcado de la victoria
+  els.goTitle.className = 'relative text-sm font-medium text-white/50';
   els.goScore.textContent = state.puntos;
   els.goLabel.textContent =
     `puntos · ${state.completadas.size} de ${BURBUJAS} burbujas`;
@@ -1178,7 +1195,6 @@ if (typeof window !== 'undefined') {
 }
 
 els.restart.addEventListener('click', startGame);
-els.sonido.addEventListener('click', alternaSonido);
 
 const introVisible = () => !els.intro.classList.contains('hidden');
 
@@ -1213,10 +1229,9 @@ document.addEventListener('keydown', (e) => {
 
 try {
   state.best = Number(localStorage.getItem(BEST_KEY)) || 0;
-  state.sonido = localStorage.getItem(SONIDO_KEY) !== '0';
 } catch (e) { state.best = 0; }
-pintaBotonSonido();
 els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';
+pintaIntro();
 
 // Prepara la primera ronda por detrás: al cerrar la intro el tablero ya está listo
 startGame();

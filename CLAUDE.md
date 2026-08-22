@@ -67,10 +67,11 @@ se pierde al tercer fallo.
 - **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
   y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
   a diferencia de sortear posiciones libres, no se amontonan.
-- **21 burbujas, tres por categoría.** Con siete categorías, 21 es el múltiplo
-  que reparte por igual; con 20 quedaba una categoría coja.
-- **La rejilla se pone de pie en pantalla estrecha**: 3×7 por debajo de 640 px y
-  7×3 por encima. Un móvil vertical no tiene sitio para cinco columnas de
+- **20 burbujas.** Entre siete categorías no reparten exacto: seis salen tres
+  veces y una, dos. **La que se queda corta se sortea en cada partida**, para que
+  no sea siempre la misma la que aparece menos.
+- **La rejilla se pone de pie en pantalla estrecha**: 4×5 por debajo de 640 px y
+  5×4 por encima. Un móvil vertical no tiene sitio para cinco columnas de
   burbujas grandes.
 - **El diámetro se calcula midiendo el contenedor** (`diametroBase()`): celda =
   mín(ancho/columnas, alto/filas), por 0,78. Sacarlo del ancho de la ventana
@@ -160,6 +161,17 @@ se pierde al tercer fallo.
   rima con las burbujas), y encima tres luces difusas de color. Va en un `div`
   fijo y no con `background-attachment: fixed`, que en iOS da problemas. Las
   luces se bajaron al 9–10 % al añadir la foto para que no la enturbiaran.
+
+## Pantallas de inicio y de victoria
+
+- **La portada se dibuja con las piezas del juego**: siete esferas flotando (una
+  por categoría, con sus degradados) y las siete temáticas como fichas con su
+  icono y su color. Sale de la misma tabla `COLORES`/`ICONOS`/`ETIQUETAS`, así
+  que añadir una categoría actualiza la portada sola.
+- **Al completar las 20 hay pantalla de enhorabuena** (`victoria()`), con
+  esferas subiendo detrás del título y un texto distinto según se haya fallado o
+  no. `gameOver()` limpia ese marcado con `innerHTML`, porque si no la derrota
+  siguiente heredaría la celebración.
 
 ## Los siete tipos de ronda
 
@@ -376,16 +388,10 @@ volver a lanzarlo sin esa opción para restaurarlo.
 
 ## Sonido
 
-**El juego no lleva música de fondo** (se quitó a petición de Miguel el
-2026-08-22 y sus archivos se borraron). Sólo hay tres efectos cortos:
-`clic.mp3` al elegir burbuja, `acierto.mp3` y `error.mp3` al resolver.
-
-- Van a `VOL_SFX` (0,7) y se rebobinan antes de sonar, para que dos seguidos no
-  se pisen.
-- `preload="auto"`: pesan poco y tienen que sonar sin retardo.
-- El botón de la cabecera silencia los efectos y guarda la preferencia en
-  `localStorage` (`billions.sonido`).
-- El `play()` va con `catch`: si el navegador lo bloquea, el juego sigue igual.
+**El juego no lleva sonido.** Ni música ni efectos: se quitaron a petición de
+Miguel (2026-08-22) y sus archivos se borraron. Si vuelve a hacer falta, el
+patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
+`catch`, porque el navegador lo bloquea hasta que el usuario interactúa.
 
 ## Publicar
 
