@@ -85,10 +85,11 @@
 
     .esfera {
       border-radius: 50%;
-      transition: scale .75s cubic-bezier(.2,.8,.2,1), filter .75s, opacity .6s, box-shadow .75s;
+      transition: transform .75s cubic-bezier(.2,.8,.2,1), filter .75s, opacity .6s, box-shadow .75s;
+      transform-origin: center center;
     }
     @media (hover: hover) {
-      .esfera-tocable:not(:disabled):hover { scale: 1.14 !important; filter: blur(0) !important; }
+      .esfera-tocable:not(:disabled):hover { transform: scale(1.14) !important; filter: blur(0) !important; }
     }
     .esfera-tocable:focus-visible {
       outline: none;
@@ -102,13 +103,13 @@
        y no de hermano adyacente. */
     .etiqueta {
       opacity: 0;
-      scale: .92;
-      transition: opacity .25s cubic-bezier(.2,.8,.2,1), scale .25s cubic-bezier(.2,.8,.2,1);
+      transform: scale(.92);
+      transition: opacity .25s cubic-bezier(.2,.8,.2,1), transform .25s cubic-bezier(.2,.8,.2,1);
     }
     @media (hover: hover) {
-      .esfera-tocable:hover .etiqueta { opacity: 1; scale: 1; }
+      .esfera-tocable:hover .etiqueta { opacity: 1; transform: scale(1); }
     }
-    .esfera-tocable:focus-visible .etiqueta { opacity: 1; scale: 1; }
+    .esfera-tocable:focus-visible .etiqueta { opacity: 1; transform: scale(1); }
     /* la burbuja señalada sube de capa para que su etiqueta no quede debajo */
     .burbuja:has(.esfera-tocable:hover), .burbuja:has(.esfera-tocable:focus-visible) { z-index: 40; }
 
@@ -161,6 +162,18 @@
       .deriva-x, .deriva-y, .esfera-elegida, .aparece, .ask-in, .card-in, .card-out,
       .score-bump, .life-out, .shake, .pop { animation: none; }
       .foco { transition: none; }
+    }
+    /* Mobile layout: ensure main app fits in the viewport height */
+    @media (max-width: 639px) {
+      html, body { height: 100dvh; }
+      #app { max-height: 100dvh; overflow: hidden; }
+      /* Make the main sections scroll internally if needed */
+      #burbujas, #board, #cards { max-height: calc(100dvh - 120px); overflow: auto; }
+      /* Modals fit inside viewport */
+      #intro .glass-fuerte, #gameover .glass-fuerte { max-height: 92dvh; overflow: auto; }
+      /* Slightly reduce paddings to gain vertical space */
+      #app { padding-top: 8px; padding-bottom: 8px; }
+      header { padding-top: 4px; padding-bottom: 4px; }
     }
   </style>
 </head>
@@ -219,7 +232,7 @@
     <main id="board" class="relative hidden flex-1 flex-col">
       <div id="ask" class="mb-4 flex flex-col items-center gap-2.5">
         <span id="round-kind" class="glass rounded-full px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[.14em]"></span>
-        <p id="question" class="tight text-balance text-center text-xl font-semibold leading-tight sm:text-3xl"></p>
+      .burbuja { transform: translate(-50%, -50%); will-change: transform; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
       </div>
 
       <div class="mx-auto mb-4 h-1 w-full max-w-sm overflow-hidden rounded-full bg-white/12">
@@ -237,21 +250,21 @@
            class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
         <div id="toast-box" class="glass-fuerte max-w-[86%] rounded-[28px] px-8 py-5 text-center shadow-2xl">
           <div id="toast-msg" class="display text-3xl leading-none sm:text-4xl"></div>
-          <div id="toast-points" class="display mt-1 hidden text-4xl leading-none text-white sm:text-5xl"></div>
-          <div id="toast-sub" class="mt-1.5 text-balance text-xs font-medium text-white/55"></div>
-        </div>
+        border-radius: 50%;
+        transition: transform .32s cubic-bezier(.2,.9,.2,1), filter .32s, opacity .2s, box-shadow .32s;
+        transform-origin: center center;
+        will-change: transform, opacity, filter, box-shadow;
+        -webkit-backface-visibility: hidden; backface-visibility: hidden;
+        -webkit-transform: translateZ(0); transform: translateZ(0);
       </div>
     </main>
 
     <!-- Pantalla previa -->
     <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
       <div class="glass-fuerte aparece w-full max-w-md rounded-[32px] p-8 text-center shadow-2xl">
-        <h2 class="display text-4xl leading-none">Billions</h2>
+      .esfera-elegida { /* No heavy animation: rely on transform transitions for smoothness */ }
         <p class="mt-2 text-sm text-white/55">El juego de la taquilla</p>
-        <ol class="mt-7 space-y-4 text-left text-[15px] leading-snug text-white/80">
-          <li class="flex gap-3.5">
-            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
-            <span>Pulsa la burbuja que quieras: su foto y su color dicen de qué va.</span>
+      /* Removed heavy box-shadow pulse (latido) to avoid paint jank on mobile */
           </li>
           <li class="flex gap-3.5">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">2</span>

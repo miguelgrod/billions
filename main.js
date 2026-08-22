@@ -489,14 +489,18 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
   const etiqueta = clicable ? 'button' : 'div';
   // la película ocupa la fila entera en móvil cuando hay tres tarjetas
   const tramo = anchaEnMovil ? 'col-span-2 sm:col-span-1' : '';
+  // Ajuste del alto en móvil: reducir 10% si estamos en pantalla estrecha
+  const mobileScale = typeof window !== 'undefined' && window.innerWidth ? (window.innerWidth < 640 ? 0.9 : 1) : 1;
+  const mobileMin = c.retrato ? Math.round(200 * mobileScale) : Math.round(220 * mobileScale);
   const alto = c.retrato
-    ? 'min-h-[200px] sm:h-[270px] sm:w-[180px] lg:h-[405px] lg:w-[270px] sm:justify-self-center'
-    : 'min-h-[220px] sm:h-[280px] sm:w-[186px] lg:h-[min(500px,56vh)] lg:w-[334px] sm:justify-self-center';
+    ? `min-h-[${mobileMin}px] sm:h-[270px] sm:w-[180px] lg:h-[405px] lg:w-[270px] sm:justify-self-center`
+    : `min-h-[${mobileMin}px] sm:h-[280px] sm:w-[186px] lg:h-[min(500px,56vh)] lg:w-[334px] sm:justify-self-center`;
   return `
     <${etiqueta} ${clicable ? `data-index="${i}"` : ''}
       class="carta ${tramo} ${clicable ? 'choice foco cursor-pointer' : 'pointer-events-none'}
              group relative flex ${alto} flex-col justify-end overflow-hidden rounded-[26px]
-             border border-white/10 bg-white/[.06] text-center shadow-[0_18px_50px_rgba(0,0,0,.55)]">
+             border border-white/10 bg-white/[.06] text-center shadow-[0_18px_50px_rgba(0,0,0,.55)]"
+      style="min-height: ${mobileMin}px">
       <img class="js-img absolute inset-0 h-full w-full scale-105 object-cover ${c.retrato ? '[object-position:50%_25%]' : ''}
                   opacity-0 brightness-[.62] saturate-[.95] transition-all duration-500
                   group-hover:brightness-90 group-hover:saturate-100"
@@ -683,7 +687,10 @@ function diametroBase() {
   const w = els.burbujas.clientWidth || 1104;
   const h = els.burbujas.clientHeight || 700;
   const celda = Math.min(w / campoRejilla.columnas, h / campoRejilla.filas);
-  return Math.max(30, Math.min(150, celda * 0.78));
+  const base = celda * 0.78;
+  // En móvil las burbujas deben ser un 15% más grandes
+  const movilMult = esEstrecha() ? 1.15 : 1;
+  return Math.max(30, Math.min(150, base * movilMult));
 }
 
 function pintaBurbujas() {
@@ -722,7 +729,7 @@ function pintaBurbujas() {
                     background:${fondo};
                     --sombra:${sombra};--halo:${medio}55;
                     box-shadow:${sombra};
-                    scale:${escala};
+                    transform: scale(${escala});
                     filter:blur(${desenfoque}px);
                     opacity:${hecha ? .3 : 1}"
              aria-label="${ETIQUETAS[b.cat]}${hecha ? ', completada' : ', elegir'}">
@@ -777,14 +784,48 @@ function muestraTablero() {
 function eligeBurbuja(i) {
   if (state.actual !== null || state.completadas.has(i)) return;
   suena('clic');
+  const previo = state.actual;
   state.actual = i;
-  pintaBurbujas();
+  // Actualiza sólo las burbujas afectadas para evitar re-render completo
+  updateBubbleSelection(previo, i);
   const cat = state.campo[i].cat;
   els.estado.textContent = ETIQUETAS[cat];
   muestraRotulo(cat);
   const ronda = nuevaRonda(state.score + 1, cat);
   precarga(ronda);
   state.timer = setTimeout(() => lanzaPregunta(ronda), ELEGIDA_MS);
+}
+
+function updateBubbleSelection(prevIndex, newIndex) {
+  // Remove selection from previous (apply in RAF to avoid layout thrash)
+  if (prevIndex !== null && prevIndex !== undefined) {
+    const prevBtn = document.querySelector(`[data-burbuja="${prevIndex}"]`);
+    if (prevBtn) {
+      window.requestAnimationFrame(() => {
+        prevBtn.classList.remove('esfera-elegida');
+        prevBtn.classList.add('esfera-tocable');
+        // reset transform to normal (use translateZ(0) to trigger compositing)
+        prevBtn.style.transform = 'translateZ(0) scale(1)';
+        const prevWrapper = prevBtn.closest('.burbuja');
+        if (prevWrapper) prevWrapper.style.zIndex = '';
+      });
+    }
+  }
+
+  // Apply selection to new (in RAF)
+  if (newIndex !== null && newIndex !== undefined) {
+    const newBtn = document.querySelector(`[data-burbuja="${newIndex}"]`);
+    if (newBtn) {
+      window.requestAnimationFrame(() => {
+        newBtn.classList.add('esfera-elegida');
+        newBtn.classList.remove('esfera-tocable');
+        // selection uses scale 1.5 for emphasis; ensure compositing with translateZ(0)
+        newBtn.style.transform = 'translateZ(0) scale(1.5)';
+        const newWrapper = newBtn.closest('.burbuja');
+        if (newWrapper) newWrapper.style.zIndex = 30;
+      });
+    }
+  }
 }
 
 function lanzaPregunta(ronda) {
