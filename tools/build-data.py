@@ -84,18 +84,34 @@ def categorias_oscar(celda):
 
 
 def main():
+    """El catálogo son las 189 del listado completo.
+
+    Las que ya estaban conservan su número de la lista de taquilla, porque las
+    carátulas se guardan con ese número; las nuevas se numeran a partir de 101.
+    """
     base = rows(BASE, HOJA_BASE)
     extra = {int(f['G']): f for f in rows(AMPLIADO, HOJA_AMPLIADA) if f.get('G', '').isdigit()}
     print(f'hojas: «{HOJA_BASE}» ({len(base)} filas) y «{HOJA_AMPLIADA}» '
           f'({len(extra)} con recaudación)', file=sys.stderr)
 
+    por_recaudacion = {int(f['C']): int(f['A']) for f in base}   # recaudación -> nº
+    completo = rows(AMPLIADO, HOJA_AMPLIADA)
+    siguiente = 101
+
     peliculas = []
     sin_extra = []
-    for f in base:
-        g = int(f['C'])
-        m = {'r': int(f['A']), 't': f['B'], 'g': g, 'y': int(f['G'])}
-        amp = extra.get(g)
-        if amp:
+    for amp in completo:
+        try:
+            g = int(amp['G'])
+        except (KeyError, ValueError):
+            g = None                      # sin taquilla, pero sirve para el resto
+        num = por_recaudacion.get(g) if g is not None else None
+        if num is None:
+            num, siguiente = siguiente, siguiente + 1
+        m = {'r': num, 't': amp['B'], 'y': int(amp['C'])}
+        if g is not None:
+            m['g'] = g
+        if True:
             m['o'] = int(amp['F']) if amp.get('F', '').isdigit() else 0
             m['d'] = split_people(amp.get('D', ''))
             m['a'] = [amp.get(c, '').strip() for c in 'HIJKL' if amp.get(c, '').strip()]
@@ -105,16 +121,27 @@ def main():
             except ValueError:
                 pass                                  # 'N/D' en los estrenos recientes
             m['oc'] = categorias_oscar(amp.get('N', ''))
-        else:
-            sin_extra.append(f['B'])
         peliculas.append(m)
 
-    peliculas.sort(key=lambda m: -m['g'])
-    assert len({m['g'] for m in peliculas}) == len(peliculas), 'recaudaciones repetidas'
+    ya = {m.get('g') for m in peliculas}
+    for f in base:
+        g = int(f['C'])
+        if g not in ya:
+            peliculas.append({'r': int(f['A']), 't': f['B'], 'g': g, 'y': int(f['G'])})
+            sin_extra.append(f['B'])
+
+    peliculas.sort(key=lambda m: -(m.get('g') or 0))
+    # Los identificadores sí tienen que ser únicos: con ellos se nombran las
+    # carátulas y se lleva la cuenta de lo ya preguntado. Las recaudaciones, en
+    # cambio, se repiten en las películas antiguas (cifras redondeadas), y de
+    # que eso no genere un duelo empatado se encarga el propio juego.
+    assert len({m['r'] for m in peliculas}) == len(peliculas), 'identificadores repetidos'
 
     def dump(m):
-        campos = [f"r: {m['r']}", f"t: {json.dumps(m['t'], ensure_ascii=False)}",
-                  f"g: {m['g']}", f"y: {m['y']}"]
+        campos = [f"r: {m['r']}", f"t: {json.dumps(m['t'], ensure_ascii=False)}"]
+        if 'g' in m:
+            campos.append(f"g: {m['g']}")
+        campos.append(f"y: {m['y']}")
         if 'o' in m:
             campos.append(f"o: {m['o']}")
             if 'fa' in m:
@@ -129,7 +156,8 @@ def main():
         f.write('// Top 100 películas por recaudación mundial\n')
         f.write('// Generado por tools/build-data.py · no editar a mano\n')
         f.write('// Taquilla y año: The Numbers · Director, reparto y Óscars: Filmaffinity\n')
-        f.write('// r = puesto · t = título · g = recaudación · y = año\n')
+        f.write('// r = identificador (y nombre de su carátula) · t = título\n')
+        f.write('// g = recaudación (puede faltar) · y = año\n')
         f.write('// o = Óscars ganados · d = director(es) · a = reparto principal\n')
         f.write('// fa = nota de FilmAffinity · oc = categorías de Óscar ganadas\n')
         f.write('// Sin o/d/a: la película no está en el Excel ampliado\n')
@@ -139,9 +167,11 @@ def main():
         f.write('];\n')
 
     con = sum(1 for m in peliculas if 'o' in m)
-    print(f'{len(peliculas)} películas · con director/reparto/Óscars: {con}', file=sys.stderr)
+    nuevas = sum(1 for m in peliculas if m['r'] > 100)
+    print(f'{len(peliculas)} películas · con director/reparto/Óscars: {con} · '
+          f'nuevas respecto al top de taquilla: {nuevas}', file=sys.stderr)
     for t in sin_extra:
-        print(f'   sin datos ampliados: {t}', file=sys.stderr)
+        print(f'   sólo con datos de taquilla: {t}', file=sys.stderr)
 
 
 if __name__ == '__main__':

@@ -181,6 +181,9 @@ const actorPhoto = (n) =>
 const PELIS = MOVIES.filter(posterOf);
 const CON_DIRECTOR = PELIS.filter((m) => (m.d || []).length && m.d.every(directorPhoto));
 const CON_REPARTO = PELIS.filter((m) => reparto(m).length >= 2);
+// Una película entra en cada temática para la que tenga datos: no hace falta
+// que los tenga todos. Las clásicas, por ejemplo, no siempre traen recaudación.
+const CON_TAQUILLA = PELIS.filter((m) => typeof m.g === 'number');
 const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
 const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
 const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
@@ -237,11 +240,14 @@ const cartaPersona = (nombre, foto, rol) => ({
 // ---- Taquilla: ¿cuál recaudó más? ----
 function rondaTaquilla(level) {
   const ratio = (a, b) => (a.g > b.g ? a.g / b.g : b.g / a.g);
-  const pool = frescas(PELIS);
+  const pool = frescas(CON_TAQUILLA);
   let [lo, hi] = bandaRatio(level);
   for (let i = 0; i < 40; i++) {
     const a = pick(pool);
-    const rivales = pool.filter((b) => b !== a && ratio(a, b) >= lo && ratio(a, b) <= hi);
+    // el `b.g !== a.g` es imprescindible: varias películas antiguas comparten
+    // cifra redondeada, y un duelo empatado no tendría respuesta correcta
+    const rivales = pool.filter((b) => b !== a && b.g !== a.g
+      && ratio(a, b) >= lo && ratio(a, b) <= hi);
     if (rivales.length) {
       const b = pick(rivales);
       const [x, y] = coin() ? [a, b] : [b, a];
@@ -269,7 +275,7 @@ function rondaAnio(level) {
     const a = pick(pool);
     const rivales = pool.filter((b) => {
       const d = Math.abs(a.y - b.y);
-      return d >= hueco && d <= hueco * 2.2;
+      return d > 0 && d >= hueco && d <= hueco * 2.2;
     });
     if (rivales.length) {
       const b = pick(rivales);
@@ -421,7 +427,7 @@ function rondaCategoria() {
 }
 
 const TIPOS = [
-  { id: 'taquilla', peso: 3, crea: rondaTaquilla, hay: () => PELIS.length > 1 },
+  { id: 'taquilla', peso: 3, crea: rondaTaquilla, hay: () => CON_TAQUILLA.length > 1 },
   { id: 'anio', peso: 2, crea: rondaAnio, hay: () => PELIS.length > 1 },
   { id: 'director', peso: 2, crea: rondaDirector, hay: () => CON_DIRECTOR.length > 1 },
   { id: 'actores', peso: 2, crea: rondaActores, hay: () => CON_REPARTO.length > 1 },
@@ -644,7 +650,7 @@ const ES_PERSONA = new Set(['director', 'actores']);
 // Depósitos de imagen de fondo. Son amplios a propósito: con 4 burbujas de cada
 // categoría por partida, un depósito de 15 hace que se repitan las mismas
 // carátulas partida tras partida.
-const TOP_TAQUILLA = PELIS.slice(0, 45);
+const TOP_TAQUILLA = CON_TAQUILLA.slice(0, 45);
 const CLASICAS = PELIS.filter((m) => m.y <= 2012);
 const PREMIADAS = PELIS.filter((m) => (m.o || 0) >= 1);
 const MEJOR_VALORADAS = [...CON_NOTA].sort((a, b) => b.fa - a.fa).slice(0, 40);

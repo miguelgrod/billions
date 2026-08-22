@@ -11,6 +11,10 @@ import argparse, json, os, re, sys, time, urllib.parse, urllib.request
 UA = 'BillionsQuiz/1.0 (juego personal; bonitu@garciarodriguez.net)'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WIKI = 'https://en.wikipedia.org/w/api.php?'
+# Las películas clásicas del listado vienen con título en español, así que se
+# busca primero en la Wikipedia en español y se cae a la inglesa.
+WIKIS = ('es', 'en')
+FRANQUICIA = re.compile(r'trilog|saga|franquic|serie de pel|series\)|^anexo:|^list of|colecci', re.I)
 
 
 def get(url, raw=False, timeout=30):
@@ -27,8 +31,44 @@ def get(url, raw=False, timeout=30):
             time.sleep(1.5)
 
 
-def wiki(params):
-    return get(WIKI + urllib.parse.urlencode(params))
+def wiki(params, idioma='en'):
+    return get(f'https://{idioma}.wikipedia.org/w/api.php?' + urllib.parse.urlencode(params))
+
+
+def infobox_en(texto):
+    """El parámetro de imagen, tanto en la ficha inglesa como en la española."""
+    if 'nfobox film' not in texto and 'icha de película' not in texto.lower():
+        return None
+    m = re.search(r'\|\s*(?:image|imagen)\s*=\s*([^\n|<}]+)', texto)
+    if not m:
+        return None
+    nombre = re.sub(r'^(File|Image|Archivo|Imagen):', '', m.group(1).strip().strip('[]'),
+                    flags=re.I).split('|')[0].strip()
+    return nombre if re.search(r'\.(jpe?g|png|gif|webp)$', nombre, re.I) else None
+
+
+def busca_en_wiki(idioma, titulo, anio):
+    """Devuelve (página, archivo) validando que sea la película y no su saga."""
+    sufijo = 'película' if idioma == 'es' else 'film'
+    res = wiki({'action': 'query', 'format': 'json', 'formatversion': '2', 'list': 'search',
+                'srsearch': f'{titulo} {anio} {sufijo}', 'srlimit': '5'}, idioma)
+    for hit in ((res or {}).get('query') or {}).get('search', []):
+        if FRANQUICIA.search(hit['title']):
+            continue                       # la página de la saga no vale
+        det = wiki({'action': 'parse', 'format': 'json', 'formatversion': '2',
+                    'page': hit['title'], 'prop': 'wikitext', 'section': '0',
+                    'redirects': '1'}, idioma)
+        if not det or 'error' in det:
+            continue
+        texto = (det.get('parse') or {}).get('wikitext', '')
+        # el año tiene que aparecer: es lo que distingue un remake del original
+        if not any(str(a) in texto for a in (anio - 1, anio, anio + 1)):
+            continue
+        img = infobox_en(texto)
+        if img:
+            return det['parse']['title'], img
+        time.sleep(0.1)
+    return None, None
 
 
 def load_movies():

@@ -30,7 +30,7 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 |---|---|
 | `index.html` | Tablero, pantalla previa, aviso superpuesto, pantalla de fin. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
 | `main.js` | Estado, rondas, revelado, récord. Sin módulos: variables globales y `defer` |
-| `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` puesto, `t` título, `g` recaudación, `y` año, `o` Óscars, `d` director(es), `a` reparto |
+| `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` identificador, `t` título, `g` recaudación (puede faltar), `y` año, `o` Óscars, `fa` nota FA, `d` director(es), `a` reparto, `oc` categorías |
 | `posters.js` | `const POSTERS` — puesto → nombre de archivo en `posters/` |
 | `posters/*.jpg` | 100 carátulas, 300 px de ancho |
 | `posters/_report.json` | Caché de resolución del descargador (qué página y qué archivo de Wikipedia usó cada película) |
@@ -179,6 +179,29 @@ se pierde al tercer fallo.
   esferas subiendo detrás del título y un texto distinto según se haya fallado o
   no. `gameOver()` limpia ese marcado con `innerHTML`, porque si no la derrota
   siguiente heredaría la celebración.
+
+## El catálogo
+
+**191 películas**: las 189 de la hoja «Listado completo» más dos estrenos de 2026
+que sólo están en la lista de taquilla. Hasta agosto de 2026 el catálogo eran
+sólo las 100 más taquilleras y las 91 de crítica se descartaban en el cruce; por
+eso *El Padrino* y compañía no aparecían nunca.
+
+- **Los identificadores 1–100 son los de la antigua lista de taquilla y no deben
+  cambiar**: con ellos se nombran las carátulas (`posters/007.jpg`). Las nuevas
+  se numeran desde 101.
+- **Una película entra en cada temática para la que tenga datos**, no hacen falta
+  todos: hay clásicas sin recaudación que sí juegan en estrenos, dirección,
+  reparto y premios. `CON_TAQUILLA`, `CON_OSCAR`, `CON_NOTA`… son depósitos
+  independientes.
+- **Varias películas antiguas comparten recaudación** (cifras redondeadas: cuatro
+  con 5 M y dos con 25 M). `rondaTaquilla()` descarta explícitamente los pares
+  con la misma cifra: un duelo empatado no tendría respuesta correcta, y la
+  horquilla de dificultad se afloja lo suficiente como para admitirlos.
+- Las carátulas de las clásicas se buscan **primero en la Wikipedia en español**,
+  porque vienen con el título traducido; se valida que el año aparezca en el
+  artículo y se descartan las páginas de saga, que si no *El Padrino* y su
+  segunda parte acababan las dos en «Trilogía de El padrino».
 
 ## Los siete tipos de ronda
 
