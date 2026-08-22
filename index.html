@@ -60,7 +60,14 @@
        El centrado va en `transform` y la deriva en la propiedad `translate`, que
        es independiente: así una no pisa a la otra. La escala del resalte vive en
        la esfera interior, por el mismo motivo. */
-    .burbuja { transform: translate(-50%, -50%); }
+    .burbuja {
+      transform: translate(-50%, -50%);
+      /* avisos al navegador para que componga en la GPU: es lo que evita los
+         tirones al animar veintiuna burbujas a la vez en un móvil */
+      will-change: transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
 
     /* La deriva se separa en dos ejes con periodos distintos. Cada eje va y
        viene con una curva casi sinusoidal, así que sólo se detiene en los
@@ -69,10 +76,12 @@
     @keyframes derivaX { to { translate: var(--dx) 0; } }
     @keyframes derivaY { to { translate: 0 var(--dy); } }
     .deriva-x {
+      will-change: translate;
       animation: derivaX var(--tx) cubic-bezier(.45,0,.55,1) infinite alternate;
       animation-delay: var(--rx);
     }
     .deriva-y {
+      will-change: translate;
       animation: derivaY var(--ty) cubic-bezier(.45,0,.55,1) infinite alternate;
       animation-delay: var(--ry);
     }
@@ -87,6 +96,9 @@
       border-radius: 50%;
       transition: transform .75s cubic-bezier(.2,.8,.2,1), filter .75s, opacity .6s, box-shadow .75s;
       transform-origin: center center;
+      will-change: transform, opacity, filter;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
     @media (hover: hover) {
       .esfera-tocable:not(:disabled):hover { transform: scale(1.14) !important; filter: blur(0) !important; }
@@ -232,7 +244,7 @@
     <main id="board" class="relative hidden flex-1 flex-col">
       <div id="ask" class="mb-4 flex flex-col items-center gap-2.5">
         <span id="round-kind" class="glass rounded-full px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[.14em]"></span>
-      .burbuja { transform: translate(-50%, -50%); will-change: transform; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        <p id="question" class="tight text-balance text-center text-xl font-semibold leading-tight sm:text-3xl"></p>
       </div>
 
       <div class="mx-auto mb-4 h-1 w-full max-w-sm overflow-hidden rounded-full bg-white/12">
@@ -250,21 +262,21 @@
            class="pointer-events-none absolute inset-0 z-20 flex items-start justify-center pt-8 opacity-0 sm:items-center sm:pt-0">
         <div id="toast-box" class="glass-fuerte max-w-[86%] rounded-[28px] px-8 py-5 text-center shadow-2xl">
           <div id="toast-msg" class="display text-3xl leading-none sm:text-4xl"></div>
-        border-radius: 50%;
-        transition: transform .32s cubic-bezier(.2,.9,.2,1), filter .32s, opacity .2s, box-shadow .32s;
-        transform-origin: center center;
-        will-change: transform, opacity, filter, box-shadow;
-        -webkit-backface-visibility: hidden; backface-visibility: hidden;
-        -webkit-transform: translateZ(0); transform: translateZ(0);
+          <div id="toast-points" class="display mt-1 hidden text-4xl leading-none text-white sm:text-5xl"></div>
+          <div id="toast-sub" class="mt-1.5 text-balance text-xs font-medium text-white/55"></div>
+        </div>
       </div>
     </main>
 
     <!-- Pantalla previa -->
     <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
       <div class="glass-fuerte aparece w-full max-w-md rounded-[32px] p-8 text-center shadow-2xl">
-      .esfera-elegida { /* No heavy animation: rely on transform transitions for smoothness */ }
+        <h2 class="display text-4xl leading-none">Billions</h2>
         <p class="mt-2 text-sm text-white/55">El juego de la taquilla</p>
-      /* Removed heavy box-shadow pulse (latido) to avoid paint jank on mobile */
+          <li class="flex gap-3.5">
+            <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
+            <span>Pulsa la burbuja que quieras: su foto y su color dicen de qué va.</span>
+          </li>
           </li>
           <li class="flex gap-3.5">
             <span class="display flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">2</span>
