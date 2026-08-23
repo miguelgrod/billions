@@ -125,6 +125,16 @@
     /* la burbuja señalada sube de capa para que su etiqueta no quede debajo */
     .burbuja:has(.esfera-tocable:hover), .burbuja:has(.esfera-tocable:focus-visible) { z-index: 40; }
 
+    /* La burbuja acertada se va del campo: crece, se difumina y desaparece,
+       como una pompa al reventar. La animación gana a la escala en línea del
+       botón porque las animaciones pesan más que el atributo style. */
+    @keyframes revienta {
+      0%   { transform: scale(1);    opacity: 1;  filter: blur(0); }
+      40%  { transform: scale(1.22); opacity: .9; filter: blur(0); }
+      100% { transform: scale(1.55); opacity: 0;  filter: blur(7px); }
+    }
+    .revienta { animation: revienta .62s cubic-bezier(.2,.7,.3,1) forwards; }
+
     @keyframes latido {
       0%, 100% { box-shadow: var(--sombra), 0 0 0 0 var(--halo); }
       55%      { box-shadow: var(--sombra), 0 0 0 22px transparent; }
@@ -186,6 +196,8 @@
     @media (prefers-reduced-motion: reduce) {
       .deriva-x, .deriva-y, .esfera-elegida, .aparece, .ask-in, .card-in, .card-out,
       .score-bump, .life-out, .shake, .pop { animation: none; }
+      /* sin animación no hay quien la haga desaparecer: se apaga y ya */
+      .revienta { animation: none; opacity: 0; }
       .foco { transition: none; }
     }
     /* Mobile layout: ensure main app fits in the viewport height */

@@ -40,6 +40,8 @@ let campoRejilla = { columnas: 7, filas: 3 };
 const esEstrecha = () =>
   typeof window !== 'undefined' && window.innerWidth ? window.innerWidth < 640 : false;
 const ELEGIDA_MS = 1100;   // la elegida se luce antes de abrir la pregunta
+const REVIENTA_MS = 620;   // lo que tarda en irse la burbuja acertada
+const VACIO_MS = 450;      // el campo vacío se ve un momento antes de celebrar
 
 // Colores de sistema de Apple en modo oscuro. Cada esfera se pinta con tres
 // paradas —luz, color y sombra— para que tenga volumen sin necesidad de brillos
@@ -150,8 +152,10 @@ const state = {
   newRecord: false,
   timer: null,
   campo: [],            // posición, tamaño y categoría de cada burbuja
-  completadas: new Set(),   // burbujas ya acertadas: se apagan
+  completadas: new Set(),   // burbujas ya acertadas: salen del campo
   actual: null,         // burbuja elegida por el jugador
+  reciente: null,       // la recién acertada, que se pinta una vez para reventar
+  burbujaTimer: null,   // repintado del campo cuando la acertada acaba de irse
 
   t0: 0,                // instante en que arrancó la ronda
   corriendo: false,     // bandera propia: t0 puede valer 0 y ser válido
@@ -767,15 +771,17 @@ function pintaBurbujas() {
   const H = els.burbujas.clientHeight || 700;
   els.burbujas.innerHTML = state.campo.map((b, i) => {
     const { luz, medio, hondo } = ESFERA[b.cat];
-    const hecha = state.completadas.has(i);
+    // Las acertadas desaparecen del campo. La de la ronda que acaba de caer se
+    // pinta una última vez para que se la vea reventar; a partir de ahí, ni se
+    // dibuja. Antes se quedaban apagadas, y el campo terminaba lleno de restos.
+    const reventando = i === state.reciente;
+    if (state.completadas.has(i) && !reventando) return '';
     const elegida = i === state.actual;
     const desenfoque = elegida ? 0 : Math.max(0, (1.06 - b.escala) * 5).toFixed(1);
     const escala = elegida ? 1.5 : 1;
     // La foto va debajo y el color encima con alfa: el resultado es la foto a la
     // mitad de intensidad, conservando la identidad de color de la categoría.
-    const velo = hecha
-      ? `${hondo}e6, ${hondo}f2`
-      : `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
+    const velo = `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
     // comillas simples: las dobles cerrarían el atributo style y tumbarían el
     // estilo entero a partir de ahí
     // Las fotos de personas se encuadran algo por encima del centro: es donde
@@ -785,9 +791,7 @@ function pintaBurbujas() {
     const fondo = b.img
       ? `radial-gradient(circle at 32% 26%, ${velo}), url('${b.img}') ${encuadre}/cover`
       : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
-    const sombra = hecha
-      ? '0 18px 40px -18px rgba(0,0,0,.6)'
-      : `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
+    const sombra = `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
     // La posición se corrige para que la burbuja, con su deriva incluida, no
     // asome fuera del campo: sin esto las columnas de los extremos se salían.
     const radio = (base * b.escala) / 2;
@@ -802,18 +806,17 @@ function pintaBurbujas() {
            style="left:${((cx / W) * 100).toFixed(2)}%;top:${((cy / H) * 100).toFixed(2)}%;z-index:${elegida ? 30 : 10}">
        <div class="deriva-x" style="--dx:${dxPx.toFixed(1)}px;--tx:${b.tx}s;--rx:${b.rx}s">
         <div class="deriva-y relative" style="--dy:${dyPx.toFixed(1)}px;--ty:${b.ty}s;--ry:${b.ry}s">
-        <button data-burbuja="${i}" ${hecha ? 'disabled' : ''}
-             class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${hecha ? 'cursor-default' : 'esfera-tocable'}"
+        <button data-burbuja="${i}" ${reventando ? 'disabled aria-hidden="true"' : ''}
+             class="esfera relative ${elegida ? 'esfera-elegida' : ''}
+                    ${reventando ? 'revienta pointer-events-none' : 'esfera-tocable'}"
              style="width:${(base * b.escala).toFixed(1)}px;aspect-ratio:1;
                     background:${fondo};
                     --sombra:${sombra};--halo:${medio}55;
                     box-shadow:${sombra};
                     transform: scale(${escala});
-                    filter:blur(${desenfoque}px);
-                    opacity:${hecha ? .3 : 1}"
-             aria-label="${ETIQUETAS[b.cat]}${hecha ? ', completada' : ', elegir'}">
-          ${hecha ? '<span class="absolute inset-0 flex items-center justify-center text-2xl text-white/70">✓</span>' : ''}
-          ${hecha ? '' : `<span class="etiqueta pointer-events-none absolute inset-0 flex items-center
+                    filter:blur(${desenfoque}px)"
+             aria-label="${ETIQUETAS[b.cat]}, elegir">
+          ${reventando ? '' : `<span class="etiqueta pointer-events-none absolute inset-0 flex items-center
                           justify-center px-2 text-center font-bold uppercase leading-none tracking-tight text-white"
                           style="font-size:${Math.max(9, 11 * b.escala).toFixed(1)}px;
                                  text-shadow:0 1px 8px rgba(0,0,0,.65), 0 0 2px rgba(0,0,0,.5)">${ETIQUETAS[b.cat]}</span>`}
@@ -843,6 +846,7 @@ function ocultaRotulo() {
 }
 
 function muestraTablero() {
+  clearTimeout(state.burbujaTimer);
   els.trivial.classList.remove('hidden');
   els.trivial.classList.add('flex');
   els.board.classList.add('hidden');
@@ -850,11 +854,27 @@ function muestraTablero() {
   state.actual = null;
   ocultaRotulo();
   pintaBurbujas();
-  if (state.completadas.size === BURBUJAS) return victoria();
   const quedan = BURBUJAS - state.completadas.size;
-  els.estado.textContent = quedan === 1
-    ? 'Elige la última burbuja'
-    : `Elige una burbuja · quedan ${quedan}`;
+  // La recién acertada se ha pintado sólo para reventar: al acabar la animación
+  // se repinta el campo ya sin ella. El repintado va por temporizador y no por
+  // `animationend`, porque un cambio de tamaño de ventana rehace el marcado y
+  // el evento se perdería con el nodo.
+  if (state.reciente !== null) {
+    state.burbujaTimer = setTimeout(() => {
+      state.reciente = null;
+      pintaBurbujas();
+      // La vigésima también revienta, y la enhorabuena espera a que el campo se
+      // haya quedado vacío: es el remate de la partida y hay que verlo.
+      if (quedan === 0) state.burbujaTimer = setTimeout(victoria, VACIO_MS);
+    }, REVIENTA_MS);
+  } else if (quedan === 0) {
+    return victoria();
+  }
+  els.estado.textContent = quedan === 0
+    ? '¡Las veinte!'
+    : quedan === 1
+      ? 'Elige la última burbuja'
+      : `Elige una burbuja · quedan ${quedan}`;
 }
 
 // El usuario elige la burbuja; ya no hay sorteo. Se luce un momento con su
@@ -1082,8 +1102,8 @@ function resuelve(correcto, ms, agotado) {
       detalle,
       ganados);
     state.completadas.add(state.actual);
-    state.timer = setTimeout(
-      state.completadas.size === BURBUJAS ? victoria : volverAlTablero, REVEAL_MS);
+    state.reciente = state.actual;
+    state.timer = setTimeout(volverAlTablero, REVEAL_MS);
   } else {
     state.vidas--;
     pintaVidas(true);
@@ -1205,6 +1225,7 @@ function startGame() {
   state.campo = reparteBurbujas();
   state.completadas = new Set();
   state.actual = null;
+  state.reciente = null;
   state.ronda = null;
   state.newRecord = false;
   els.score.textContent = '0';

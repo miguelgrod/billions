@@ -3,7 +3,7 @@
 Quiz web de cine: veinte **burbujas** repartidas por la pantalla, cada una de un
 tipo de pregunta —taquilla, estrenos, directores, repartos u Óscars—. Un sorteo
 las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
-apaga las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
+revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
 **https://bonitu.es/billions/**
 
@@ -61,8 +61,8 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 
 **Veinte burbujas repartidas por la pantalla**, cuatro por categoría, sin
 recorrido ni ficha ni dado. **El jugador pulsa la que quiere** y esa plantea la
-pregunta de su categoría. Acertar apaga la burbuja. Se gana al apagarlas todas y
-se pierde al tercer fallo.
+pregunta de su categoría. Acertar la revienta y la saca del campo. Se gana al
+vaciarlo y se pierde al tercer fallo.
 
 - **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
   y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
@@ -109,7 +109,27 @@ se pierde al tercer fallo.
   conserva la identidad de color de su categoría y la foto se lee a media
   intensidad. Poner la foto encima con `opacity` apagaría también el degradado.
 - **Elegida y bloqueo**: pulsar una burbuja fija `state.actual`; mientras haya
-  una elegida, las demás no responden. Las completadas van `disabled`.
+  una elegida, las demás no responden.
+- **La burbuja acertada desaparece del campo**, no se queda apagada. Antes se
+  quedaba a opacidad 0,3 con una marca de visto, y al final de la partida el
+  campo era un cementerio de restos entre los que costaba distinguir lo que
+  quedaba por jugar. Ahora `pintaBurbujas()` sencillamente no las dibuja.
+- **La que acaba de caer se pinta una última vez para que se la vea reventar**
+  (`state.reciente` y la animación `.revienta`, `REVIENTA_MS` = 620 ms): crece,
+  se difumina y se va, como una pompa. Al acabar, el campo se repinta ya sin
+  ella.
+  - **El repintado va por temporizador y no por `animationend`**: un cambio de
+    tamaño de ventana rehace el marcado entero y el evento se perdería con el
+    nodo, dejando la burbuja congelada en el campo para siempre.
+  - **La animación gana a la escala en línea del botón** sin necesidad de
+    `!important`: las animaciones pesan más que el atributo `style`.
+  - Con `prefers-reduced-motion` la regla la deja en `opacity: 0`. Sin eso, sin
+    animación no habría nada que la hiciera desaparecer y se quedaría a la vista
+    hasta el repintado.
+- **La vigésima también revienta antes de la enhorabuena.** `responde()` ya no
+  se salta el tablero al completar la última: vuelve al campo, la revienta, deja
+  ver el campo vacío `VACIO_MS` (450 ms) y entonces celebra. Es el remate de la
+  partida y hay que verlo.
 - `ELEGIDA_MS` (1,1 s) es lo que la elegida se luce con su rótulo antes de que se
   abra la pregunta.
 - **La burbuja elegida sube de capa** (`z-index`): al crecer invade a sus
@@ -260,6 +280,9 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
   pregunta que aún no se lee.
 - **Los enunciados nombran a las películas y a las personas** (`nom()` los
   resalta), en vez de remitir a las tarjetas con un "esta película".
+- **Las burbujas no se recolocan al quedar menos.** El campo se va vaciando y
+  los huecos se quedan donde están: recolocar las supervivientes las movería
+  bajo el cursor del jugador entre ronda y ronda.
 - **Ritmo:** `REVEAL_MS` (2800 ms tras acertar) y `GAMEOVER_MS` (3200 ms tras
   fallar) al principio de `main.js`. Son el tiempo para leer las cifras; se
   tocan a menudo, están como constantes con nombre por eso.
