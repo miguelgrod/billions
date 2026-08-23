@@ -30,6 +30,11 @@ const ANIOS_MAX = 5, ANIOS_SUELO = 1, ANIOS_CAIDA = 0.89;
 // nombres, así que la distancia temporal es lo que evita afirmar en falso que
 // dos actores no coincidieron.
 const HUECO_SEGURO = 12;
+// Reparto: años de diferencia de edad admisibles entre los dos intérpretes.
+// Sin tope salían parejas como Zendaya (1996) contra Ben Kingsley (1943): un
+// cuarto de las preguntas separaba a los dos por más de 45 años y la mayor
+// llegaba a 128. No es dificultad, es que la pareja resulte verosímil.
+const EDAD_MAX = 22;
 
 // ---- Campo de burbujas ----
 // Veinte burbujas repartidas por la pantalla, cuatro de cada categoría. No hay
@@ -193,6 +198,16 @@ const directorPhoto = (n) =>
 const actorPhoto = (n) =>
   typeof ACTOR_PHOTOS !== 'undefined' && ACTOR_PHOTOS[n] ? 'actors/' + ACTOR_PHOTOS[n] : null;
 
+/* ---------- edades ---------- */
+
+const nacio = (n) => (typeof NACIMIENTOS !== 'undefined' ? NACIMIENTOS[n] : undefined);
+// Si de alguno de los dos no hay fecha, se deja pasar en vez de descartar: son
+// muy pocos y quedarse sin pareja es peor que no poder juzgar la diferencia.
+const edadCerca = (a, b, tope = EDAD_MAX) => {
+  const x = nacio(a), y = nacio(b);
+  return x === undefined || y === undefined ? true : Math.abs(x - y) <= tope;
+};
+
 /* ---------- fondos de datos ----------
    Nada entra en juego sin fotografía: las películas siempre tienen carátula,
    pero hay directores y actores sin foto, y esos quedan fuera. */
@@ -207,6 +222,18 @@ const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
 const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
 const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
 const CATEGORIAS_OSCAR = [...new Set(CON_CATEGORIA.flatMap((m) => m.oc))];
+// En qué años trabajó cada actor, hasta donde alcanzan nuestros datos. Es lo que
+// permite escoger un intruso cuya carrera conocida no roce la película por la
+// que se pregunta.
+const ANIOS_DE_ACTOR = (() => {
+  const mapa = new Map();
+  CON_REPARTO.forEach((p) => reparto(p).forEach((n) => {
+    if (!mapa.has(n)) mapa.set(n, []);
+    mapa.get(n).push(p.y);
+  }));
+  return mapa;
+})();
+const REPARTOS = [...ANIOS_DE_ACTOR.keys()];
 // Los cincuenta con más películas rodadas (actores.js). La foto la trae cada
 // uno consigo, así que aquí sólo hay que comprobar que venga.
 const TOP_ACTORES = (typeof ACTORES_TOP !== 'undefined' ? ACTORES_TOP : [])
@@ -379,16 +406,32 @@ function rondaActores(level) {
   const m = pick(frescas(CON_REPARTO));
   const cast = reparto(m);
   const juntos = coin();
-  let a = pick(cast), b;
+  let candidatos;
   if (juntos) {
-    b = pick(cast.filter((n) => n !== a));
+    candidatos = cast;
   } else {
     const hueco = Math.max(HUECO_SEGURO, Math.round(30 - level));
-    const lejanas = CON_REPARTO.filter((o) => Math.abs(o.y - m.y) >= hueco);
-    const ajenos = [...new Set(lejanas.flatMap(reparto))]
-      .filter((n) => !(m.a || []).includes(n));
-    if (!ajenos.length) return null;
-    b = pick(ajenos);
+    // El intruso tiene que estar lejos en TODA su filmografía conocida, no sólo
+    // en una película. Antes se cogía el reparto de las películas lejanas, y
+    // bastaba con que el actor tuviera una lejana para entrar: podía tener otra
+    // del mismo año que la preguntada y aun así afirmarse que no coincidieron.
+    candidatos = REPARTOS.filter((n) => !(m.a || []).includes(n)
+      && (ANIOS_DE_ACTOR.get(n) || []).every((y) => Math.abs(y - m.y) >= hueco));
+    if (!candidatos.length) return null;
+  }
+  // Varias tiradas buscando dos de una quinta parecida. Si no aparece ninguna
+  // —un reparto con un niño y un veterano, por ejemplo—, vale la última que
+  // salga: quedarse sin ronda es peor, porque la burbuja acabaría soltando la
+  // pregunta de otra categoría.
+  let a = null, b = null;
+  for (let i = 0; i < 12; i++) {
+    const x = pick(cast);
+    const otros = candidatos.filter((n) => n !== x);
+    if (!otros.length) continue;
+    const cerca = otros.filter((n) => edadCerca(x, n));
+    a = x;
+    b = pick(cerca.length ? cerca : otros);
+    if (cerca.length) break;
   }
   if (!a || !b) return null;
   return {

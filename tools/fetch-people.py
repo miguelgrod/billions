@@ -23,8 +23,14 @@ NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 # Qué se busca en la primera frase del artículo para dar por buena la identidad.
 # Para actores es estricto a propósito: 'Chris Evans' a secas es un presentador
 # británico, y su artículo habla de televisión y radio, no de interpretación.
-CINE = re.compile(r'\b(direct(or|ed|s)|film ?mak(er|ing)|films?|movie|screenwriter|'
-                  r'producer|animator|cinematographer|actor|actress|cinema)\b', re.I)
+# Para un director hay que exigir que el artículo hable de DIRIGIR. La versión
+# antigua admitía también 'films', 'movie', 'cinema' y —lo peor— 'actor', que
+# cumple cualquiera del gremio: por eso 'Steve McQueen' se resolvía en el actor
+# de Bullitt en vez de en el director de 12 Years a Slave, y la validación daba
+# el cambiazo por bueno sin rechistar. Quien dirige y actúa (Eastwood, Chaplin)
+# sigue pasando, porque su artículo dice las dos cosas.
+CINE = re.compile(r'\b(director|directed|directs|directing|film ?mak(er|ing)|'
+                  r'screenwriter|animator)\b', re.I)
 INTERPRETE = re.compile(r'\b(actor|actress|performer|voice artist)\b', re.I)
 
 ROLES = {

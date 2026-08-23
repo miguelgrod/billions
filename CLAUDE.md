@@ -49,6 +49,8 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 | `top_50_actores_numero_peliculas.xlsx` | Los 50 actores con más largometrajes rodados. Origen de `actores.js` |
 | `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `f` archivo en `actors/` |
 | `tools/build-actores.py` | Regenera `actores.js` y descarga las fotos que falten |
+| `nacimientos.js` | `const NACIMIENTOS` — nombre → año de nacimiento, de los 635 actores en juego. Generado, **no editar a mano** |
+| `tools/fetch-nacimientos.py` | Descarga los años de nacimiento de Wikidata (P569) |
 
 ## Invariantes que no hay que romper
 
@@ -307,9 +309,30 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
    eso, responder "no" siempre acertaría tres de cada cuatro veces.
 4. **El "no" de los repartos es una heurística, no un dato.** Sólo tenemos cinco
    actores por película, así que "no coincidieron" se afirma cogiendo un intruso
-   de una película separada por `HUECO_SEGURO` años o más. Reduce mucho el riesgo
-   de afirmar en falso, pero no lo elimina: si bajas ese hueco, aumenta.
-5. **Las dos películas de 2026 sin datos ampliados** (*Michael*, *The Super Mario
+   cuya filmografía conocida esté entera a `HUECO_SEGURO` años o más de la
+   película por la que se pregunta. Reduce mucho el riesgo de afirmar en falso,
+   pero no lo elimina: si bajas ese hueco, aumenta.
+   - **«Entera» es la palabra importante.** Antes se cogía el reparto de las
+     películas lejanas, y bastaba con que el actor tuviera *una* lejana para
+     entrar: podía tener además otra del mismo año que la preguntada y aun así
+     afirmarse que no coincidieron. Pasaba en el 6 % de los "no". Ahora se
+     comprueba película por película (`ANIOS_DE_ACTOR`) y son 0 de 7.000.
+5. **La diferencia de edad entre los dos intérpretes no pasa de `EDAD_MAX`
+   (22 años).** Sin ese tope salían parejas como Zendaya (1996) contra Ben
+   Kingsley (1943): la mediana era de 22 años, **un cuarto de las preguntas
+   separaba a los dos por más de 45** y la mayor llegaba a 128. Ahora la mediana
+   es de 11 y ninguna pasa de 22.
+   - **Ojo con el orden de estas dos reglas:** acercar las edades empuja a elegir
+     intrusos de la misma generación, que son justo los que más probabilidades
+     tienen de haber coincidido. Al aplicarla sola, los "no" arriesgados pasaron
+     del 6 % al 12,5 %. Es el filtro de filmografía entera del punto 4 el que lo
+     deja en cero. **Si tocas uno, vuelve a medir el otro.**
+   - Si de alguno de los dos no hay fecha, se deja pasar en vez de descartar:
+     son muy pocos y quedarse sin pareja es peor que no poder juzgar.
+   - Si en un reparto no hay ninguna pareja de quinta parecida —un niño y un
+     veterano—, vale la que salga: sin ronda, la burbuja acabaría soltando la
+     pregunta de otra categoría.
+6. **Las dos películas de 2026 sin datos ampliados** (*Michael*, *The Super Mario
    Galaxy Movie*) sólo aparecen en rondas de taquilla y estreno.
 
 ## Detalles del juego
@@ -498,6 +521,20 @@ volver a lanzarlo sin esa opción para restaurarlo.
   nombre y con imagen, que se colarían sin decir nada. El caso de manual es
   `Chris Evans`, que en la Wikipedia inglesa es un presentador británico. Si el
   extracto no habla de cine, se reintenta con `(actor)`, `(director)` y búsqueda.
+- **A un director hay que exigirle que el artículo hable de DIRIGIR.** `CINE`
+  admitía antes `films`, `movie`, `cinema` y —lo peor— `actor`, palabras que
+  cumple cualquiera del gremio. Por eso **Steve McQueen** se resolvía en el actor
+  de *Bullitt* (1930-1980) en vez de en el director británico de *12 Years a
+  Slave*: son dos personas distintas, el artículo a secas es el del actor, y como
+  decía "actor" la validación lo daba por bueno y nunca llegaba a probar con
+  `(director)`. Quien dirige y actúa —Eastwood, Chaplin— sigue pasando, porque su
+  artículo dice las dos cosas.
+- **Los años de nacimiento salen de Wikidata (P569), no del texto del artículo**:
+  vienen como dato y no hay que adivinarlos de una frase. Se entra por el título
+  del artículo inglés; ocho nombres no cuadran por acentuación (*Zoe Saldana*
+  contra *Zoë Saldaña*, *Charles Chaplin* contra *Charlie Chaplin*) y para ésos
+  hay una segunda pasada que le pide a Wikipedia el identificador, porque ella sí
+  normaliza acentos y sigue redirecciones. Cobertura: 635 de 635.
 - Los actores están a 300 px y no a 400 como los directores: son 641 personas, y
   a 400 px pasaban de 38 MB.
 - **17 actores no tienen foto y no la van a tener por esta vía**: 4 no tienen
