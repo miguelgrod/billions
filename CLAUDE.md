@@ -12,6 +12,15 @@ Vive dentro del repo de **Bonitu Plays** y se despliega con él, pero es un
 **site independiente**: no comparte código, estilos ni datos con el juego de
 niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 
+> **El proyecto acabará saliendo de Bonitu** (Miguel, 2026-08-24). La separación
+> es el destino, no sólo una norma de estilo, y eso manda en las decisiones de
+> arquitectura: **no lo acoples a la infraestructura del padre**. Si hace falta
+> un servicio nuevo —base de datos, analítica, dominio, páginas legales—, se le
+> monta el suyo desde el principio aunque cueste más, para no tener que migrarlo
+> después. Lo que hoy es compartido y habrá que sustituir: el despliegue (S3
+> `bonituplay` + CloudFront `E3LRZQIIEJH24`), el dominio, y las páginas de
+> privacidad, cookies y aviso legal, que hoy son las del padre.
+
 ## Lo esencial en 30 segundos
 
 - **Sin build ni dependencias.** Tailwind entra por el CDN Play (`cdn.tailwindcss.com`),
@@ -214,10 +223,31 @@ vaciarlo y se pierde al tercer fallo.
 
 ## Pantallas de inicio y de victoria
 
-- **La portada se dibuja con las piezas del juego**: siete esferas flotando (una
-  por categoría) y las siete temáticas como fichas con su icono y su color. Sale
-  de la misma tabla `COLORES`/`ICONOS`/`ETIQUETAS`, así que añadir una categoría
-  actualiza la portada sola.
+- **La portada es una vista completa, no un aviso superpuesto.** Ocupa la
+  pantalla entera, con doce esferas flotando de fondo y el texto encima. Antes
+  era una tarjeta de cristal centrada; se cambió a petición de Miguel el
+  2026-08-24, con textos mucho mayores.
+  - **Tapa el tablero pero conserva el fondo bokeh**, poniéndoselo ella misma.
+    Dejar pasar el del documento enseñaba por debajo la cabecera del juego y sus
+    veinte burbujas: dos campos de esferas superpuestos.
+  - **Las esferas y el velo van `fixed`, no `absolute`**: en un contenedor con
+    desplazamiento, lo absoluto se va con el contenido y en un móvil alto el
+    fondo se despegaba al bajar.
+  - **El diámetro se mide del contenedor**, como en el campo. Con píxeles fijos,
+    unas esferas de 70 px se perdían en una pantalla entera. Por eso la portada
+    también se repinta al cambiar el tamaño de la ventana.
+- **La portada se dibuja con las piezas del juego**: doce esferas flotando y las
+  ocho temáticas como fichas con su esfera, su icono y su color —el código de
+  color se aprende ahí y no a base de fallar partidas—. Sale de la misma tabla
+  `COLORES`/`ICONOS`/`ETIQUETAS`, así que añadir una categoría actualiza la
+  portada sola.
+- **`justify-content: safe center` y no `center` a secas.** Centrando sin más, si
+  el contenido no cabe se desborda por arriba y **no hay manera de llegar a él**:
+  en un portátil bajo el título quedaba fuera de la pantalla. `safe` deja de
+  centrar en cuanto hay desbordamiento.
+- **El botón se enfoca con `preventScroll`.** Sin eso, el navegador lo llevaba a
+  la vista al cargar y empujaba el título fuera de la pantalla — 57 px de
+  desplazamiento que parecían un fallo de maquetación y no lo eran.
 - **Las esferas de la portada son las mismas pompas del campo**, no una versión
   simplificada: la misma receta de foto debajo y velo de color encima
   (`imagenPara()`, encuadre al 28 % en los retratos), la misma sombra, el mismo

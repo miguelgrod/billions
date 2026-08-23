@@ -744,29 +744,37 @@ function revelaCartas(r) {
 // La portada se dibuja con las mismas piezas que el juego: esferas de las siete
 // categorías y sus iconos. Así lo primero que se ve ya explica de qué va.
 function pintaIntro() {
-  // Siete esferas, una por categoría, repartidas para que ninguna quede cortada
-  // por el borde superior y el conjunto no forme una línea recta. Se pintan con
-  // la misma receta que las del campo —foto debajo, velo de color encima y la
-  // misma deriva de dos ejes—, así que la portada enseña la pieza de verdad.
+  // Doce esferas repartidas por la pantalla entera, con la misma receta que el
+  // campo: foto debajo, velo de color encima, la misma deriva de dos ejes y el
+  // desenfoque de profundidad de campo. La portada no ilustra el juego: es el
+  // juego en reposo.
+  // El tamaño sale de medir el contenedor, no de píxeles fijos: aquí el
+  // contenedor es la ventana entera y unas esferas de 70 px se perderían.
+  const W = els.introBurbujas.clientWidth || 1280;
+  const H = els.introBurbujas.clientHeight || 800;
+  const base = Math.max(52, Math.min(190, Math.min(W / 6.2, H / 4.4)));
+  // x, y en % de la pantalla · k, factor sobre el diámetro base
   const reparto = [
-    { cat: 'oscarcat',    x:  9, y: 62, d: 50, tx: 24, ty: 30, rx: 0,    ry: -5 },
-    { cat: 'taquilla',    x: 24, y: 35, d: 70, tx: 31, ty: 25, rx: -7,   ry: -12 },
-    { cat: 'director',    x: 38, y: 71, d: 42, tx: 27, ty: 34, rx: -3,   ry: -2 },
-    { cat: 'critica',     x: 52, y: 33, d: 62, tx: 35, ty: 28, rx: -14,  ry: -9 },
-    { cat: 'filmografia', x: 66, y: 68, d: 46, tx: 26, ty: 36, rx: -18,  ry: -21 },
-    { cat: 'actores',     x: 78, y: 38, d: 38, tx: 22, ty: 32, rx: -9,   ry: -17 },
-    { cat: 'oscar',       x: 91, y: 64, d: 64, tx: 29, ty: 23, rx: -5,   ry: -6 },
-    { cat: 'anio',        x: 31, y: 19, d: 32, tx: 33, ty: 27, rx: -11,  ry: -14 },
+    { cat: 'taquilla',    x:  8, y: 18, k: .82, tx: 31, ty: 25, rx: -7,  ry: -12 },
+    { cat: 'critica',     x: 23, y: 72, k: 1.0, tx: 35, ty: 28, rx: -14, ry: -9 },
+    { cat: 'anio',        x: 38, y: 12, k: .58, tx: 33, ty: 27, rx: -11, ry: -14 },
+    { cat: 'oscar',       x: 91, y: 30, k: .95, tx: 29, ty: 23, rx: -5,  ry: -6 },
+    { cat: 'filmografia', x: 76, y: 78, k: .74, tx: 26, ty: 36, rx: -18, ry: -21 },
+    { cat: 'director',    x: 60, y: 86, k: .62, tx: 27, ty: 34, rx: -3,  ry: -2 },
+    { cat: 'actores',     x: 93, y: 62, k: .5,  tx: 22, ty: 32, rx: -9,  ry: -17 },
+    { cat: 'oscarcat',    x: 12, y: 46, k: .66, tx: 24, ty: 30, rx: 0,   ry: -5 },
+    { cat: 'taquilla',    x: 68, y: 16, k: .54, tx: 28, ty: 33, rx: -22, ry: -8 },
+    { cat: 'anio',        x: 45, y: 44, k: .44, tx: 36, ty: 26, rx: -16, ry: -25 },
+    { cat: 'oscar',       x: 30, y: 30, k: .4,  tx: 30, ty: 38, rx: -12, ry: -3 },
+    { cat: 'actores',     x: 55, y: 66, k: .46, tx: 25, ty: 31, rx: -20, ry: -19 },
   ];
   const usadas = new Set();
   els.introBurbujas.innerHTML = reparto.map((b) => {
     const { luz, medio, hondo } = ESFERA[b.cat];
     const img = imagenPara(b.cat, usadas);
-    // la escala se deriva del diámetro para que el desenfoque de las pequeñas
-    // dé la misma profundidad de campo que en el juego
-    const escala = b.d / 70;
-    const desenfoque = Math.max(0, (1 - escala) * 3.2).toFixed(1);
-    // La foto va debajo y el color encima con alfa: mismos valores que el campo.
+    const d = base * b.k;
+    // las pequeñas quedan al fondo y desenfocadas, como en el campo
+    const desenfoque = Math.max(0, (1 - b.k) * 4.5).toFixed(1);
     const velo = `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
     const encuadre = ES_PERSONA.has(b.cat) ? 'center 28%' : 'center';
     // comillas simples: las dobles cerrarían el atributo style
@@ -774,29 +782,34 @@ function pintaIntro() {
       ? `radial-gradient(circle at 32% 26%, ${velo}), url('${img}') ${encuadre}/cover`
       : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
     const sombra = `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
-    // la deriva va en fracción del diámetro, como en el campo
-    const dx = (b.d * 0.16).toFixed(1);
-    const dy = (b.d * 0.14).toFixed(1);
+    const dx = (d * 0.16).toFixed(1);
+    const dy = (d * 0.14).toFixed(1);
     return `
       <div class="burbuja absolute" style="left:${b.x}%;top:${b.y}%">
        <div class="deriva-x" style="--dx:${dx}px;--tx:${b.tx}s;--rx:${b.rx}s">
         <div class="deriva-y" style="--dy:${dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
-         <div class="esfera" style="width:${b.d}px;aspect-ratio:1;
+         <div class="esfera" style="width:${d.toFixed(1)}px;aspect-ratio:1;
                 background:${fondo};
                 box-shadow:${sombra};
                 filter:blur(${desenfoque}px)"></div>
         </div>
        </div>
       </div>`;
-  }).join('') +
-    '<span class="pointer-events-none absolute inset-0" ' +
-    'style="background:linear-gradient(to bottom, transparent 40%, rgba(20,20,24,.85) 100%)"></span>';
+  }).join('');
 
+  // Cada temática con su esfera al lado: el código de color se aprende aquí y
+  // no a base de fallar partidas.
   els.introCats.innerHTML = CATEGORIAS.map((cat) => {
     const color = COLORES[cat];
-    return `<span class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-      style="background:${color}1f;color:${color}">
-      ${iconoHTML(cat, { clase: 'h-3.5 w-3.5 shrink-0', color, grosor: 1.8 })}${ETIQUETAS[cat]}</span>`;
+    const { luz, medio, hondo } = ESFERA[cat];
+    return `<span class="glass flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left sm:gap-3 sm:px-3.5 sm:py-3">
+      <span class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9"
+            style="background:radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%);
+                   box-shadow:0 6px 16px -6px ${medio}88">
+        ${iconoHTML(cat, { clase: 'h-[18px] w-[18px]', color: hondo, grosor: 1.9 })}
+      </span>
+      <span class="text-[13px] font-semibold leading-tight sm:text-sm" style="color:${color}">${ETIQUETAS[cat]}</span>
+    </span>`;
   }).join('');
 }
 
@@ -1407,6 +1420,9 @@ els.answers.addEventListener('click', (e) => {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => {
     if (!els.trivial.classList.contains('hidden')) pintaBurbujas();
+    // la portada también mide su contenedor, y ahora ese contenedor es la
+    // ventana entera
+    if (!els.intro.classList.contains('hidden')) pintaIntro();
   });
 }
 
@@ -1451,4 +1467,7 @@ pintaIntro();
 
 // Prepara la primera ronda por detrás: al cerrar la intro el tablero ya está listo
 startGame();
-els.play.focus();
+// Con `preventScroll` no se desplaza la portada al enfocar. Sin él, el
+// navegador llevaba el botón a la vista y empujaba el título fuera de la
+// pantalla en cuanto la vista no cabía entera.
+els.play.focus({ preventScroll: true });

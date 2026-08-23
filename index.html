@@ -25,6 +25,19 @@
        direcciones y deja parte de la interfaz fuera de pantalla. La primera
        declaración queda de reserva para navegadores sin dvh. */
     .alto-ventana { min-height: 100vh; min-height: 100dvh; }
+    /* Centrado que no se come el principio. Con `justify-content: center`, si el
+       contenido no cabe se desborda por ARRIBA y no hay manera de llegar a él:
+       en un portátil bajo el título quedaba fuera de la pantalla. La palabra
+       clave `safe` deja de centrar en cuanto hay desbordamiento y alinea al
+       principio. Se declara dos veces para los navegadores que no la conozcan. */
+    .centro-seguro { justify-content: center; justify-content: safe center; }
+    /* En una pantalla baja —un portátil de 13" o un móvil apaisado— la portada
+       se queda sin sitio y el botón cae por debajo del borde. Se aprieta el
+       ritmo vertical en vez de obligar a desplazar para empezar a jugar. */
+    @media (min-width: 640px) and (max-height: 820px) {
+      #intro .centro-seguro { gap: 1.75rem; padding-top: 2rem; padding-bottom: 2rem; }
+      #intro h2 { font-size: clamp(3rem, 8vw, 5.5rem) !important; }
+    }
     .display { font-family: var(--sf); font-weight: 700; letter-spacing: -.022em; }
     .tight { letter-spacing: -.015em; }
 
@@ -168,6 +181,12 @@
 
     @keyframes aparecer { from { opacity: 0; transform: translateY(16px) scale(.97); } }
     .aparece { animation: aparecer .5s cubic-bezier(.2,.8,.2,1) both; }
+    /* La portada entra por partes, de arriba abajo: se lee en el orden en que
+       aparece en vez de caer todo de golpe. */
+    #intro .aparece:nth-child(2) { animation-delay: .06s; }
+    #intro .aparece:nth-child(3) { animation-delay: .16s; }
+    #intro .aparece:nth-child(4) { animation-delay: .26s; }
+    #intro .aparece:nth-child(5) { animation-delay: .36s; }
     @keyframes askIn { from { opacity: 0; transform: translateY(-8px); } }
     .ask-in { animation: askIn .45s cubic-bezier(.2,.8,.2,1) both; }
     @keyframes cardIn { from { opacity: 0; transform: translateY(22px) scale(.96); } }
@@ -207,7 +226,7 @@
       /* Make the main sections scroll internally if needed */
       #burbujas, #board, #cards { max-height: calc(100dvh - 120px); overflow: auto; }
       /* Modals fit inside viewport */
-      #intro .glass-fuerte, #gameover .glass-fuerte { max-height: 92dvh; overflow: auto; }
+      #gameover .glass-fuerte { max-height: 92dvh; overflow: auto; }
       /* Slightly reduce paddings to gain vertical space */
       #app { padding-top: 8px; padding-bottom: 8px; }
       header { padding-top: 4px; padding-bottom: 4px; }
@@ -293,45 +312,60 @@
       </div>
     </main>
 
-    <!-- Pantalla previa -->
-    <div id="intro" class="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 backdrop-blur-2xl">
-      <div class="relative w-full max-w-lg">
-        <!-- resplandor de color detrás de la tarjeta -->
-        <div class="pointer-events-none absolute -inset-8 -z-10 opacity-70 blur-3xl"
-             style="background:radial-gradient(50% 50% at 30% 20%, rgba(244,155,221,.35), transparent 70%),
-                    radial-gradient(50% 50% at 75% 75%, rgba(127,227,224,.30), transparent 70%)"></div>
+    <!-- Pantalla previa: vista completa, no un aviso superpuesto -->
+    <div id="intro" class="alto-ventana fixed inset-0 z-40 overflow-y-auto" style="background:#08080b">
+      <div class="pointer-events-none fixed inset-0"
+           style="background-image:url('imgs/bg_game.webp');background-size:cover;
+                  background-position:center;opacity:.28"></div>
+      <!-- El campo de esferas ocupa la pantalla entera: lo primero que se ve es
+           el mundo del juego en reposo. Va detrás y no recibe pulsaciones. -->
+      <div id="intro-burbujas" class="pointer-events-none fixed inset-0 overflow-hidden"></div>
+      <!-- velo para que el texto se lea por encima de las esferas -->
+      <div class="pointer-events-none fixed inset-0"
+           style="background:radial-gradient(95% 62% at 50% 44%, rgba(8,8,11,.86) 0%, rgba(8,8,11,.55) 55%, rgba(8,8,11,.12) 100%)"></div>
 
-        <div class="glass-fuerte aparece overflow-hidden rounded-[36px] shadow-2xl">
-          <!-- Esferas flotando: lo primero que se ve es de qué va el juego -->
-          <div id="intro-burbujas" class="relative h-36 w-full overflow-hidden sm:h-40"></div>
+      <div class="centro-seguro relative flex min-h-full flex-col items-center gap-6 px-5 py-8 text-center sm:gap-12 sm:px-8 sm:py-14">
+        <header class="aparece">
+          <h2 class="display leading-[.88]" style="font-size:clamp(3.4rem,12vw,8rem)">Billions</h2>
+          <p class="mt-3 font-medium text-white/55" style="font-size:clamp(1rem,2.6vw,1.6rem)">
+            ¿Cuánto sabes de cine?
+          </p>
+        </header>
 
-          <div class="px-7 pb-8 pt-1 text-center sm:px-9">
-            <h2 class="display text-[42px] leading-none sm:text-5xl">Billions</h2>
-            <p class="mt-2 text-sm text-white/50">¿Cuánto sabes de cine?</p>
+        <!-- Las ocho temáticas con su esfera: el color se aprende aquí, no jugando -->
+        <div id="intro-cats" class="aparece grid w-full max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"></div>
 
-            <!-- Las siete temáticas, con su color y su icono -->
-            <div id="intro-cats" class="mt-6 flex flex-wrap items-center justify-center gap-1.5"></div>
+        <ol class="aparece grid w-full max-w-5xl gap-4 text-left sm:grid-cols-3 sm:gap-10">
+          <li class="flex items-start gap-4 sm:flex-col sm:items-center sm:gap-3 sm:text-center">
+            <span class="display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-base text-white/70 sm:h-11 sm:w-11 sm:text-lg">1</span>
+            <span class="text-white/80" style="font-size:clamp(1rem,1.7vw,1.25rem);line-height:1.45">
+              <b class="font-semibold text-white">Pulsa la burbuja que quieras.</b>
+              Su color y su foto dicen de qué va.
+            </span>
+          </li>
+          <li class="flex items-start gap-4 sm:flex-col sm:items-center sm:gap-3 sm:text-center">
+            <span class="display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-base text-white/70 sm:h-11 sm:w-11 sm:text-lg">2</span>
+            <span class="text-white/80" style="font-size:clamp(1rem,1.7vw,1.25rem);line-height:1.45">
+              <b class="font-semibold text-white">Tienes 10 segundos.</b>
+              Cuanto antes respondas, más puntos.
+            </span>
+          </li>
+          <li class="flex items-start gap-4 sm:flex-col sm:items-center sm:gap-3 sm:text-center">
+            <span class="display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-base text-white/70 sm:h-11 sm:w-11 sm:text-lg">3</span>
+            <span class="text-white/80" style="font-size:clamp(1rem,1.7vw,1.25rem);line-height:1.45">
+              <b class="font-semibold text-white">Acertar la revienta.</b>
+              Gana quien reviente las veinte; al tercer fallo pierdes.
+            </span>
+          </li>
+        </ol>
 
-            <ol class="mx-auto mt-7 max-w-sm space-y-3.5 text-left text-[15px] leading-snug text-white/75">
-              <li class="flex items-start gap-3.5">
-                <span class="display mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
-                <span>Pulsa la burbuja que quieras: su color y su foto dicen de qué va.</span>
-              </li>
-              <li class="flex items-start gap-3.5">
-                <span class="display mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">2</span>
-                <span>Tienes <b class="text-white">10 segundos</b>: cuanto antes respondas, más puntos.</span>
-              </li>
-              <li class="flex items-start gap-3.5">
-                <span class="display mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs">3</span>
-                <span>Acertar apaga la burbuja. Gana quien las apague todas; <b class="text-white">al tercer fallo pierdes</b>.</span>
-              </li>
-            </ol>
-
-            <button id="play" class="foco mt-8 w-full rounded-2xl bg-white px-5 py-4 text-[15px] font-semibold text-black shadow-lg shadow-black/40">
-              Empezar a jugar
-            </button>
-            <p id="intro-best" class="mt-3 h-4 text-xs text-white/40"></p>
-          </div>
+        <div class="aparece flex flex-col items-center gap-4">
+          <button id="play"
+                  class="foco rounded-full bg-white px-12 py-4 font-semibold text-black sm:px-14 sm:py-5 shadow-[0_20px_60px_-15px_rgba(255,255,255,.45)]"
+                  style="font-size:clamp(1.05rem,1.9vw,1.35rem)">
+            Empezar a jugar
+          </button>
+          <p id="intro-best" class="h-5 text-sm text-white/40"></p>
         </div>
       </div>
     </div>
@@ -359,6 +393,6 @@
   <script src="actors.js?v=cd0f29e3" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="main.js?v=8ec66770" defer></script>
+  <script src="main.js?v=8118cf9d" defer></script>
 </body>
 </html>
