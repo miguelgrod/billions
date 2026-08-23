@@ -11,9 +11,16 @@ import argparse, json, os, re, sys, time, urllib.parse, urllib.request
 UA = 'BillionsQuiz/1.0 (juego personal; bonitu@garciarodriguez.net)'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WIKI = 'https://en.wikipedia.org/w/api.php?'
-# Las películas clásicas del listado vienen con título en español, así que se
-# busca primero en la Wikipedia en español y se cae a la inglesa.
-WIKIS = ('es', 'en')
+# La ficha INGLESA es la que guarda el cartel de estreno; la española lleva
+# muchas veces el logotipo de la película, y su buscador se va con facilidad a
+# otra de nombre parecido (La La Land -> Passengers). Así que se busca primero
+# en inglés —que encuentra igual de bien las clásicas aunque el título del
+# catálogo venga traducido— y sólo se cae al español si allí no hay nada.
+WIKIS = ('en', 'es')
+# Un cartel es más alto que ancho. Un logotipo va de 2:1 a 10:1, así que este
+# tope lo descarta solo. Los siete «quad» británicos apaisados son de la lista
+# antigua y ya están descargados.
+MAX_RATIO = 0.95
 FRANQUICIA = re.compile(r'trilog|saga|franquic|serie de pel|series\)|^anexo:|^list of|colecci', re.I)
 
 

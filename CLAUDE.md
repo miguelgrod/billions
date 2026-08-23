@@ -40,6 +40,7 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 | `*/\_report.json` | Qué foto se asignó a cada persona, cuáles fueron por vía indirecta y cuáles quedaron en duda |
 | `tools/build-data.py` | Regenera `movies.js` cruzando los dos Excel |
 | `tools/fetch-posters.py` | Descarga las carátulas. Dos fuentes: Wikipedia (sin clave) o TMDB (con clave) |
+| `tools/repara-caratulas.py` | Rehace las carátulas que no son carátulas: vuelve a resolverlas en la Wikipedia inglesa y rechaza lo que no tenga forma de cartel |
 | `tools/fetch-people.py` | Saca del Excel los directores o los actores y descarga sus fotos (`--role`) |
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
@@ -226,10 +227,26 @@ eso *El Padrino* y compañía no aparecían nunca.
   con 5 M y dos con 25 M). `rondaTaquilla()` descarta explícitamente los pares
   con la misma cifra: un duelo empatado no tendría respuesta correcta, y la
   horquilla de dificultad se afloja lo suficiente como para admitirlos.
-- Las carátulas de las clásicas se buscan **primero en la Wikipedia en español**,
-  porque vienen con el título traducido; se valida que el año aparezca en el
+- Las carátulas se buscan **primero en la Wikipedia en inglés**, que es la que
+  guarda el cartel de estreno en la ficha. Se valida que el año aparezca en el
   artículo y se descartan las páginas de saga, que si no *El Padrino* y su
   segunda parte acababan las dos en «Trilogía de El padrino».
+- **Buscar primero en español fue un error caro y no hay que repetirlo.** Se
+  hizo al ampliar el catálogo, pensando que las clásicas vienen con el título
+  traducido, y estropeó 61 de las 91 nuevas:
+  - **La ficha española lleva muchas veces el logotipo, no el cartel**: salieron
+    33 rótulos apaisados (*Blade Runner* a 300×29, *Whiplash*, *Moonlight*,
+    *El Padrino*…). El juego los pintaba como una franja en medio de la tarjeta.
+  - **Su buscador se va a otra película de nombre parecido**: *La La Land* acabó
+    con el cartel de *Passengers*, *Nomadland* con el de *One Night in Miami*,
+    *American Beauty* con el logo de *La Bella y la Bestia* y *Hasta que llegó
+    su hora* con el de *Érase una vez en América*. Ninguna de esas la cazaba la
+    validación del año.
+  - La inglesa encuentra igual de bien las clásicas aunque el título del
+    catálogo venga traducido: resolvió las 61 sin fallar una.
+  - `tools/repara-caratulas.py` es lo que las rehízo, y **sólo acepta la imagen
+    si es más alta que ancha** (`MAX_RATIO`). Es la comprobación que faltaba: un
+    logotipo va de 2:1 a 10:1 y se cae solo.
 
 ## Los siete tipos de ronda
 
@@ -413,7 +430,9 @@ resolución hay que usar TMDB (`w500`, `w780`, `original`), que da unos 2000 px 
 necesita una clave gratuita de la API v3. El backend ya está escrito.
 
 Siete carátulas son apaisadas (los "quad" británicos de Harry Potter, Skyfall y
-Spectre): son las auténticas de Wikipedia, y la tarjeta las recorta. TMDB usa
+Spectre): son las auténticas de Wikipedia, y la tarjeta las recorta. **Son las
+únicas siete que pueden serlo**: cualquier otra apaisada es un logotipo colado, y
+un `sips -g pixelWidth -g pixelHeight posters/*.jpg` lo destapa en un segundo. TMDB usa
 siempre el formato vertical.
 
 Las imágenes tienen copyright de sus estudios y están a título ilustrativo, con
