@@ -179,6 +179,15 @@
     @keyframes fundido { from { opacity: 0; } to { opacity: 1; } }
     .fundido { animation: fundido 1s ease-out both; }
 
+    /* Paso de la portada al juego: se desvanece y se acerca un punto, como si
+       se entrara en el tablero. El campo ya está detrás, así que el cruce entre
+       las dos pantallas sale gratis. */
+    @keyframes introFuera {
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(1.04); }
+    }
+    .intro-fuera { animation: introFuera 1.5s cubic-bezier(.4,0,.2,1) both; }
+
     @keyframes aparecer { from { opacity: 0; transform: translateY(16px) scale(.97); } }
     .aparece { animation: aparecer .5s cubic-bezier(.2,.8,.2,1) both; }
     /* La portada entra por partes, de arriba abajo: se lee en el orden en que
@@ -215,6 +224,9 @@
     @media (prefers-reduced-motion: reduce) {
       .deriva-x, .deriva-y, .esfera-elegida, .aparece, .ask-in, .card-in, .card-out,
       .score-bump, .life-out, .shake, .pop { animation: none; }
+      /* sin animación el fundido no se ve: se apaga de golpe en vez de dejar la
+         portada 1,5 s tapando el juego sin que pase nada */
+      .intro-fuera { animation: none; opacity: 0; }
       /* sin animación no hay quien la haga desaparecer: se apaga y ya */
       .revienta { animation: none; opacity: 0; }
       .foco { transition: none; }
@@ -393,6 +405,6 @@
   <script src="actors.js?v=cd0f29e3" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="main.js?v=8118cf9d" defer></script>
+  <script src="main.js?v=d9ac259b" defer></script>
 </body>
 </html>

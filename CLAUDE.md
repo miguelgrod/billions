@@ -245,6 +245,17 @@ vaciarlo y se pierde al tercer fallo.
   el contenido no cabe se desborda por arriba y **no hay manera de llegar a él**:
   en un portátil bajo el título quedaba fuera de la pantalla. `safe` deja de
   centrar en cuanto hay desbordamiento.
+- **De la portada al juego se pasa con un fundido de `SALIDA_INTRO_MS` (1,5 s).**
+  La portada se desvanece y se acerca un punto, como si se entrara en el
+  tablero. **El cruce sale gratis**: el campo ya está pintado por detrás desde
+  que carga la página, así que basta con desvanecer lo de delante.
+  - **La portada sigue capturando pulsaciones mientras se va** (nada de
+    `pointer-events: none`): si no, se podría elegir una burbuja a través de ella
+    y abrir una pregunta con la portada todavía a medio desaparecer.
+  - **`state.saliendoIntro` evita encadenar dos fundidos**: al botón y a la tecla
+    se puede llamar dos veces seguidas.
+  - Aquí no hay reloj que arrancar —sólo corre durante una pregunta—, así que el
+    fundido no le quita tiempo a nadie.
 - **El botón se enfoca con `preventScroll`.** Sin eso, el navegador lo llevaba a
   la vista al cargar y empujaba el título fuera de la pantalla — 57 px de
   desplazamiento que parecían un fallo de maquetación y no lo eran.

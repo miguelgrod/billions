@@ -84,6 +84,7 @@ const ESFERA = {
   critica:     { luz: '#DBFFFF', medio: '#9AF4F1', hondo: '#64C4C4' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
+const SALIDA_INTRO_MS = 1500;  // la portada se desvanece y descubre el campo
 
 // Un icono por categoría, dibujado a trazo sobre una rejilla de 24. Va dentro de
 // la esfera a muy poca opacidad: se lee como un relieve, no como un adorno.
@@ -174,6 +175,8 @@ const state = {
   campo: [],            // posición, tamaño y categoría de cada burbuja
   completadas: new Set(),   // burbujas ya acertadas: salen del campo
   actual: null,         // burbuja elegida por el jugador
+  saliendoIntro: false, // la portada se está desvaneciendo
+  timerIntro: null,
   reciente: null,       // la recién acertada, que se pinta una vez para reventar
   burbujaTimer: null,   // repintado del campo cuando la acertada acaba de irse
 
@@ -1431,8 +1434,21 @@ els.restart.addEventListener('click', startGame);
 const introVisible = () => !els.intro.classList.contains('hidden');
 
 function closeIntro() {
-  els.intro.classList.add('hidden');
-  els.intro.classList.remove('flex');
+  // Dos vías llegan aquí —el botón y la tecla—, y sin la bandera se podía
+  // encadenar el fundido dos veces.
+  if (state.saliendoIntro) return;
+  state.saliendoIntro = true;
+  // El campo ya está pintado por detrás: basta con desvanecer la portada para
+  // que el paso se vea como un cruce entre las dos, sin pantalla intermedia.
+  els.intro.classList.add('intro-fuera');
+  // La portada sigue capturando pulsaciones mientras se va: si no, se podría
+  // elegir una burbuja a través de ella y abrir una pregunta con la portada
+  // todavía a medio desaparecer.
+  state.timerIntro = setTimeout(() => {
+    els.intro.classList.add('hidden');
+    els.intro.classList.remove('intro-fuera');
+    state.saliendoIntro = false;
+  }, SALIDA_INTRO_MS);
   // El reloj sólo corre durante una pregunta; aquí lo que aparece es el campo.
 }
 
