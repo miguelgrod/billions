@@ -18,7 +18,12 @@ const STAGGER_MS = 70;     // desfase entre tarjetas al entrar
 // En taquilla es el ratio entre recaudaciones (2.0 = una dobla a la otra);
 // en estrenos, los años de diferencia. Ambas empiezan holgadas y se estrechan.
 const RATIO_INICIAL = 2.0, RATIO_SUELO = 1.12, RATIO_CAIDA = 0.85, BANDA = 1.45;
-const ANIOS_INICIAL = 18, ANIOS_SUELO = 2, ANIOS_CAIDA = 0.88;
+// En estrenos, la diferencia de años NUNCA pasa de ANIOS_MAX. Preguntar si se
+// estrenó antes una de 1950 o una de 1995 no mide saber de cine: la gracia está
+// en distinguir estrenos próximos, no lejanos. Aquí el número es el máximo
+// admisible y baja con el nivel; en taquilla y en crítica el ratio y la nota
+// funcionan igual.
+const ANIOS_MAX = 5, ANIOS_SUELO = 1, ANIOS_CAIDA = 0.89;
 
 // Al elegir un "intruso" (director o actor que no es de la película) se coge de
 // una película lejana en el tiempo: no tenemos el reparto completo, sólo cinco
@@ -212,16 +217,19 @@ function bandaRatio(level) {
   return [lo, lo * BANDA];
 }
 
-// Diferencia de nota exigida: empieza holgada y se estrecha hasta dos décimas
-const NOTA_INICIAL = 1.4, NOTA_SUELO = 0.2, NOTA_CAIDA = 0.86;
+// Diferencia de nota admisible: como mucho punto y medio, y estrechándose hasta
+// un par de décimas. Punto y medio ya es un abismo en FilmAffinity, donde el
+// catálogo entero cabe entre el 4,8 y el 9.
+const NOTA_MAX = 1.5, NOTA_SUELO = 0.2, NOTA_CAIDA = 0.86;
 
 function huecoNota(level) {
-  return NOTA_SUELO + (NOTA_INICIAL - NOTA_SUELO) * Math.pow(NOTA_CAIDA, level - 1);
+  return NOTA_SUELO + (NOTA_MAX - NOTA_SUELO) * Math.pow(NOTA_CAIDA, level - 1);
 }
 
+// Diferencia de años admisible: cinco al principio, uno al final.
 function huecoAnios(level) {
   return Math.max(ANIOS_SUELO,
-    Math.round(ANIOS_SUELO + (ANIOS_INICIAL - ANIOS_SUELO) * Math.pow(ANIOS_CAIDA, level - 1)));
+    Math.round(ANIOS_SUELO + (ANIOS_MAX - ANIOS_SUELO) * Math.pow(ANIOS_CAIDA, level - 1)));
 }
 
 // Los nombres propios van resaltados dentro del enunciado: la pregunta dice de
@@ -273,13 +281,19 @@ function rondaTaquilla(level) {
 
 // ---- Estrenos: ¿cuál se estrenó antes? ----
 function rondaAnio(level) {
-  const hueco = huecoAnios(level);
+  // El máximo manda: la pareja nunca se separa más de lo que diga el nivel, y
+  // el nivel nunca pasa de ANIOS_MAX. El mínimo va pegado al máximo para que un
+  // nivel bajo no suelte por sorpresa un duelo de un año, que es el difícil.
+  const maximo = huecoAnios(level);
+  const minimo = Math.max(1, maximo - 1);
   const pool = frescas(PELIS);
   for (let i = 0; i < 40; i++) {
     const a = pick(pool);
     const rivales = pool.filter((b) => {
+      // `minimo` nunca baja de 1, así que el empate a año queda descartado: un
+      // duelo de estreno empatado no tendría respuesta correcta
       const d = Math.abs(a.y - b.y);
-      return d > 0 && d >= hueco && d <= hueco * 2.2;
+      return d >= minimo && d <= maximo;
     });
     if (rivales.length) {
       const b = pick(rivales);
@@ -385,13 +399,16 @@ function rondaOscar() {
 
 // ---- Crítica: ¿cuál tiene mejor nota en FilmAffinity? ----
 function rondaCritica(level) {
-  const hueco = huecoNota(level);
+  const maximo = huecoNota(level);
+  const minimo = Math.max(0.1, maximo * 0.55);
   const pool = frescas(CON_NOTA);
   for (let i = 0; i < 40; i++) {
     const a = pick(pool);
     const rivales = pool.filter((b) => {
-      const d = Math.abs(a.fa - b.fa);
-      return d >= hueco && d <= hueco * 2.6;
+      // la resta de dos notas de una decimal arrastra ruido binario (8.1 - 7.2
+      // da 0.8999…), y sin redondear la comparación con la banda falla por poco
+      const d = Math.round(Math.abs(a.fa - b.fa) * 10) / 10;
+      return d >= minimo && d <= maximo;
     });
     if (rivales.length) {
       const b = pick(rivales);

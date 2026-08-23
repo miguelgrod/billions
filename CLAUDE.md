@@ -286,9 +286,31 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
 - **Ritmo:** `REVEAL_MS` (2800 ms tras acertar) y `GAMEOVER_MS` (3200 ms tras
   fallar) al principio de `main.js`. Son el tiempo para leer las cifras; se
   tocan a menudo, están como constantes con nombre por eso.
+- **Ningún duelo enfrenta cosas muy dispares.** Los tres tipos de duelo tienen
+  un tope, y lo que baja con el nivel es ese tope, no un mínimo:
+  - **Estrenos: nunca más de `ANIOS_MAX` (5) años de diferencia**, de 5 en el
+    nivel 1 a 1 en el 20. Antes iban de 18 a 2 años, con una mediana de 26 y
+    máximos de 39: preguntar si se estrenó antes una de 1950 o una de 1995 no
+    mide saber de cine. La gracia está en distinguir estrenos próximos.
+  - **Crítica: nunca más de `NOTA_MAX` (1,5) puntos**, de 1,5 a 0,2. Antes
+    llegaba a 3,6, y el catálogo entero cabe entre el 4,8 y el 9.
+  - **Taquilla: como mucho unas 2,9 veces** en el nivel 1 —eso ya lo hacía la
+    banda de ratio— bajando a 1,7. Ahí no había nada que arreglar.
+  - El mínimo va pegado al máximo (un año menos, o el 55 % de la nota) para que
+    un nivel bajo no suelte por sorpresa el duelo más difícil de todos.
+  - **El mínimo de años nunca baja de 1**, que es lo que descarta el empate de
+    año: un duelo de estreno empatado no tendría respuesta correcta.
+  - **La diferencia de notas se redondea a una decimal antes de comparar**: la
+    resta de dos notas de una decimal arrastra ruido binario (8,1 − 7,2 da
+    0,8999…) y la comparación con la banda fallaba por poco.
+  - Comprobado con 100.000 rondas repartidas en 5.000 partidas completas:
+    ninguna burbuja se queda sin pregunta de su categoría. **Es el riesgo de
+    apretar estas bandas**: si un generador no encuentra pareja, `nuevaRonda()`
+    acaba cayendo en `rondaTaquilla()` y el jugador pulsa Estrenos y recibe otra
+    cosa. Si estrechas más los márgenes, vuelve a medirlo.
 - **Dificultad progresiva (sólo en los duelos, no en los sí/no):** en taquilla la marca lo
   parecidas que son las dos recaudaciones; en estrenos, los años de diferencia
-  (`huecoAnios()`, de 18 años a 2). En las de sí/no lo que sube con el nivel es
+  (`huecoAnios()`, de 5 años a 1). En las de sí/no lo que sube con el nivel es
   lo plausible que es el intruso. Sobre la taquilla:
   medido como ratio entre ellas (2.0 = la ganadora dobla a la otra; 1.05 = moneda
   al aire). `banda(level)` devuelve la horquilla admisible del nivel, que parte de
