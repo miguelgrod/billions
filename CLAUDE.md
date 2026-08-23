@@ -1,7 +1,8 @@
 # Billions — juego de taquilla
 
 Quiz web de cine: veinte **burbujas** repartidas por la pantalla, cada una de un
-tipo de pregunta —taquilla, estrenos, directores, repartos u Óscars—. Un sorteo
+tipo de pregunta —taquilla, estrenos, directores, repartos, crítica, filmografía
+u Óscars—. Un sorteo
 las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
 revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
@@ -45,6 +46,9 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
 | `top_peliculas_taquilla_y_critica.xlsx` | Datos ampliados: 189 películas con director, nota de FilmAffinity, Óscars y 5 actores. **`movies.js` no sale de aquí todavía** |
+| `top_50_actores_numero_peliculas.xlsx` | Los 50 actores con más largometrajes rodados. Origen de `actores.js` |
+| `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `f` archivo en `actors/` |
+| `tools/build-actores.py` | Regenera `actores.js` y descarga las fotos que falten |
 
 ## Invariantes que no hay que romper
 
@@ -68,9 +72,15 @@ vaciarlo y se pierde al tercer fallo.
 - **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
   y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
   a diferencia de sortear posiciones libres, no se amontonan.
-- **20 burbujas.** Entre siete categorías no reparten exacto: seis salen tres
-  veces y una, dos. **La que se queda corta se sortea en cada partida**, para que
-  no sea siempre la misma la que aparece menos.
+- **20 burbujas.** Entre ocho categorías no reparten exacto: cada una sale dos
+  veces y cuatro salen una tercera. **Las agraciadas se sortean en cada partida**,
+  para que no sean siempre las mismas las que aparecen más.
+  - **El reparto se hace a mano, no quitando sobrantes al azar**: quitando al
+    azar podían caer las tres quitadas sobre la misma categoría y dejarla sin
+    ninguna burbuja en el campo.
+  - **Sólo entran las categorías que de verdad pueden preguntar** (`hay()`). Si
+    un archivo de datos no llegara a cargar, su categoría se queda fuera en vez
+    de dar una burbuja que al pulsarla suelta la pregunta de otra.
 - **La rejilla se pone de pie en pantalla estrecha**: 4×5 por debajo de 640 px y
   5×4 por encima. Un móvil vertical no tiene sitio para cinco columnas de
   burbujas grandes.
@@ -165,11 +175,13 @@ vaciarlo y se pierde al tercer fallo.
   hay hover, ese papel lo cumple el rótulo al elegir.
 - **Los iconos de categoría** (`ICONOS`) viven ya sólo en el rótulo. En el fondo
   de las burbujas van fotos, no iconos.
-- **La paleta de las burbujas son pasteles del rosa al azul cielo**, la gama de
-  la referencia que pasó Miguel. Los cinco tonos están repartidos por igual
-  (199°–316°, con saltos de 24° a 38°): ese paso regular es lo que los mantiene
-  distinguibles siendo todos de la misma familia. Si se añade una categoría, hay
-  que volver a repartir, no encajarla en un hueco.
+- **La paleta de las burbujas son pasteles del rosa al turquesa**, la gama de
+  la referencia que pasó Miguel. Los ocho tonos están repartidos por igual
+  (178°–343°, en pasos de 23,6°): ese paso regular es lo que los mantiene
+  distinguibles siendo todos de la misma familia. **Si se añade una categoría hay
+  que volver a repartir la rampa entera, no encajarla en un hueco.** Al entrar
+  Filmografía se hizo así: meterla en el hueco más ancho la habría dejado a 18°
+  de sus dos vecinas, menos separación de la que ya había entre las demás.
 - **Los números van en blanco, no en un color de acento.** El color vive en las
   burbujas; un acento naranja al lado de estos pasteles desentonaba. El verde,
   el naranja y el rojo se reservan para lo semántico: acierto, fallo y tiempo. Las pequeñas llevan un desenfoque leve que da
@@ -259,7 +271,18 @@ eso *El Padrino* y compañía no aparecían nunca.
 | `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 98 |
 | `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
 | `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 27 |
+| `filmografia` | ¿Quién ha rodado más películas, *X* o *Y*? | Elegir tarjeta | 50 actores |
 
+- **`filmografia` no juega con películas, sino con personas.** Su depósito es
+  `actores.js` (los 50 con más largometrajes rodados, de Samuel L. Jackson con
+  152 a Timothée Chalamet con 20), y por eso su ronda **no declara `pelis`**:
+  `state.vistas` guarda identificadores de película y ahí no encajan.
+- **`FILMO_MINIMO` (10 películas) no es un ajuste de dificultad, es honradez con
+  la fuente.** El propio Excel avisa de que los recuentos bailan ±5-10 según lo
+  que se cuente como largometraje, así que un duelo de 55 contra 60 no lo
+  decidiría el jugador sino el criterio de quien contó. De paso descarta los
+  empates, que son muchos: **siete actores empatan a 55 películas y cinco a 60**.
+  Es el mismo problema que las recaudaciones repetidas, y la misma solución.
 - **`oscarcat` tira de un depósito pequeño** (27 películas con desglose de
   premios, 18 categorías). Su umbral en `frescas()` está bajado a 6 por eso.
 - **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae

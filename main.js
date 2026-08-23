@@ -36,7 +36,8 @@ const HUECO_SEGURO = 12;
 // recorrido ni ficha ni dado: el jugador pulsa la burbuja que quiere y esa
 // plantea la pregunta de su categoría.
 const BURBUJAS = 20;
-const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat', 'critica'];
+const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat',
+                    'critica', 'filmografia'];
 // En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
 // filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
 const REJILLA_ANCHA = { columnas: 5, filas: 4 };
@@ -52,25 +53,30 @@ const VACIO_MS = 450;      // el campo vacío se ve un momento antes de celebrar
 // paradas —luz, color y sombra— para que tenga volumen sin necesidad de brillos
 // añadidos: es lo que hace que se lean como cuerpos y no como círculos planos.
 const COLORES = {
-  oscarcat: '#F49BB4',   // rosa
-  oscar:    '#F49BDD',   // magenta
-  taquilla: '#D49BF4',   // orquídea
-  director: '#AC9BF4',   // lila
-  actores:  '#9BB4F4',   // azul violáceo
-  anio:     '#7FCDF2',   // azul cielo
-  critica:  '#7FE3E0',   // turquesa
+  oscarcat:    '#F49AB3',   // rosa
+  oscar:       '#F49AD6',   // magenta
+  taquilla:    '#EE9AF4',   // orquídea
+  director:    '#CB9AF4',   // violeta
+  actores:     '#A79AF4',   // lila
+  filmografia: '#9AB0F4',   // azul violáceo
+  anio:        '#9AD3F4',   // azul cielo
+  critica:     '#9AF4F1',   // turquesa
 };
-// Cinco tonos repartidos por igual entre el rosa y el azul cielo: es la gama de
-// la referencia, y el paso regular de tono es lo que los mantiene distinguibles
-// pese a ser todos pasteles de la misma familia.
+// Ocho tonos repartidos por igual entre el turquesa y el rosa (178°-343°, en
+// pasos de 23,6°): es la gama de la referencia, y el paso regular de tono es lo
+// que los mantiene distinguibles pese a ser todos pasteles de la misma familia.
+// Al entrar Filmografía se volvió a repartir la rampa entera en vez de encajarla
+// en el hueco más ancho, que la habría dejado a 18° de sus dos vecinas —menos
+// separación de la que ya había entre las demás—.
 const ESFERA = {
-  oscarcat: { luz: '#FFDCE6', medio: '#F49BB4', hondo: '#C7658A' },
-  oscar:    { luz: '#FFDCF6', medio: '#F49BDD', hondo: '#C765B4' },
-  taquilla: { luz: '#F3DCFF', medio: '#D49BF4', hondo: '#9E63C4' },
-  director: { luz: '#E4DEFF', medio: '#AC9BF4', hondo: '#7565C9' },
-  actores:  { luz: '#DCE7FF', medio: '#9BB4F4', hondo: '#6480C9' },
-  anio:     { luz: '#D6F0FF', medio: '#7FCDF2', hondo: '#4A97C2' },
-  critica:  { luz: '#D6FBFA', medio: '#7FE3E0', hondo: '#3F9E9B' },
+  oscarcat:    { luz: '#FFDBE4', medio: '#F49AB3', hondo: '#C4647B' },
+  oscar:       { luz: '#FFDBF2', medio: '#F49AD6', hondo: '#C464A1' },
+  taquilla:    { luz: '#FEDBFF', medio: '#EE9AF4', hondo: '#C164C4' },
+  director:    { luz: '#F0DBFF', medio: '#CB9AF4', hondo: '#9B64C4' },
+  actores:     { luz: '#E2DBFF', medio: '#A79AF4', hondo: '#7564C4' },
+  filmografia: { luz: '#DBE3FF', medio: '#9AB0F4', hondo: '#6478C4' },
+  anio:        { luz: '#DBF1FF', medio: '#9AD3F4', hondo: '#649EC4' },
+  critica:     { luz: '#DBFFFF', medio: '#9AF4F1', hondo: '#64C4C4' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
 
@@ -96,6 +102,10 @@ const ICONOS = {
             '<path d="M8.5 9.6 6 3.5h4.4L12 7M15.5 9.6 18 3.5h-4.4"/>' +
             '<path d="m12 12 .9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
   critica:  '<path d="m12 3.5 2.7 5.6 6 .9-4.4 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.3 10l6-.9z"/>',
+  // una pila de películas: es un recuento, no una película suelta
+  filmografia: '<rect x="6.5" y="9" width="15" height="12" rx="2"/>' +
+               '<path d="M4.6 6.8h13.6M2.8 4.2h11.4"/>' +
+               '<path d="M10 12.4v5.2l4.4-2.6z"/>',
 };
 
 const iconoHTML = (cat, opts = {}) => `
@@ -197,6 +207,11 @@ const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
 const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
 const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
 const CATEGORIAS_OSCAR = [...new Set(CON_CATEGORIA.flatMap((m) => m.oc))];
+// Los cincuenta con más películas rodadas (actores.js). La foto la trae cada
+// uno consigo, así que aquí sólo hay que comprobar que venga.
+const TOP_ACTORES = (typeof ACTORES_TOP !== 'undefined' ? ACTORES_TOP : [])
+  .filter((a) => a.f && typeof a.p === 'number');
+const fotoActorTop = (a) => 'actors/' + a.f;
 const DIRECTORES = [...new Set(CON_DIRECTOR.flatMap((m) => m.d))];
 
 function reparto(m) {
@@ -217,10 +232,24 @@ function bandaRatio(level) {
   return [lo, lo * BANDA];
 }
 
+// Filmografía: cuántas películas ha rodado cada uno, medido como ratio igual
+// que la taquilla. El tope de 2.0 (2.9 con la banda) es el mismo criterio de no
+// enfrentar cosas dispares que rige en los demás duelos.
+const FILMO_INICIAL = 2.0, FILMO_SUELO = 1.3, FILMO_CAIDA = 0.87;
+// Y además una diferencia mínima en películas: el propio Excel avisa de que los
+// recuentos bailan ±5-10 según lo que se cuente como largometraje. Por debajo de
+// eso el duelo no lo decide el saber del jugador, sino el criterio de la fuente.
+const FILMO_MINIMO = 10;
+
 // Diferencia de nota admisible: como mucho punto y medio, y estrechándose hasta
 // un par de décimas. Punto y medio ya es un abismo en FilmAffinity, donde el
 // catálogo entero cabe entre el 4,8 y el 9.
 const NOTA_MAX = 1.5, NOTA_SUELO = 0.2, NOTA_CAIDA = 0.86;
+
+function bandaFilmo(level) {
+  const lo = FILMO_SUELO + (FILMO_INICIAL - FILMO_SUELO) * Math.pow(FILMO_CAIDA, level - 1);
+  return [lo, lo * BANDA];
+}
 
 function huecoNota(level) {
   return NOTA_SUELO + (NOTA_MAX - NOTA_SUELO) * Math.pow(NOTA_CAIDA, level - 1);
@@ -245,8 +274,8 @@ const cartaPeli = (m, opts = {}) => ({
   decimal: !!opts.decimal,
 });
 
-const cartaPersona = (nombre, foto, rol) => ({
-  img: foto, titulo: nombre, sub: rol, retrato: true,
+const cartaPersona = (nombre, foto, rol, valor, sufijo) => ({
+  img: foto, titulo: nombre, sub: rol, retrato: true, valor, sufijo,
 });
 
 // ---- Taquilla: ¿cuál recaudó más? ----
@@ -428,6 +457,39 @@ function rondaCritica(level) {
   return null;
 }
 
+// ---- Filmografía: ¿quién ha rodado más películas? ----
+function rondaFilmografia(level) {
+  const ratio = (a, b) => (a.p > b.p ? a.p / b.p : b.p / a.p);
+  const pool = TOP_ACTORES;
+  let [lo, hi] = bandaFilmo(level);
+  for (let i = 0; i < 40; i++) {
+    const a = pick(pool);
+    // Siete actores comparten las 55 películas y cinco las 60: un duelo
+    // empatado no tendría respuesta correcta, así que `FILMO_MINIMO` los
+    // descarta de paso.
+    const rivales = pool.filter((b) => b !== a
+      && Math.abs(b.p - a.p) >= FILMO_MINIMO
+      && ratio(a, b) >= lo && ratio(a, b) <= hi);
+    if (rivales.length) {
+      const b = pick(rivales);
+      const [x, y] = coin() ? [a, b] : [b, a];
+      return {
+        tipo: 'filmografia',
+        pregunta: `¿Quién ha rodado más películas, ${nom(x.n)} o ${nom(y.n)}?`,
+        modo: 'elige',
+        cartas: [cartaPersona(x.n, fotoActorTop(x), 'Intérprete', x.p, ' películas'),
+                 cartaPersona(y.n, fotoActorTop(y), 'Intérprete', y.p, ' películas')],
+        correcta: x.p > y.p ? 0 : 1,
+        // no lleva `pelis`: el depósito son personas, no películas, y `vistas`
+        // guarda identificadores de película
+        firma: `fi-${[x.n, y.n].sort().join('-')}`,
+      };
+    }
+    if (i % 8 === 7) { lo *= 0.94; hi *= 1.1; }
+  }
+  return null;
+}
+
 // ---- Categoría: ¿ganó el Óscar a tal cosa? ----
 function rondaCategoria() {
   const m = pick(frescas(CON_CATEGORIA, 6));
@@ -455,6 +517,7 @@ const TIPOS = [
   { id: 'oscar', peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
   { id: 'oscarcat', peso: 2, crea: rondaCategoria, hay: () => CON_CATEGORIA.length > 1 },
   { id: 'critica', peso: 2, crea: rondaCritica, hay: () => CON_NOTA.length > 1 },
+  { id: 'filmografia', peso: 2, crea: rondaFilmografia, hay: () => TOP_ACTORES.length > 1 },
 ];
 
 // `categoria` la impone la burbuja elegida; sin ella se sortea por peso
@@ -502,6 +565,7 @@ const ETIQUETAS = {
   oscar: 'Óscars',
   oscarcat: 'Categoría',
   critica: 'Crítica',
+  filmografia: 'Filmografía',
 };
 
 function cartaHTML(c, i, clicable, anchaEnMovil) {
@@ -533,7 +597,7 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
       <div class="relative flex flex-col items-center px-4 pb-5 pt-6">
         ${c.sub ? `<span class="mb-2 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur-sm">${c.sub}</span>` : ''}
         <span class="tight text-lg font-semibold leading-tight text-white lg:text-2xl">${c.titulo}</span>
-        <span class="js-valor display mt-2 h-7 text-lg leading-none text-white opacity-0 transition-opacity duration-300 lg:text-2xl"></span>
+        <span class="js-valor display mt-2 h-7 whitespace-nowrap text-lg leading-none text-white opacity-0 transition-opacity duration-300 lg:text-2xl"></span>
         ${clicable ? '<span class="mt-1 text-[11px] text-white/45 transition group-hover:text-white/80">Pulsa para elegir</span>' : ''}
       </div>
     </${etiqueta}>`;
@@ -583,15 +647,15 @@ function entradaTarjetas() {
 }
 
 // Cuenta ascendente hasta la cifra real
-function countUp(el, target, dinero, decimal) {
+function countUp(el, target, dinero, decimal, sufijo = '') {
   const start = performance.now();
   function frame(now) {
     const p = Math.min((now - start) / COUNT_MS, 1);
     const eased = 1 - Math.pow(1 - p, 3);
     const v = target * eased;
-    el.textContent = dinero ? fmtMoney(Math.round(v))
+    el.textContent = (dinero ? fmtMoney(Math.round(v))
       : decimal ? v.toFixed(1).replace('.', ',')
-      : String(Math.round(v));
+      : String(Math.round(v))) + sufijo;
     if (p < 1) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -620,7 +684,8 @@ function revelaCartas(r) {
     if (c.valor === undefined) return;
     const v = card.querySelector('.js-valor');
     v.classList.remove('opacity-0');
-    if (c.dinero || c.decimal || r.tipo === 'anio') countUp(v, c.valor, c.dinero, c.decimal);
+    if (c.dinero || c.decimal || r.tipo === 'anio' || r.tipo === 'filmografia')
+      countUp(v, c.valor, c.dinero, c.decimal, c.sufijo || '');
     else v.textContent = c.valor;
   });
 }
@@ -635,13 +700,14 @@ function pintaIntro() {
   // la misma receta que las del campo —foto debajo, velo de color encima y la
   // misma deriva de dos ejes—, así que la portada enseña la pieza de verdad.
   const reparto = [
-    { cat: 'oscarcat', x: 11, y: 62, d: 54, tx: 24, ty: 30, rx: 0,    ry: -5 },
-    { cat: 'taquilla', x: 27, y: 35, d: 74, tx: 31, ty: 25, rx: -7,   ry: -12 },
-    { cat: 'director', x: 43, y: 70, d: 44, tx: 27, ty: 34, rx: -3,   ry: -2 },
-    { cat: 'critica',  x: 58, y: 33, d: 64, tx: 35, ty: 28, rx: -14,  ry: -9 },
-    { cat: 'actores',  x: 74, y: 66, d: 50, tx: 22, ty: 32, rx: -9,   ry: -17 },
-    { cat: 'oscar',    x: 89, y: 37, d: 66, tx: 29, ty: 23, rx: -5,   ry: -6 },
-    { cat: 'anio',     x: 35, y: 20, d: 34, tx: 33, ty: 27, rx: -11,  ry: -14 },
+    { cat: 'oscarcat',    x:  9, y: 62, d: 50, tx: 24, ty: 30, rx: 0,    ry: -5 },
+    { cat: 'taquilla',    x: 24, y: 35, d: 70, tx: 31, ty: 25, rx: -7,   ry: -12 },
+    { cat: 'director',    x: 38, y: 71, d: 42, tx: 27, ty: 34, rx: -3,   ry: -2 },
+    { cat: 'critica',     x: 52, y: 33, d: 62, tx: 35, ty: 28, rx: -14,  ry: -9 },
+    { cat: 'filmografia', x: 66, y: 68, d: 46, tx: 26, ty: 36, rx: -18,  ry: -21 },
+    { cat: 'actores',     x: 78, y: 38, d: 38, tx: 22, ty: 32, rx: -9,   ry: -17 },
+    { cat: 'oscar',       x: 91, y: 64, d: 64, tx: 29, ty: 23, rx: -5,   ry: -6 },
+    { cat: 'anio',        x: 31, y: 19, d: 32, tx: 33, ty: 27, rx: -11,  ry: -14 },
   ];
   const usadas = new Set();
   els.introBurbujas.innerHTML = reparto.map((b) => {
@@ -649,7 +715,7 @@ function pintaIntro() {
     const img = imagenPara(b.cat, usadas);
     // la escala se deriva del diámetro para que el desenfoque de las pequeñas
     // dé la misma profundidad de campo que en el juego
-    const escala = b.d / 74;
+    const escala = b.d / 70;
     const desenfoque = Math.max(0, (1 - escala) * 3.2).toFixed(1);
     // La foto va debajo y el color encima con alfa: mismos valores que el campo.
     const velo = `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
@@ -691,7 +757,7 @@ function pintaIntro() {
 // del propio juego: un director para dirección, un actor para reparto, y
 // carátulas escogidas según el criterio de cada categoría.
 const ACTORES_EN_JUEGO = [...new Set(CON_REPARTO.flatMap(reparto))];
-const ES_PERSONA = new Set(['director', 'actores']);
+const ES_PERSONA = new Set(['director', 'actores', 'filmografia']);
 // Depósitos de imagen de fondo. Son amplios a propósito: con 4 burbujas de cada
 // categoría por partida, un depósito de 15 hace que se repitan las mismas
 // carátulas partida tras partida.
@@ -707,6 +773,7 @@ function imagenPara(cat, usadas) {
     director: () => directorPhoto(pick(DIRECTORES)),
     actores: () => actorPhoto(pick(ACTORES_EN_JUEGO)),
     oscar: () => posterOf(pick(PREMIADAS.length ? PREMIADAS : PELIS)),
+    filmografia: () => (TOP_ACTORES.length ? fotoActorTop(pick(TOP_ACTORES)) : null),
   };
   const dame = fuentes[cat] || fuentes.taquilla;
   // varios intentos para no repetir imagen en el mismo campo
@@ -721,13 +788,26 @@ function imagenPara(cat, usadas) {
 // azar. Se ve repartido por la pantalla y, a diferencia de sortear posiciones
 // libres, nunca se solapan.
 function reparteBurbujas() {
-  // Veinte burbujas entre siete categorías no reparten exacto: seis salen tres
-  // veces y una, dos. La que se queda corta se sortea en cada partida, así que
-  // no es siempre la misma la que aparece menos.
+  // Veinte burbujas entre ocho categorías no reparten exacto: cada una sale dos
+  // veces y cuatro salen una tercera. Las agraciadas se sortean en cada partida,
+  // así que no son siempre las mismas las que aparecen más.
+  // Se reparte a mano en vez de quitar sobrantes al azar: quitando al azar podía
+  // caer tres veces sobre la misma categoría y dejarla sin ninguna burbuja.
+  // Sólo las que de verdad pueden plantear pregunta: si un archivo de datos no
+  // llegara a cargar, su categoría se queda fuera del campo en vez de dar una
+  // burbuja que al pulsarla suelta la pregunta de otra.
+  const jugables = CATEGORIAS.filter((c) => {
+    const t = TIPOS.find((x) => x.id === c);
+    return t && t.hay();
+  });
+  const usables = jugables.length ? jugables : CATEGORIAS;
+  const base = Math.floor(BURBUJAS / usables.length);
+  const extra = BURBUJAS % usables.length;
   const cats = [];
-  CATEGORIAS.forEach((c) => cats.push(c, c, c));
-  cats.splice(rnd(cats.length), 1);
-  while (cats.length > BURBUJAS) cats.splice(rnd(cats.length), 1);
+  usables.forEach((c) => { for (let i = 0; i < base; i++) cats.push(c); });
+  const sobran = [...usables];
+  barajaEnSitio(sobran);
+  cats.push(...sobran.slice(0, extra));
   barajaEnSitio(cats);
 
   const campo = [];
@@ -1145,6 +1225,9 @@ function explicaDuelo(r) {
   }
   if (r.tipo === 'critica') {
     return `${gana.titulo} tiene un ${gana.valor.toFixed(1).replace('.', ',')} en FilmAffinity.`;
+  }
+  if (r.tipo === 'filmografia') {
+    return `${gana.titulo} ha rodado ${gana.valor} películas, ${Math.abs(a.valor - b.valor)} más.`;
   }
   return `${gana.titulo} se estrenó en ${gana.valor}.`;
 }
