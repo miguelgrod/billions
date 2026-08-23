@@ -236,6 +236,8 @@ const ANIOS_DE_ACTOR = (() => {
 const REPARTOS = [...ANIOS_DE_ACTOR.keys()];
 // Los cincuenta con más películas rodadas (actores.js). La foto la trae cada
 // uno consigo, así que aquí sólo hay que comprobar que venga.
+// La foto la trae cada uno consigo y tools/build-actores.py garantiza que el
+// archivo existe: aquí sólo se comprueba que venga el dato.
 const TOP_ACTORES = (typeof ACTORES_TOP !== 'undefined' ? ACTORES_TOP : [])
   .filter((a) => a.f && typeof a.p === 'number');
 const fotoActorTop = (a) => 'actors/' + a.f;
@@ -263,10 +265,14 @@ function bandaRatio(level) {
 // que la taquilla. El tope de 2.0 (2.9 con la banda) es el mismo criterio de no
 // enfrentar cosas dispares que rige en los demás duelos.
 const FILMO_INICIAL = 2.0, FILMO_SUELO = 1.3, FILMO_CAIDA = 0.87;
-// Y además una diferencia mínima en películas: el propio Excel avisa de que los
-// recuentos bailan ±5-10 según lo que se cuente como largometraje. Por debajo de
-// eso el duelo no lo decide el saber del jugador, sino el criterio de la fuente.
+// Y además una diferencia mínima en películas, porque los recuentos no son
+// exactos: el Excel marca cada cifra como verificada, estimada o provisional y
+// le asigna su margen (`tol`). El duelo exige que la diferencia supere la suma
+// de los dos márgenes; si no, no lo decidiría el jugador sino el criterio de la
+// fuente. Un provisional contra un verificado necesita 18 películas de hueco;
+// dos verificados, con 10 les basta.
 const FILMO_MINIMO = 10;
+const margen = (a, b) => Math.max(FILMO_MINIMO, (a.tol || 0) + (b.tol || 0));
 
 // Diferencia de nota admisible: como mucho punto y medio, y estrechándose hasta
 // un par de décimas. Punto y medio ya es un abismo en FilmAffinity, donde el
@@ -511,7 +517,7 @@ function rondaFilmografia(level) {
     // empatado no tendría respuesta correcta, así que `FILMO_MINIMO` los
     // descarta de paso.
     const rivales = pool.filter((b) => b !== a
-      && Math.abs(b.p - a.p) >= FILMO_MINIMO
+      && Math.abs(b.p - a.p) >= margen(a, b)
       && ratio(a, b) >= lo && ratio(a, b) <= hi);
     if (rivales.length) {
       const b = pick(rivales);

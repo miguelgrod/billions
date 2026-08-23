@@ -46,6 +46,35 @@ ROLES = {
 
 ICONOS = re.compile(r'\.svg$|commons-logo|edit-ltr|symbol|ambox|question_book', re.I)
 
+# Excepciones conocidas en las que el artículo bueno se llama de otra manera:
+# tres dúos con artículo conjunto y un seudónimo. Comprobadas a mano.
+ALIAS_OK = {
+    ('Anthony Russo', 'Russo brothers'), ('Joe Russo', 'Russo brothers'),
+    ('Daniel Kwan', 'Daniels (directors)'), ('Daniel Scheinert', 'Daniels (directors)'),
+    ('Anna Boden', 'Boden and Fleck'), ('Ryan Fleck', 'Boden and Fleck'),
+    ('Yu Yang', 'Jiaozi (director)'),
+}
+
+
+def _palabras(t):
+    t = re.sub(r'\s*\([^)]*\)', '', t or '')          # fuera "(actor)", "(director)"
+    t = unicodedata.normalize('NFKD', t).encode('ascii', 'ignore').decode().lower()
+    return [w for w in re.findall(r'[a-z]+', t) if len(w) > 1]
+
+
+def mismo_nombre(pedido, titulo):
+    """¿El artículo es de quien buscábamos, o de otro que también actúa?
+
+    Sin esto, la búsqueda de reserva se quedaba con el primer resultado que
+    hablara de cine, aunque fuera otra persona: 'Daniel Richter' acababa en
+    Andy Richter, 'Jack Benny' en Jack Nance y 'Peter Appel' en Andrea
+    Riseborough. Salían 26 caras equivocadas de 40 desambiguadas.
+    """
+    if (pedido, titulo) in ALIAS_OK:
+        return True
+    p, a = _palabras(pedido), set(_palabras(titulo))
+    return bool(p) and all(w in a for w in p)
+
 
 def api(params, tries=3):
     req = urllib.request.Request(API + urllib.parse.urlencode(params),
@@ -148,7 +177,8 @@ def desambigua(name, width, rol):
         for p in ((res.get('query') or {}).get('pages') or []):
             thumb = (p.get('thumbnail') or {}).get('source')
             extracto = p.get('extract', '')
-            if thumb and rol['valida'].search(extracto):
+            # que sea del gremio no basta: tiene que ser quien buscamos
+            if thumb and rol['valida'].search(extracto) and mismo_nombre(name, p['title']):
                 return thumb, extracto, p['title']
         time.sleep(0.2)
     return None, '', None

@@ -46,8 +46,9 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
 | `top_peliculas_taquilla_y_critica.xlsx` | Datos ampliados: 189 películas con director, nota de FilmAffinity, Óscars y 5 actores. **`movies.js` no sale de aquí todavía** |
-| `top_50_actores_numero_peliculas.xlsx` | Los 50 actores con más largometrajes rodados. Origen de `actores.js` |
-| `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `f` archivo en `actors/` |
+| `top_50_actores_numero_peliculas.xlsx` | Los actores con más largometrajes rodados, con su fiabilidad. Origen de `actores.js`. **La hoja ya ha cambiado de nombre una vez**: el script la localiza por la fila de cabecera, no por el nombre |
+| `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `tol` margen de error, `f` archivo en `actors/` |
+| `tools/repara-personas.py` | Rehace las fotos de personas que apuntaban a otro con nombre parecido |
 | `tools/build-actores.py` | Regenera `actores.js` y descarga las fotos que falten |
 | `nacimientos.js` | `const NACIMIENTOS` — nombre → año de nacimiento, de los 635 actores en juego. Generado, **no editar a mano** |
 | `tools/fetch-nacimientos.py` | Descarga los años de nacimiento de Wikidata (P569) |
@@ -279,12 +280,15 @@ eso *El Padrino* y compañía no aparecían nunca.
   `actores.js` (los 50 con más largometrajes rodados, de Samuel L. Jackson con
   152 a Timothée Chalamet con 20), y por eso su ronda **no declara `pelis`**:
   `state.vistas` guarda identificadores de película y ahí no encajan.
-- **`FILMO_MINIMO` (10 películas) no es un ajuste de dificultad, es honradez con
-  la fuente.** El propio Excel avisa de que los recuentos bailan ±5-10 según lo
-  que se cuente como largometraje, así que un duelo de 55 contra 60 no lo
-  decidiría el jugador sino el criterio de quien contó. De paso descarta los
-  empates, que son muchos: **siete actores empatan a 55 películas y cinco a 60**.
-  Es el mismo problema que las recaudaciones repetidas, y la misma solución.
+- **El hueco exigido sale de la fiabilidad de cada cifra, no es fijo.** El Excel
+  marca cada recuento como verificado (TMDB o filmografía de Wikipedia),
+  estimado (±5) o provisional (TV Guide, AceShowbiz: **pueden mezclar créditos
+  de cine y televisión**). `build-actores.py` traduce eso a un margen por actor
+  —3, 8 y 15 películas— y la ronda exige que la diferencia supere la **suma de
+  los dos márgenes**, con `FILMO_MINIMO` (10) como suelo. Un provisional contra
+  un verificado necesita 18 de hueco; dos verificados se apañan con 10.
+  De paso descarta los empates, que los hay. No es dificultad: es que el duelo
+  no lo decida el criterio de quien contó.
 - **`oscarcat` tira de un depósito pequeño** (27 películas con desglose de
   premios, 18 categorías). Su umbral en `frescas()` está bajado a 6 por eso.
 - **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae
@@ -521,6 +525,27 @@ volver a lanzarlo sin esa opción para restaurarlo.
   nombre y con imagen, que se colarían sin decir nada. El caso de manual es
   `Chris Evans`, que en la Wikipedia inglesa es un presentador británico. Si el
   extracto no habla de cine, se reintenta con `(actor)`, `(director)` y búsqueda.
+- **La búsqueda de reserva se quedaba con otra persona.** `desambigua()` daba por
+  bueno el primer resultado que hablara de cine, sin comprobar el nombre:
+  **26 de los 40 actores desambiguados tenían la cara de otro** — Daniel Richter
+  salía con la de Andy Richter, Jack Benny con la de Jack Nance, Peter Appel con
+  la de Andrea Riseborough. Ahora `mismo_nombre()` exige que el título del
+  artículo contenga todas las palabras del nombre pedido, con `ALIAS_OK` para las
+  siete excepciones comprobadas a mano (los tres dúos y el seudónimo Jiaozi).
+- **Y el oficio no puede ser el único filtro, porque deja fuera a los que no son
+  «actores» de oficio.** Jack Benny era *entertainer*, Chester Conklin *comedian*
+  y John Legend *singer*: `INTERPRETE` no los reconocía y por eso caían en la
+  búsqueda de reserva, que es donde se torcían. `repara-personas.py` verifica la
+  identidad **con la película en la que sale cada uno**: si el artículo nombra
+  una de sus películas del catálogo, no hay duda. Es la prueba fuerte; el oficio
+  queda como la débil.
+- **El respaldo de «coge la primera imagen del artículo» agarra carteles.** A
+  Sebastian Hansen le tocó el de *A Minecraft Movie*. Se exige que el nombre del
+  archivo lleve el de la persona.
+- **Quien no se pueda identificar con certeza se queda sin foto y fuera del
+  juego.** De los 26, se recuperaron 4 con la cara correcta y 22 se quedaron sin
+  ella: comprobado artículo por artículo que **no tienen ninguna imagen**, sólo
+  iconos. Antes que enseñar a otro, mejor no enseñar a nadie.
 - **A un director hay que exigirle que el artículo hable de DIRIGIR.** `CINE`
   admitía antes `films`, `movie`, `cinema` y —lo peor— `actor`, palabras que
   cumple cualquiera del gremio. Por eso **Steve McQueen** se resolvía en el actor
@@ -529,6 +554,14 @@ volver a lanzarlo sin esa opción para restaurarlo.
   decía "actor" la validación lo daba por bueno y nunca llegaba a probar con
   `(director)`. Quien dirige y actúa —Eastwood, Chaplin— sigue pasando, porque su
   artículo dice las dos cosas.
+- **La fecha de muerte destapa homónimos, y por eso se descarga.** Si alguien
+  figura en una película rodada después de morir, la identidad es de otro. Es lo
+  que habría cazado a Steve McQueen sin esperar a que se notara a simple vista.
+  El contraste de los 1.149 créditos contra nacimiento y muerte dejó 9 imposibles:
+  6 identidades equivocadas y **3 muertes reales durante el rodaje** —Paul Walker
+  en *Furious 7*, Carrie Fisher en *The Last Jedi* y Oliver Reed en *Gladiator*—,
+  que son ciertas y hay que dejar en paz. Lo mismo con los cuatro actores
+  infantiles (Drew Barrymore con 7 años en *E.T.*).
 - **Los años de nacimiento salen de Wikidata (P569), no del texto del artículo**:
   vienen como dato y no hay que adivinarlos de una frase. Se entra por el título
   del artículo inglés; ocho nombres no cuadran por acentuación (*Zoe Saldana*

@@ -20,26 +20,61 @@ fp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fp)
 
 XLSX = os.path.join(ROOT, 'top_50_actores_numero_peliculas.xlsx')
-HOJA = 'Top 50 Actores'
 CARPETA = os.path.join(ROOT, 'actors')
+# La hoja ya se ha llamado de dos maneras ('Top 50 Actores' y 'Top Actores - Nº
+# Películas'), así que no se busca por nombre sino por la fila de cabecera. Si
+# cambia el nombre otra vez, esto sigue funcionando.
+CABECERA = ('Actor/Actriz', 'Nº películas')
+
+# Qué margen de error se le concede a cada cifra, según lo que declare el propio
+# Excel. Los provisionales salen de fuentes que pueden mezclar créditos de cine y
+# televisión, así que su número puede estar bastante inflado.
+TOLERANCIA = {'verificado': 3, 'estimado': 8, 'provisional': 15}
 ANCHO = 300                      # el mismo que el resto de fotos de actores
 NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 
 
 def filas():
     z = zipfile.ZipFile(XLSX)
-    wb = ET.fromstring(z.read('xl/workbook.xml'))
-    hojas = [s.get('name') for s in wb.iter(NS + 'sheet')]
-    if HOJA not in hojas:
-        raise SystemExit(f'No encuentro la hoja «{HOJA}». Hay: {hojas}')
-    root = ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
 
     def val(c):
         if c.get('t') == 'inlineStr':
             return ''.join(t.text or '' for t in c.iter(NS + 't'))
         v = c.find(NS + 'v')
         return v.text if v is not None else ''
-    return [[val(c) for c in row.findall(NS + 'c')] for row in root.iter(NS + 'row')]
+
+    for hoja in sorted(n for n in z.namelist() if n.startswith('xl/worksheets/sheet')):
+        root = ET.fromstring(z.read(hoja))
+        datos = [[val(c) for c in row.findall(NS + 'c')] for row in root.iter(NS + 'row')]
+        for i, f in enumerate(datos):
+            if all(any(col == c for col in f) for c in CABECERA):
+                return datos[i:]
+    wb = ET.fromstring(z.read('xl/workbook.xml'))
+    raise SystemExit('Ninguna hoja tiene la cabecera ' + str(CABECERA) +
+                     '. Hay: ' + str([s.get('name') for s in wb.iter(NS + 'sheet')]))
+
+
+def columnas(cabecera):
+    """Dónde está cada columna: el Excel ya ha cambiado de forma una vez."""
+    idx = {}
+    for i, c in enumerate(cabecera):
+        c = (c or '').strip().lower()
+        if c.startswith('actor'):        idx['nombre'] = i
+        elif c.startswith('nº pel'):     idx['pelis'] = i
+        elif c.startswith('año nac'):    idx['nacido'] = i
+        elif c.startswith('fiabilidad'): idx['fiabilidad'] = i
+    for k in ('nombre', 'pelis'):
+        if k not in idx:
+            raise SystemExit(f'Falta la columna «{k}» en {cabecera}')
+    return idx
+
+
+def fiabilidad(txt):
+    t = (txt or '').lower()
+    for clave in TOLERANCIA:
+        if clave in t:
+            return clave
+    return 'provisional'          # si no lo dice, se supone lo peor
 
 
 def fotos_existentes():
@@ -71,13 +106,18 @@ def main():
     ap.add_argument('--refresh', action='store_true')
     args = ap.parse_args()
 
-    datos = [f for f in filas() if len(f) >= 5 and f[0].isdigit()]
+    hoja = filas()
+    col = columnas(hoja[0])
+    datos = [f for f in hoja[1:] if f and f[0].isdigit() and len(f) > col['pelis']]
     print(f'{len(datos)} actores en el Excel', file=sys.stderr)
     ya = fotos_existentes()
 
     salida, sin_foto = [], []
     for f in datos:
-        puesto, nombre, pelis = int(f[0]), f[1].strip(), int(f[4])
+        puesto, nombre = int(f[0]), f[col['nombre']].strip()
+        pelis = int(f[col['pelis']])
+        fia = fiabilidad(f[col['fiabilidad']] if 'fiabilidad' in col
+                         and len(f) > col['fiabilidad'] else '')
         archivo = None if args.refresh else ya.get(nombre)
         if archivo and not os.path.exists(os.path.join(CARPETA, archivo)):
             archivo = None
@@ -86,7 +126,8 @@ def main():
             print(f'  {puesto:2}  {nombre[:28]:<28} -> {archivo or "SIN FOTO"}', file=sys.stderr)
             time.sleep(0.4)
         if archivo:
-            salida.append({'n': nombre, 'p': pelis, 'f': archivo})
+            salida.append({'n': nombre, 'p': pelis, 'f': archivo,
+                           'tol': TOLERANCIA[fia], 'fia': fia})
         else:
             sin_foto.append(nombre)
 
@@ -94,15 +135,20 @@ def main():
     # descarta los empates, pero conviene saber cuántos hay.
     from collections import Counter
     empates = {k: v for k, v in Counter(a['p'] for a in salida).items() if v > 1}
+    print(f'fiabilidad: ' + str(dict(Counter(a['fia'] for a in salida))), file=sys.stderr)
 
     with open(os.path.join(ROOT, 'actores.js'), 'w', encoding='utf-8') as out:
         out.write('// Los 50 actores con más películas rodadas.\n')
         out.write('// Generado por tools/build-actores.py desde\n')
         out.write('// top_50_actores_numero_peliculas.xlsx — no editar a mano.\n')
         out.write('// n: nombre · p: nº de películas · f: archivo en actors/\n')
+        out.write('// tol: margen de error en películas, según la fiabilidad que\n')
+        out.write('//      declara el propio Excel (verificado 3, estimado 8,\n')
+        out.write('//      provisional 15: esas fuentes mezclan cine y televisión)\n')
         out.write('const ACTORES_TOP = [\n')
         for a in sorted(salida, key=lambda x: -x['p']):
-            out.write(f'  {{ n: "{a["n"]}", p: {a["p"]}, f: "{a["f"]}" }},\n')
+            out.write(f'  {{ n: "{a["n"]}", p: {a["p"]}, tol: {a["tol"]}, '
+                      f'f: "{a["f"]}" }},   // {a["fia"]}\n')
         out.write('];\n')
 
     print(f'\nactores.js con {len(salida)} actores · sin foto: {len(sin_foto)}', file=sys.stderr)

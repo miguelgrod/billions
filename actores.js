@@ -2,55 +2,47 @@
 // Generado por tools/build-actores.py desde
 // top_50_actores_numero_peliculas.xlsx — no editar a mano.
 // n: nombre · p: nº de películas · f: archivo en actors/
+// tol: margen de error en películas, según la fiabilidad que
+//      declara el propio Excel (verificado 3, estimado 8,
+//      provisional 15: esas fuentes mezclan cine y televisión)
 const ACTORES_TOP = [
-  { n: "Samuel L. Jackson", p: 152, f: "samuel-l-jackson.jpg" },
-  { n: "Michael Caine", p: 130, f: "michael-caine.jpg" },
-  { n: "Robert De Niro", p: 120, f: "robert-de-niro.jpg" },
-  { n: "Nicolas Cage", p: 115, f: "nicolas-cage.jpg" },
-  { n: "Liam Neeson", p: 95, f: "liam-neeson.jpg" },
-  { n: "Morgan Freeman", p: 90, f: "morgan-freeman.jpg" },
-  { n: "Anthony Hopkins", p: 88, f: "anthony-hopkins.jpg" },
-  { n: "Bruce Willis", p: 88, f: "bruce-willis.jpg" },
-  { n: "Tom Hanks", p: 80, f: "tom-hanks.jpg" },
-  { n: "Jeff Bridges", p: 75, f: "jeff-bridges.jpg" },
-  { n: "Clint Eastwood", p: 72, f: "clint-eastwood.jpg" },
-  { n: "Nicole Kidman", p: 70, f: "nicole-kidman.jpg" },
-  { n: "Robert Downey Jr.", p: 70, f: "robert-downey-jr.jpg" },
-  { n: "Scarlett Johansson", p: 65, f: "scarlett-johansson.jpg" },
-  { n: "Johnny Depp", p: 65, f: "johnny-depp.jpg" },
-  { n: "Keanu Reeves", p: 65, f: "keanu-reeves.jpg" },
-  { n: "Meryl Streep", p: 65, f: "meryl-streep.jpg" },
-  { n: "Brad Pitt", p: 61, f: "brad-pitt.jpg" },
-  { n: "Denzel Washington", p: 60, f: "denzel-washington.jpg" },
-  { n: "Jack Nicholson", p: 60, f: "jack-nicholson.jpg" },
-  { n: "Gary Oldman", p: 60, f: "gary-oldman.jpg" },
-  { n: "Woody Harrelson", p: 60, f: "woody-harrelson.jpg" },
-  { n: "Michelle Yeoh", p: 60, f: "michelle-yeoh.jpg" },
-  { n: "Al Pacino", p: 55, f: "al-pacino.jpg" },
-  { n: "Harrison Ford", p: 55, f: "harrison-ford.jpg" },
-  { n: "Matt Damon", p: 55, f: "matt-damon.jpg" },
-  { n: "Cate Blanchett", p: 55, f: "cate-blanchett.jpg" },
-  { n: "Penélope Cruz", p: 55, f: "penelope-cruz.jpg" },
-  { n: "Dustin Hoffman", p: 55, f: "dustin-hoffman.jpg" },
-  { n: "Sean Penn", p: 55, f: "sean-penn.jpg" },
-  { n: "Tom Cruise", p: 50, f: "tom-cruise.jpg" },
-  { n: "Javier Bardem", p: 50, f: "javier-bardem.jpg" },
-  { n: "Julia Roberts", p: 50, f: "julia-roberts.jpg" },
-  { n: "Kate Winslet", p: 45, f: "kate-winslet.jpg" },
-  { n: "Sandra Bullock", p: 45, f: "sandra-bullock.jpg" },
-  { n: "Charlize Theron", p: 45, f: "charlize-theron.jpg" },
-  { n: "Natalie Portman", p: 42, f: "natalie-portman.jpg" },
-  { n: "Joaquin Phoenix", p: 40, f: "joaquin-phoenix.jpg" },
-  { n: "George Clooney", p: 40, f: "george-clooney.jpg" },
-  { n: "Dwayne Johnson", p: 40, f: "dwayne-johnson.jpg" },
-  { n: "Angelina Jolie", p: 40, f: "angelina-jolie.jpg" },
-  { n: "Viola Davis", p: 40, f: "viola-davis.jpg" },
-  { n: "Christian Bale", p: 38, f: "christian-bale.jpg" },
-  { n: "Cillian Murphy", p: 38, f: "cillian-murphy.jpg" },
-  { n: "Will Smith", p: 35, f: "will-smith.jpg" },
-  { n: "Leonardo DiCaprio", p: 35, f: "leonardo-dicaprio.jpg" },
-  { n: "Ryan Gosling", p: 35, f: "ryan-gosling.jpg" },
-  { n: "Emma Stone", p: 30, f: "emma-stone.jpg" },
-  { n: "Margot Robbie", p: 30, f: "margot-robbie.jpg" },
-  { n: "Timothée Chalamet", p: 20, f: "timothee-chalamet.jpg" },
+  { n: "Samuel L. Jackson", p: 150, tol: 3, f: "samuel-l-jackson.jpg" },   // verificado
+  { n: "Robert De Niro", p: 136, tol: 3, f: "robert-de-niro.jpg" },   // verificado
+  { n: "Bruce Willis", p: 131, tol: 3, f: "bruce-willis.jpg" },   // verificado
+  { n: "Nicolas Cage", p: 116, tol: 3, f: "nicolas-cage.jpg" },   // verificado
+  { n: "Keanu Reeves", p: 99, tol: 3, f: "keanu-reeves.jpg" },   // verificado
+  { n: "Anthony Hopkins", p: 97, tol: 3, f: "anthony-hopkins.jpg" },   // verificado
+  { n: "Tom Hanks", p: 96, tol: 3, f: "tom-hanks.jpg" },   // verificado
+  { n: "Matt Damon", p: 85, tol: 3, f: "matt-damon.jpg" },   // verificado
+  { n: "Dustin Hoffman", p: 82, tol: 15, f: "dustin-hoffman.jpg" },   // provisional
+  { n: "Johnny Depp", p: 81, tol: 15, f: "johnny-depp.jpg" },   // provisional
+  { n: "Jeff Bridges", p: 80, tol: 8, f: "jeff-bridges.jpg" },   // estimado
+  { n: "Robert Downey Jr.", p: 80, tol: 15, f: "robert-downey-jr.jpg" },   // provisional
+  { n: "Harrison Ford", p: 78, tol: 15, f: "harrison-ford.jpg" },   // provisional
+  { n: "Meryl Streep", p: 77, tol: 3, f: "meryl-streep.jpg" },   // verificado
+  { n: "Nicole Kidman", p: 77, tol: 3, f: "nicole-kidman.jpg" },   // verificado
+  { n: "Clint Eastwood", p: 75, tol: 3, f: "clint-eastwood.jpg" },   // verificado
+  { n: "Cate Blanchett", p: 74, tol: 15, f: "cate-blanchett.jpg" },   // provisional
+  { n: "Jack Nicholson", p: 71, tol: 3, f: "jack-nicholson.jpg" },   // verificado
+  { n: "Kurt Russell", p: 65, tol: 3, f: "kurt-russell.jpg" },   // verificado
+  { n: "Scarlett Johansson", p: 65, tol: 15, f: "scarlett-johansson.jpg" },   // provisional
+  { n: "Al Pacino", p: 65, tol: 15, f: "al-pacino.jpg" },   // provisional
+  { n: "Brad Pitt", p: 61, tol: 3, f: "brad-pitt.jpg" },   // verificado
+  { n: "Mark Ruffalo", p: 60, tol: 3, f: "mark-ruffalo.jpg" },   // verificado
+  { n: "Denzel Washington", p: 58, tol: 3, f: "denzel-washington.jpg" },   // verificado
+  { n: "Kate Winslet", p: 57, tol: 15, f: "kate-winslet.jpg" },   // provisional
+  { n: "Penélope Cruz", p: 56, tol: 15, f: "penelope-cruz.jpg" },   // provisional
+  { n: "Javier Bardem", p: 55, tol: 15, f: "javier-bardem.jpg" },   // provisional
+  { n: "Russell Crowe", p: 54, tol: 3, f: "russell-crowe.jpg" },   // verificado
+  { n: "Julia Roberts", p: 53, tol: 3, f: "julia-roberts.jpg" },   // verificado
+  { n: "Colin Farrell", p: 53, tol: 3, f: "colin-farrell.jpg" },   // verificado
+  { n: "Daniel Craig", p: 50, tol: 3, f: "daniel-craig.jpg" },   // verificado
+  { n: "Gary Oldman", p: 50, tol: 8, f: "gary-oldman.jpg" },   // estimado
+  { n: "Sandra Bullock", p: 49, tol: 3, f: "sandra-bullock.jpg" },   // verificado
+  { n: "Joaquin Phoenix", p: 47, tol: 15, f: "joaquin-phoenix.jpg" },   // provisional
+  { n: "Tom Cruise", p: 45, tol: 8, f: "tom-cruise.jpg" },   // estimado
+  { n: "Edward Norton", p: 38, tol: 3, f: "edward-norton.jpg" },   // verificado
+  { n: "Jennifer Lawrence", p: 32, tol: 3, f: "jennifer-lawrence.jpg" },   // verificado
+  { n: "Ryan Gosling", p: 31, tol: 3, f: "ryan-gosling.jpg" },   // verificado
+  { n: "Leonardo DiCaprio", p: 30, tol: 8, f: "leonardo-dicaprio.jpg" },   // estimado
 ];
