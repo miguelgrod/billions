@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Genera actores.js a partir de top_50_actores_numero_peliculas.xlsx.
 
-Los cincuenta actores con más películas rodadas. La foto es requisito: quien no
+Los actores con más películas rodadas (39 en la revisión de agosto de 2026;
+el archivo conserva el nombre "top_50" de cuando eran cincuenta). La foto es requisito: quien no
 la tenga no entra en el juego, como el resto del catálogo. Treinta y nueve ya
 están descargados de los repartos de las películas; los demás se buscan en la
 Wikipedia inglesa con la misma maquinaria que tools/fetch-people.py, validando
@@ -138,7 +139,7 @@ def main():
     print(f'fiabilidad: ' + str(dict(Counter(a['fia'] for a in salida))), file=sys.stderr)
 
     with open(os.path.join(ROOT, 'actores.js'), 'w', encoding='utf-8') as out:
-        out.write('// Los 50 actores con más películas rodadas.\n')
+        out.write(f'// Los {len(salida)} actores con más películas rodadas.\n')
         out.write('// Generado por tools/build-actores.py desde\n')
         out.write('// top_50_actores_numero_peliculas.xlsx — no editar a mano.\n')
         out.write('// n: nombre · p: nº de películas · f: archivo en actors/\n')

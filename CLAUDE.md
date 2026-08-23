@@ -17,6 +17,12 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 - **Sin build ni dependencias.** Tailwind entra por el CDN Play (`cdn.tailwindcss.com`),
   que compila las clases en el navegador. Se abre con doble clic o
   `python3 -m http.server`.
+- **Antes de desplegar un cambio de datos, pasa `tools/sella-versiones.py`.**
+  Pone la huella del contenido en cada `<script src>` (`actores.js?v=3d235854`).
+  Sin eso, un navegador que ya se había guardado `actores.js` seguía usándolo:
+  los archivos se sirven **sin `Cache-Control`** y las etiquetas no llevaban
+  versión, así que actualizar el Excel no se notaba en quien ya hubiera entrado.
+  Es idempotente y sólo toca lo que haya cambiado.
 - Cuatro archivos: [index.html](index.html) (estructura y CSS propio),
   [main.js](main.js) (juego), [movies.js](movies.js) (datos),
   [posters.js](posters.js) (índice de carátulas).
@@ -44,6 +50,7 @@ niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
 | `tools/repara-caratulas.py` | Rehace las carátulas que no son carátulas: vuelve a resolverlas en la Wikipedia inglesa y rechaza lo que no tenga forma de cartel |
 | `tools/fetch-people.py` | Saca del Excel los directores o los actores y descarga sus fotos (`--role`) |
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
+| `tools/sella-versiones.py` | Pone la huella del contenido en los `<script src>` para que el navegador no sirva datos viejos de su caché |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
 | `top_peliculas_taquilla_y_critica.xlsx` | Datos ampliados: 189 películas con director, nota de FilmAffinity, Óscars y 5 actores. **`movies.js` no sale de aquí todavía** |
 | `top_50_actores_numero_peliculas.xlsx` | Los actores con más largometrajes rodados, con su fiabilidad. Origen de `actores.js`. **La hoja ya ha cambiado de nombre una vez**: el script la localiza por la fila de cabecera, no por el nombre |

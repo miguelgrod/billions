@@ -1,4 +1,4 @@
-// Los 50 actores con más películas rodadas.
+// Los 39 actores con más películas rodadas.
 // Generado por tools/build-actores.py desde
 // top_50_actores_numero_peliculas.xlsx — no editar a mano.
 // n: nombre · p: nº de películas · f: archivo en actors/
