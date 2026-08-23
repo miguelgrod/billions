@@ -144,13 +144,6 @@
     }
     .destello { animation: destello 1.8s ease-in-out infinite; }
 
-    /* Esferas del encabezado de la pantalla previa */
-    @keyframes flotaIntro {
-      0%, 100% { transform: translateY(0) }
-      50%      { transform: translateY(-10px) }
-    }
-    .flota-intro { animation: flotaIntro var(--dur) ease-in-out infinite; animation-delay: var(--retardo); }
-
     /* Rótulo de la temática al salir la burbuja */
     @keyframes rotuloIn {
       0%   { opacity: 0; transform: scale(.82); filter: blur(6px); }
@@ -298,7 +291,7 @@
 
         <div class="glass-fuerte aparece overflow-hidden rounded-[36px] shadow-2xl">
           <!-- Esferas flotando: lo primero que se ve es de qué va el juego -->
-          <div id="intro-burbujas" class="relative h-28 w-full overflow-hidden sm:h-32"></div>
+          <div id="intro-burbujas" class="relative h-36 w-full overflow-hidden sm:h-40"></div>
 
           <div class="px-7 pb-8 pt-1 text-center sm:px-9">
             <h2 class="display text-[42px] leading-none sm:text-5xl">Billions</h2>

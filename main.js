@@ -610,24 +610,48 @@ function revelaCartas(r) {
 // categorías y sus iconos. Así lo primero que se ve ya explica de qué va.
 function pintaIntro() {
   // Siete esferas, una por categoría, repartidas para que ninguna quede cortada
-  // por el borde superior y el conjunto no forme una línea recta.
+  // por el borde superior y el conjunto no forme una línea recta. Se pintan con
+  // la misma receta que las del campo —foto debajo, velo de color encima y la
+  // misma deriva de dos ejes—, así que la portada enseña la pieza de verdad.
   const reparto = [
-    { cat: 'oscarcat', x: 10, y: 62, d: 40, dur: 5.5, r: 0 },
-    { cat: 'taquilla', x: 25, y: 36, d: 58, dur: 6.5, r: -1.2 },
-    { cat: 'director', x: 42, y: 68, d: 34, dur: 5,   r: -2.4 },
-    { cat: 'critica',  x: 56, y: 34, d: 50, dur: 7,   r: -0.6 },
-    { cat: 'actores',  x: 72, y: 64, d: 38, dur: 6,   r: -3 },
-    { cat: 'oscar',    x: 88, y: 38, d: 52, dur: 6.8, r: -1.8 },
-    { cat: 'anio',     x: 34, y: 22, d: 26, dur: 5.2, r: -2 },
+    { cat: 'oscarcat', x: 11, y: 62, d: 54, tx: 24, ty: 30, rx: 0,    ry: -5 },
+    { cat: 'taquilla', x: 27, y: 35, d: 74, tx: 31, ty: 25, rx: -7,   ry: -12 },
+    { cat: 'director', x: 43, y: 70, d: 44, tx: 27, ty: 34, rx: -3,   ry: -2 },
+    { cat: 'critica',  x: 58, y: 33, d: 64, tx: 35, ty: 28, rx: -14,  ry: -9 },
+    { cat: 'actores',  x: 74, y: 66, d: 50, tx: 22, ty: 32, rx: -9,   ry: -17 },
+    { cat: 'oscar',    x: 89, y: 37, d: 66, tx: 29, ty: 23, rx: -5,   ry: -6 },
+    { cat: 'anio',     x: 35, y: 20, d: 34, tx: 33, ty: 27, rx: -11,  ry: -14 },
   ];
+  const usadas = new Set();
   els.introBurbujas.innerHTML = reparto.map((b) => {
     const { luz, medio, hondo } = ESFERA[b.cat];
+    const img = imagenPara(b.cat, usadas);
+    // la escala se deriva del diámetro para que el desenfoque de las pequeñas
+    // dé la misma profundidad de campo que en el juego
+    const escala = b.d / 74;
+    const desenfoque = Math.max(0, (1 - escala) * 3.2).toFixed(1);
+    // La foto va debajo y el color encima con alfa: mismos valores que el campo.
+    const velo = `${luz}99 0%, ${medio}80 46%, ${hondo}a6 100%`;
+    const encuadre = ES_PERSONA.has(b.cat) ? 'center 28%' : 'center';
+    // comillas simples: las dobles cerrarían el atributo style
+    const fondo = img
+      ? `radial-gradient(circle at 32% 26%, ${velo}), url('${img}') ${encuadre}/cover`
+      : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
+    const sombra = `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
+    // la deriva va en fracción del diámetro, como en el campo
+    const dx = (b.d * 0.16).toFixed(1);
+    const dy = (b.d * 0.14).toFixed(1);
     return `
-      <span class="flota-intro absolute rounded-full"
-            style="left:${b.x}%;top:${b.y}%;width:${b.d}px;height:${b.d}px;
-                   transform:translate(-50%,-50%);--dur:${b.dur}s;--retardo:${b.r}s;
-                   background:radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%);
-                   box-shadow:0 12px 26px -8px ${medio}66, inset 0 1px 0 rgba(255,255,255,.4)"></span>`;
+      <div class="burbuja absolute" style="left:${b.x}%;top:${b.y}%">
+       <div class="deriva-x" style="--dx:${dx}px;--tx:${b.tx}s;--rx:${b.rx}s">
+        <div class="deriva-y" style="--dy:${dy}px;--ty:${b.ty}s;--ry:${b.ry}s">
+         <div class="esfera" style="width:${b.d}px;aspect-ratio:1;
+                background:${fondo};
+                box-shadow:${sombra};
+                filter:blur(${desenfoque}px)"></div>
+        </div>
+       </div>
+      </div>`;
   }).join('') +
     '<span class="pointer-events-none absolute inset-0" ' +
     'style="background:linear-gradient(to bottom, transparent 40%, rgba(20,20,24,.85) 100%)"></span>';

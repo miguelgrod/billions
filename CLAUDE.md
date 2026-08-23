@@ -172,9 +172,17 @@ se pierde al tercer fallo.
 ## Pantallas de inicio y de victoria
 
 - **La portada se dibuja con las piezas del juego**: siete esferas flotando (una
-  por categoría, con sus degradados) y las siete temáticas como fichas con su
-  icono y su color. Sale de la misma tabla `COLORES`/`ICONOS`/`ETIQUETAS`, así
-  que añadir una categoría actualiza la portada sola.
+  por categoría) y las siete temáticas como fichas con su icono y su color. Sale
+  de la misma tabla `COLORES`/`ICONOS`/`ETIQUETAS`, así que añadir una categoría
+  actualiza la portada sola.
+- **Las esferas de la portada son las mismas pompas del campo**, no una versión
+  simplificada: la misma receta de foto debajo y velo de color encima
+  (`imagenPara()`, encuadre al 28 % en los retratos), la misma sombra, el mismo
+  desenfoque de profundidad de campo en las pequeñas y la misma deriva de dos
+  ejes (`.deriva-x`/`.deriva-y`). Lo primero que se ve es la pieza de verdad. El
+  cabeceo propio que tenían antes (`flotaIntro`) se retiró: además de no
+  parecerse al juego, se quedaba fuera de la regla de `prefers-reduced-motion`,
+  que sólo nombra las clases de deriva.
 - **Al completar las 20 hay pantalla de enhorabuena** (`victoria()`), con
   esferas subiendo detrás del título y un texto distinto según se haya fallado o
   no. `gameOver()` limpia ese marcado con `innerHTML`, porque si no la derrota
