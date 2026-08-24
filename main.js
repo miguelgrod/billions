@@ -1659,6 +1659,10 @@ function startGame() {
   state.completadas = new Set();
   state.actual = null;
   state.reciente = null;
+  // El fundido de salida de la portada se cancela aquí con su temporizador, y
+  // es ese temporizador el que bajaba la bandera: sin esto, reiniciar mientras
+  // la portada se iba la dejaba levantada y "Jugar" no volvía a responder.
+  state.saliendoIntro = false;
   state.ronda = null;
   state.newRecord = false;
   els.score.textContent = '0';
