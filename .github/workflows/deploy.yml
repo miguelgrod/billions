@@ -42,6 +42,7 @@ jobs:
             --exclude "*.md" \
             --exclude "*.xlsx" \
             --exclude ".git/*" \
+            --exclude ".gitignore" \
             --exclude ".github/*" \
             --exclude "tools/*" \
             --exclude "build/*" \
@@ -68,4 +69,4 @@ jobs:
         run: |
           echo "### Billions desplegado" >> $GITHUB_STEP_SUMMARY
           echo "- Bucket \`${BUCKET}\` (${REGION})" >> $GITHUB_STEP_SUMMARY
-          echo "- https://d1qd7dxsg5ongd.cloudfront.net" >> $GITHUB_STEP_SUMMARY
+          echo "- https://ganoyo.com" >> $GITHUB_STEP_SUMMARY
