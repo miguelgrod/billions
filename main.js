@@ -1699,6 +1699,43 @@ if (typeof window !== 'undefined') {
 
 els.restart.addEventListener('click', startGame);
 
+const refreshGameToIntro = () => {
+  paraCronometro();
+  clearTimeout(state.timer);
+  clearTimeout(state.burbujaTimer);
+  clearTimeout(state.timerIntro);
+  state.actual = null;
+  state.reciente = null;
+  state.score = 0;
+  state.puntos = 0;
+  state.vidas = VIDAS;
+  state.round = 1;
+  state.vistas = new Set();
+  state.ronda = null;
+  state.next = null;
+  state.ultima = '';
+  state.campo = reparteBurbujas();
+  state.completadas = new Set();
+  state.newRecord = false;
+  els.score.textContent = '0';
+  els.points.textContent = '0';
+  pintaVidas(false);
+  hideToast();
+  els.trivial.classList.add('hidden');
+  els.trivial.classList.remove('flex');
+  els.board.classList.add('hidden');
+  els.board.classList.remove('flex');
+  els.gameover.classList.add('hidden');
+  els.gameover.classList.remove('flex');
+  els.intro.classList.remove('hidden');
+  els.intro.classList.remove('intro-fuera');
+  els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';
+  pintaIntro();
+  els.play.focus({ preventScroll: true });
+};
+
+document.getElementById('refresh-game')?.addEventListener('click', refreshGameToIntro);
+
 const introVisible = () => !els.intro.classList.contains('hidden');
 
 function closeIntro() {
