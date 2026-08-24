@@ -209,17 +209,24 @@ const hayDecisionDeCookies = () => {
 // dentro— y el overflow oculto en html/body corta el desplazamiento. El banner
 // y el diálogo quedan fuera de #app a propósito: son lo único que responde.
 const bloqueaHastaDecidir = () => {
-  document.documentElement.classList.add('cookies-bloqueado');
-  document.body.classList.add('cookies-bloqueado');
-  document.getElementById('cookie-velo')?.classList.remove('hidden');
-  document.getElementById('app')?.setAttribute('inert', '');
+  const app = document.getElementById('app');
+  if (app) {
+    app.setAttribute('aria-busy', 'true');
+    app.style.pointerEvents = 'none';
+  }
+  // El sitio puede seguir siendo leído por el crawler y por el usuario mientras se
+  // toma la decisión. La clave es bloquear sólo la interacción del juego, no la
+  // página entera, porque AdSense necesita que el contenido HTML siga accesible.
+  document.getElementById('cookie-velo')?.classList.add('hidden');
 };
 
 const liberaTrasDecidir = () => {
-  document.documentElement.classList.remove('cookies-bloqueado');
-  document.body.classList.remove('cookies-bloqueado');
+  const app = document.getElementById('app');
+  if (app) {
+    app.removeAttribute('aria-busy');
+    app.style.pointerEvents = '';
+  }
   document.getElementById('cookie-velo')?.classList.add('hidden');
-  document.getElementById('app')?.removeAttribute('inert');
 };
 
 const deleteCookie = (name) => {

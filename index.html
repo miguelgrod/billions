@@ -464,10 +464,10 @@
   </div>
 
 
-  <!-- Velo del muro de cookies. Va por encima de todo el juego (la portada
-       está en z-40) y por debajo del propio banner (z-50), así que lo único
-       que queda accesible es la decisión. -->
-  <div id="cookie-velo" class="fixed inset-0 z-[45] hidden bg-black/70 backdrop-blur-sm"></div>
+  <!-- Velo de cookies: se mantiene sólo como referencia visual para el banner y
+       no cubre la página entera, porque AdSense y otros crawlers necesitan que el
+       contenido HTML siga accesible para verificar el sitio. -->
+  <div id="cookie-velo" class="fixed inset-0 z-[45] hidden bg-black/10"></div>
 
   <!-- Centrado con posición y translate, no con flex: el aviso se muestra y se
        oculta poniendo y quitando `hidden`, y una clase `flex` fija se pelearía
