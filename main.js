@@ -1646,6 +1646,56 @@ function pintaFiesta() {
   els.goFiesta.classList.remove('hidden');
 }
 
+function insertBmcButton() {
+  if (document.querySelector('script[data-bmc="billions"]')) return;
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
+  script.dataset.bmc = 'billions';
+  script.dataset.name = 'bmc-button';
+  script.dataset.slug = 'miguelgrod';
+  script.dataset.color = '#FFDD00';
+  script.dataset.emoji = '';
+  script.dataset.font = 'Cookie';
+  script.dataset.text = 'Invítame a un café';
+  script.dataset.outlineColor = '#000000';
+  script.dataset.fontColor = '#000000';
+  script.dataset.coffeeColor = '#ffffff';
+  document.body.appendChild(script);
+}
+
+function pintaMensajeApoyo() {
+  const shareUrl = 'https://ganoyo.com/';
+  const shareText = encodeURIComponent('He jugado a Billions · ¿Cuánto sabes de cine? ¿Te apuntas?');
+  const whatsappUrl = `https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}`;
+  const xUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  const shareMarkup = `
+    <div class="mt-6 border-t border-white/10 pt-5 text-left">
+      <p class="text-xs font-medium uppercase tracking-[0.22em] text-white/50">Compartir</p>
+      <p class="mt-2 text-sm leading-relaxed text-white/75">
+        Si te ha gustado el juego puedes compartirlo y apoyar su desarrollo invitándome a un café:
+      </p>
+      <div class="mt-3 flex justify-center">
+        <a href="https://www.buymeacoffee.com/miguelgrod" target="_blank" rel="noreferrer noopener"
+           class="inline-flex items-center justify-center rounded-full bg-[#FFDD00] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[#FFDD00]/20 transition hover:scale-[1.02]">
+          Invítame a un café
+        </a>
+      </div>
+      <div class="mt-4 flex items-center justify-center gap-2">
+        <a href="${whatsappUrl}" target="_blank" rel="noreferrer noopener"
+           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-sm font-semibold text-white" aria-label="Compartir por WhatsApp">WA</a>
+        <a href="${xUrl}" target="_blank" rel="noreferrer noopener"
+           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#000000] text-sm font-semibold text-white" aria-label="Compartir en X">X</a>
+        <a href="${facebookUrl}" target="_blank" rel="noreferrer noopener"
+           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-sm font-semibold text-white" aria-label="Compartir en Facebook">f</a>
+      </div>
+    </div>
+  `;
+  els.goDetail.insertAdjacentHTML('beforeend', shareMarkup);
+  insertBmcButton();
+}
+
 function victoria() {
   clearTimeout(state.timer);
   hideToast();
@@ -1666,6 +1716,7 @@ function victoria() {
     (state.newRecord
       ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
       : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
+  pintaMensajeApoyo();
   els.gameover.classList.remove('hidden');
   els.gameover.classList.add('flex');
   els.restart.focus();
@@ -1683,6 +1734,7 @@ function gameOver(detalle) {
     (state.newRecord
       ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
       : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
+  pintaMensajeApoyo();
   els.gameover.classList.remove('hidden');
   els.gameover.classList.add('flex');
   els.restart.focus();
