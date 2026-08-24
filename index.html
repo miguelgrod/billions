@@ -65,8 +65,19 @@
     #cookie-velo { touch-action: none; }
     /* La cabecera del juego y sus botones tienen que quedar por encima del
        overlay de la intro cuando se pasa a la partida, y no quedar soterrados
-       por la capa de la portada en móvil. */
+       por la capa de la portada en móvil. En iOS Safari también ayuda forzar la
+       capa del botón para que el toque llegue al control y no a la capa del
+       fondo. */
     #app { position: relative; z-index: 10; }
+    #refresh-game {
+      position: relative;
+      z-index: 20;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #refresh-game img {
+      pointer-events: none;
+    }
     /* Centrado que no se come el principio. Con `justify-content: center`, si el
        contenido no cabe se desborda por ARRIBA y no hay manera de llegar a él:
        en un portátil bajo el título quedaba fuera de la pantalla. La palabra
