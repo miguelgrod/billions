@@ -15,15 +15,6 @@ const COOKIE_CATALOG = [
     enabledByDefault: true,
   },
   {
-    id: 'ads',
-    label: 'Google AdSense',
-    required: false,
-    description: 'Muestran anuncios y miden su rendimiento. Las gestiona Google.',
-    cookies: ['__gads', '__gpi', '__eoi', 'FPAU', 'FPID'],
-    vendor: 'Google',
-    enabledByDefault: false,
-  },
-  {
     id: 'analytics',
     label: 'Google Analytics',
     required: false,
@@ -216,7 +207,7 @@ const bloqueaHastaDecidir = () => {
   }
   // El sitio puede seguir siendo leído por el crawler y por el usuario mientras se
   // toma la decisión. La clave es bloquear sólo la interacción del juego, no la
-  // página entera, porque AdSense necesita que el contenido HTML siga accesible.
+  // página entera, para que la web siga siendo legible y accesible.
   document.getElementById('cookie-velo')?.classList.add('hidden');
 };
 
@@ -258,24 +249,6 @@ const injectAnalytics = () => {
   document.head.appendChild(script);
 };
 
-// AdSense se trae igual que la analítica: sólo si se ha consentido. El script
-// de Google es el que pidió Miguel, con su cliente ca-pub-9786374666304161.
-const injectAds = () => {
-  if (document.querySelector('script[data-cookie="ads"]')) return;
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9786374666304161';
-  script.crossOrigin = 'anonymous';
-  script.dataset.cookie = 'ads';
-  document.head.appendChild(script);
-};
-
-const removeAdsCookies = () => {
-  const ads = COOKIE_CATALOG.find((cookie) => cookie.id === 'ads');
-  if (!ads) return;
-  ads.cookies.forEach((cookie) => deleteCookie(cookie));
-};
-
 const applyCookiePreferences = (preferences) => {
   const analyticsAllowed = Boolean(preferences.analytics);
   window['ga-disable-G-2W59RJL0L7'] = !analyticsAllowed;
@@ -284,15 +257,6 @@ const applyCookiePreferences = (preferences) => {
     injectAnalytics();
   } else {
     removeAnalyticsCookies();
-  }
-
-  // Un script ya inyectado no se puede descargar: por eso la publicidad sólo se
-  // trae cuando hay un sí, y retirarla se resuelve borrando sus cookies y no
-  // volviendo a pedirla en la carga siguiente.
-  if (preferences.ads) {
-    injectAds();
-  } else {
-    removeAdsCookies();
   }
 };
 
