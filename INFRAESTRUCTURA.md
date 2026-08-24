@@ -9,10 +9,18 @@ siguen aquí.
 |---|---|---|
 | Bucket | `bonituplay` | **`billions-cine`** |
 | Región | us-east-1 | **eu-west-1** (Irlanda) |
-| CloudFront | `E3LRZQIIEJH24` | pendiente → variable `BILLIONS_CF_ID` |
+| CloudFront | `E3LRZQIIEJH24` | **`EJYIWS894T0ZX`** → `d1qd7dxsg5ongd.cloudfront.net` |
+| Dominio | `bonitu.es` | **`ganoyo.com`** (y `www.`) |
+| Certificado | — | ACM **us-east-1**, `4bb07d7d-dd49-43ba-8f81-a65b2c5f4be7` |
+| Usuario que despliega | el de Bonitu | `billions-deploy`, acotado a este proyecto |
 | Workflow | `deploy.yml` en `miguelgrod/bonitu` | `deploy.yml` en `miguelgrod/billions` |
 
-## Cómo se crea (consola de AWS)
+## Estado
+
+**En pie desde el 2026-08-24 en https://ganoyo.com** — bucket, distribución,
+certificado, dominio y despliegue propios.
+
+## Cómo se creó (consola de AWS)
 
 ### 1. El bucket
 
@@ -48,6 +56,34 @@ siguen aquí.
     está aquí)
 13. Crear y esperar a que despliegue. Apuntar el **ID de la distribución** y
     el **dominio** (`dXXXXXXXX.cloudfront.net`)
+
+### 2b. Lo que el asistente nuevo NO pregunta
+
+El asistente de la consola no ofrece estos dos campos; se ponen después en
+**Distribución → General → Settings → Edit**:
+
+- **Default root object: `index.html`.** Sin esto, la raíz devuelve un error.
+- **Price class: sólo Norteamérica y Europa.** Por defecto paga nodos en Asia,
+  Oceanía y Sudamérica que aquí no se usan.
+
+### 2c. El dominio
+
+`ganoyo.com` está registrado en **Dinahosting**, no en Route 53, así que el
+certificado y el DNS se hicieron a mano:
+
+- **El certificado va en ACM y obligatoriamente en `us-east-1`**: es la única
+  región desde la que CloudFront los lee. Uno emitido en Irlanda no aparece en
+  la lista de la distribución. Se pidieron los dos nombres a la vez.
+- **Validación por DNS**: dos CNAME en Dinahosting, cuyo panel añade el dominio
+  solo — en *Host* va sólo la parte izquierda, y en el del `www` hay que
+  acordarse del sufijo `.www`. **Esos dos registros no se borran nunca**: sin
+  ellos el certificado no se renueva.
+- **La raíz se resolvió con un registro ANAME**, que Dinahosting ofrece. El DNS
+  estándar no admite CNAME en la raíz, y un registro A no vale porque las
+  direcciones de CloudFront cambian solas. Sin ANAME habría hecho falta redirigir
+  la raíz a `www` o mudar el DNS a Route 53.
+- Los registros A de la página aparcada (`@` y `www` → `82.98.135.44`) se
+  borraron: un nombre no puede tener a la vez un A y un ANAME/CNAME.
 
 ### 3. Conectar el despliegue
 
@@ -97,9 +133,7 @@ repositorio. Si falta un permiso, el workflow falla nombrando la acción exacta.
 
 ## Lo que falta para la independencia completa
 
-- **Dominio propio.** Hasta entonces la URL es la de CloudFront. Con dominio
-  hacen falta además un certificado en ACM (**en us-east-1**, es el único sitio
-  donde CloudFront los lee) y el CNAME en la distribución.
+
 - **Páginas legales propias**: privacidad, cookies y aviso legal son hoy las de
   bonitu.es y Billions no enlaza ninguna. Pasan a ser obligatorias el día que se
   guarde un apodo en una clasificación.

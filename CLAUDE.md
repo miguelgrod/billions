@@ -6,7 +6,7 @@ u Óscars—. Un sorteo
 las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
 revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
-**https://bonitu.es/billions/**
+**https://ganoyo.com**
 
 **Proyecto independiente.** Nació dentro del repo de Bonitu Plays y se
 publicaba con él; **el 2026-08-24 salió a repositorio, bucket y distribución
@@ -640,7 +640,7 @@ patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
 
 Push a `main` → GitHub Actions (`.github/workflows/deploy.yml`) → bucket
 `billions-cine` (eu-west-1) + invalidación de CloudFront `EJYIWS894T0ZX`.
-En producción: **https://d1qd7dxsg5ongd.cloudfront.net**
+En producción: **https://ganoyo.com**
 
 Los detalles de la infraestructura y lo que queda pendiente están en
 [INFRAESTRUCTURA.md](INFRAESTRUCTURA.md).
