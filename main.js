@@ -1671,24 +1671,30 @@ function pintaMensajeApoyo() {
   const xUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
   const shareMarkup = `
-    <div class="mt-6 border-t border-white/10 pt-5 text-left">
-      <p class="text-xs font-medium uppercase tracking-[0.22em] text-white/50">Compartir</p>
-      <p class="mt-2 text-sm leading-relaxed text-white/75">
-        Si te ha gustado el juego puedes compartirlo y apoyar su desarrollo invitándome a un café:
+    <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-left shadow-[0_16px_36px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-[10px] font-medium uppercase tracking-[0.26em] text-white/45">Apoya el juego</p>
+        <span class="inline-flex rounded-full border border-[#FFDD00]/40 bg-[#FFDD00]/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#FFDD00]">café</span>
+      </div>
+      <p class="mt-3 text-sm leading-relaxed text-white/80">
+        Si te ha gustado, puedes compartirlo y apoyar su desarrollo invitándome a un café.
       </p>
-      <div class="mt-3 flex justify-center">
+      <div class="mt-4 flex justify-center">
         <a href="https://www.buymeacoffee.com/miguelgrod" target="_blank" rel="noreferrer noopener"
-           class="inline-flex items-center justify-center rounded-full bg-[#FFDD00] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[#FFDD00]/20 transition hover:scale-[1.02]">
+           class="foco inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#FFDD00] via-[#FFD21A] to-[#FFCA28] px-4 py-2.5 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(255,221,0,0.22)] transition-transform duration-200 hover:scale-[1.02]">
           Invítame a un café
         </a>
       </div>
-      <div class="mt-4 flex items-center justify-center gap-2">
-        <a href="${whatsappUrl}" target="_blank" rel="noreferrer noopener"
-           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-sm font-semibold text-white" aria-label="Compartir por WhatsApp">WA</a>
-        <a href="${xUrl}" target="_blank" rel="noreferrer noopener"
-           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#000000] text-sm font-semibold text-white" aria-label="Compartir en X">X</a>
-        <a href="${facebookUrl}" target="_blank" rel="noreferrer noopener"
-           class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-sm font-semibold text-white" aria-label="Compartir en Facebook">f</a>
+      <div class="mt-5 border-t border-white/10 pt-4">
+        <p class="text-center text-[10px] font-medium uppercase tracking-[0.22em] text-white/50">Compartir</p>
+        <div class="mt-3 flex items-center justify-center gap-2.5">
+          <a href="${whatsappUrl}" target="_blank" rel="noreferrer noopener"
+             class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-base font-bold text-white shadow-[0_10px_24px_rgba(37,211,102,0.28)]" aria-label="Compartir por WhatsApp">W</a>
+          <a href="${xUrl}" target="_blank" rel="noreferrer noopener"
+             class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-base font-bold text-black shadow-[0_10px_24px_rgba(255,255,255,0.15)]" aria-label="Compartir en X">X</a>
+          <a href="${facebookUrl}" target="_blank" rel="noreferrer noopener"
+             class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-base font-bold text-white shadow-[0_10px_24px_rgba(24,119,242,0.26)]" aria-label="Compartir en Facebook">f</a>
+        </div>
       </div>
     </div>
   `;
