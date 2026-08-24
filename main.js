@@ -4,6 +4,26 @@
 // Clave nueva: el récord pasa a medirse en puntos, no en niveles, así que no
 // puede heredar los valores guardados con el sistema anterior.
 const BEST_KEY = 'billions.best.points';
+const COOKIE_KEY = 'billions.cookieConsent.v1';
+const COOKIE_CATALOG = [
+  {
+    id: 'essential',
+    label: 'Necesarias',
+    required: true,
+    description: 'Mantienen el juego operativo y guardan tu mejor puntuación en el navegador.',
+    cookies: ['billions.best.points'],
+    enabledByDefault: true,
+  },
+  {
+    id: 'analytics',
+    label: 'Google Analytics',
+    required: false,
+    description: 'Miden visitas y uso del sitio para entender qué funciona mejor.',
+    cookies: ['_ga', '_gid', '_gat', '_gat_gtag_UA_123456789_1'],
+    vendor: 'Google',
+    enabledByDefault: false,
+  },
+];
 const VIDAS = 3;           // se permiten dos fallos; el tercero acaba la partida
 const TIEMPO = 10000;      // milisegundos para responder
 const PUNTOS_MAX = 100;    // se cobran enteros al instante y bajan hasta 0
@@ -121,6 +141,191 @@ const iconoHTML = (cat, opts = {}) => `
        style="opacity:${opts.opacidad ?? 1}" aria-hidden="true">
     ${ICONOS[cat] || ''}
   </svg>`;
+
+const getCookiePreferences = () => {
+  try {
+    const raw = localStorage.getItem(COOKIE_KEY);
+    const stored = raw ? JSON.parse(raw) : {};
+    return COOKIE_CATALOG.reduce((acc, cookie) => {
+      const base = cookie.required || cookie.enabledByDefault;
+      acc[cookie.id] = Object.prototype.hasOwnProperty.call(stored, cookie.id)
+        ? Boolean(stored[cookie.id])
+        : base;
+      return acc;
+    }, {});
+  } catch (error) {
+    return COOKIE_CATALOG.reduce((acc, cookie) => {
+      acc[cookie.id] = cookie.required || cookie.enabledByDefault;
+      return acc;
+    }, {});
+  }
+};
+
+const saveCookiePreferences = (preferences) => {
+  const normalized = COOKIE_CATALOG.reduce((acc, cookie) => {
+    acc[cookie.id] = cookie.required || Boolean(preferences[cookie.id]);
+    return acc;
+  }, {});
+  localStorage.setItem(COOKIE_KEY, JSON.stringify(normalized));
+  return normalized;
+};
+
+const deleteCookie = (name) => {
+  const path = '; path=/';
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT${path}`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}${path}`;
+};
+
+const removeAnalyticsCookies = () => {
+  const analytics = COOKIE_CATALOG.find((cookie) => cookie.id === 'analytics');
+  if (!analytics) return;
+  analytics.cookies.forEach((cookie) => deleteCookie(cookie));
+};
+
+const injectAnalytics = () => {
+  if (document.querySelector('script[data-cookie="analytics"]')) return;
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-2W59RJL0L7';
+  script.dataset.cookie = 'analytics';
+  script.onload = () => {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments);
+    };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-2W59RJL0L7');
+  };
+  document.head.appendChild(script);
+};
+
+const applyCookiePreferences = (preferences) => {
+  const analyticsAllowed = Boolean(preferences.analytics);
+  window['ga-disable-G-2W59RJL0L7'] = !analyticsAllowed;
+
+  if (analyticsAllowed) {
+    injectAnalytics();
+  } else {
+    removeAnalyticsCookies();
+  }
+};
+
+const renderCookieOptions = (container, selected = getCookiePreferences()) => {
+  container.innerHTML = COOKIE_CATALOG.map((cookie) => {
+    const checked = Boolean(selected[cookie.id]);
+    const disabled = cookie.required ? 'disabled' : '';
+    return `
+      <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/3 p-3 ${cookie.required ? 'opacity-90' : ''}">
+        <input type="checkbox" data-cookie-id="${cookie.id}" ${checked ? 'checked' : ''} ${disabled}
+               class="mt-1 h-4 w-4 accent-white" />
+        <span class="flex-1">
+          <span class="flex items-center gap-2 text-sm font-semibold text-white">
+            ${cookie.label}
+            ${cookie.required ? '<span class="rounded-full border border-white/15 px-2 py-0.5 text-[10px] uppercase tracking-[.12em] text-white/60">Obligatoria</span>' : ''}
+          </span>
+          <span class="mt-1 block text-sm leading-relaxed text-white/65">${cookie.description}</span>
+          ${cookie.vendor ? `<span class="mt-1 block text-[11px] uppercase tracking-[.12em] text-white/50">Proveedor: ${cookie.vendor}</span>` : ''}
+        </span>
+      </label>
+    `;
+  }).join('');
+};
+
+const openCookieModal = () => {
+  const modal = document.getElementById('cookie-modal');
+  if (!modal) return;
+  renderCookieOptions(document.getElementById('cookie-options'), getCookiePreferences());
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+const closeCookieModal = () => {
+  const modal = document.getElementById('cookie-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+const showCookieBanner = () => {
+  const banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  const prefs = getCookiePreferences();
+  if (prefs.analytics !== undefined && (prefs.analytics === true || prefs.analytics === false)) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+};
+
+const initCookieBanner = () => {
+  const preferences = getCookiePreferences();
+  applyCookiePreferences(preferences);
+
+  const banner = document.getElementById('cookie-banner');
+  if (banner) {
+    const acceptButton = document.getElementById('cookie-accept');
+    const rejectButton = document.getElementById('cookie-reject');
+    const settingsButton = document.getElementById('cookie-settings');
+    const linkButton = document.getElementById('cookie-link');
+    const closeButton = document.getElementById('cookie-close');
+    const saveButton = document.getElementById('cookie-save');
+    const acceptSelectedButton = document.getElementById('cookie-accept-selected');
+    const acceptAllModalButton = document.getElementById('cookie-accept-all-modal');
+
+    const allAccepted = COOKIE_CATALOG.reduce((acc, cookie) => {
+      acc[cookie.id] = true;
+      return acc;
+    }, {});
+
+    const acceptPreferences = (nextPrefs) => {
+      const saved = saveCookiePreferences(nextPrefs);
+      applyCookiePreferences(saved);
+      closeCookieModal();
+      banner.classList.add('hidden');
+    };
+
+    acceptButton?.addEventListener('click', () => acceptPreferences(allAccepted));
+    rejectButton?.addEventListener('click', () => {
+      const rejected = COOKIE_CATALOG.reduce((acc, cookie) => {
+        acc[cookie.id] = Boolean(cookie.required || cookie.enabledByDefault);
+        return acc;
+      }, {});
+      acceptPreferences(rejected);
+    });
+    settingsButton?.addEventListener('click', openCookieModal);
+    linkButton?.addEventListener('click', openCookieModal);
+    closeButton?.addEventListener('click', closeCookieModal);
+    saveButton?.addEventListener('click', () => {
+      const inputs = document.querySelectorAll('[data-cookie-id]');
+      const nextPrefs = COOKIE_CATALOG.reduce((acc, cookie) => {
+        const input = [...inputs].find((el) => el.dataset.cookieId === cookie.id);
+        acc[cookie.id] = Boolean(cookie.required || input?.checked);
+        return acc;
+      }, {});
+      acceptPreferences(nextPrefs);
+    });
+    acceptSelectedButton?.addEventListener('click', () => {
+      const inputs = document.querySelectorAll('[data-cookie-id]');
+      const nextPrefs = COOKIE_CATALOG.reduce((acc, cookie) => {
+        const input = [...inputs].find((el) => el.dataset.cookieId === cookie.id);
+        acc[cookie.id] = Boolean(cookie.required || input?.checked);
+        return acc;
+      }, {});
+      acceptPreferences(nextPrefs);
+    });
+    acceptAllModalButton?.addEventListener('click', () => acceptPreferences(allAccepted));
+  }
+
+  const current = getCookiePreferences();
+  if (!localStorage.getItem(COOKIE_KEY)) {
+    banner?.classList.remove('hidden');
+  } else {
+    banner?.classList.add('hidden');
+  }
+  if (current.analytics === false) {
+    window['ga-disable-G-2W59RJL0L7'] = true;
+  }
+};
 
 const els = {
   trivial: document.getElementById('trivial'),

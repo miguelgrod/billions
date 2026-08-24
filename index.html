@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Billions · ¿Cuánto sabes de cine?</title>
   <meta name="description" content="Juego de cine: taquilla, estrenos, directores, repartos y Óscars." />
+  <!-- El script de analítica se carga sólo tras el consentimiento del usuario.
+       Si añadimos nuevas cookies, se registran en la tabla de `COOKIE_CATALOG` y
+       el banner las refleja automáticamente sin reescribir el HTML. -->
   <!-- Tailwind y la tipografía se sirven desde aquí, no desde un CDN ajeno.
        Pedirlos fuera entregaba la IP de cada visitante a Google y a Tailwind sin
        que hiciera falta: son archivos estáticos y caben en el bucket. Así el
@@ -406,7 +409,8 @@
           <p class="text-xs text-white/25">
             Datos de The Numbers, FilmAffinity y Wikipedia ·
             <a href="privacidad.html" class="underline underline-offset-2 hover:text-white/60">Privacidad</a> ·
-            <a href="aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a>
+            <a href="aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a> ·
+            <button id="cookie-link" type="button" class="underline underline-offset-2 hover:text-white/60">Cookies</button>
           </p>
         </div>
       </div>
@@ -428,6 +432,46 @@
 
   </div>
 
+
+  <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 z-50 hidden">
+    <div class="glass-fuerte mx-auto max-w-5xl rounded-[28px] p-4 shadow-2xl sm:p-5">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <p class="display text-xl leading-none text-white sm:text-2xl">Gestiona tus cookies</p>
+          <p class="mt-2 text-sm leading-relaxed text-white/75">
+            Usamos cookies necesarias para que el juego funcione y, si lo autorizas,
+            cookies de analítica para medir visitas y mejorar la web. Puedes aceptar
+            todas, rechazar las opcionales o personalizar tu elección en cualquier momento.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2 sm:justify-end">
+          <button id="cookie-settings" type="button" class="foco glass rounded-full px-4 py-2.5 text-sm font-medium text-white">Configurar</button>
+          <button id="cookie-reject" type="button" class="foco glass rounded-full px-4 py-2.5 text-sm font-medium text-white">Rechazar opcionales</button>
+          <button id="cookie-accept" type="button" class="foco rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black">Aceptar todas</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cookie-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
+    <div class="glass-fuerte w-full max-w-2xl rounded-[28px] p-5 shadow-2xl sm:p-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="display text-2xl leading-none text-white">Preferencias de cookies</p>
+          <p class="mt-2 text-sm text-white/70">Elige qué cookies quieres permitir en este sitio.</p>
+        </div>
+        <button id="cookie-close" type="button" aria-label="Cerrar" class="foco rounded-full border border-white/15 px-3 py-1.5 text-sm text-white/80">✕</button>
+      </div>
+
+      <div id="cookie-options" class="mt-5 space-y-3"></div>
+
+      <div class="mt-6 flex flex-col gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+        <button id="cookie-save" type="button" class="foco rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black">Guardar preferencias</button>
+        <button id="cookie-accept-selected" type="button" class="foco glass rounded-full px-4 py-2.5 text-sm font-medium text-white">Aceptar seleccionadas</button>
+        <button id="cookie-accept-all-modal" type="button" class="foco glass rounded-full px-4 py-2.5 text-sm font-medium text-white">Aceptar todas</button>
+      </div>
+    </div>
+  </div>
 
   <script src="movies.js?v=54203923" defer></script>
   <script src="posters.js?v=3e6b8c75" defer></script>
