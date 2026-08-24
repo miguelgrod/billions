@@ -120,6 +120,18 @@ nada más:
 Sus llaves van a los secretos `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY` del
 repositorio. Si falta un permiso, el workflow falla nombrando la acción exacta.
 
+## Trampas conocidas
+
+- **`aws s3 sync --delete` no borra lo que está excluido.** Si añades un archivo
+  a la lista de `--exclude` y ese archivo **ya estaba en el bucket**, se queda
+  ahí para siempre: el sync deja de subirlo, pero también deja de considerarlo
+  para el borrado. Pasó con `.gitignore` y hubo que quitarlo a mano desde la
+  consola. Si excluyes algo nuevo, comprueba si ya estaba publicado.
+- **La consola de S3 te devuelve a la región del bucket.** Estando en la página
+  del bucket, cambiar la región arriba a la derecha no sirve de nada: a los
+  cinco segundos te redirige de vuelta a Irlanda. Para ir a otra región, entra
+  por URL directa (`https://us-east-1.console.aws.amazon.com/acm/home?region=us-east-1`).
+
 ## Decisiones que conviene no deshacer
 
 - **Los Excel de origen, `tools/` y la documentación no se suben.** Hoy se
