@@ -63,6 +63,10 @@
        `touch-action: none`, un arrastre sobre él seguía moviendo la página en
        móvil aunque no se pudiera pulsar nada. */
     #cookie-velo { touch-action: none; }
+    /* La cabecera del juego y sus botones tienen que quedar por encima del
+       overlay de la intro cuando se pasa a la partida, y no quedar soterrados
+       por la capa de la portada en móvil. */
+    #app { position: relative; z-index: 10; }
     /* Centrado que no se come el principio. Con `justify-content: center`, si el
        contenido no cabe se desborda por ARRIBA y no hay manera de llegar a él:
        en un portátil bajo el título quedaba fuera de la pantalla. La palabra
