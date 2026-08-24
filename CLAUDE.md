@@ -8,18 +8,16 @@ revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. 
 al tercero se acaba la partida. En producción:
 **https://bonitu.es/billions/**
 
-Vive dentro del repo de **Bonitu Plays** y se despliega con él, pero es un
-**site independiente**: no comparte código, estilos ni datos con el juego de
-niveles ni con el recetario. No lo enlaces desde el sitio padre salvo petición.
+**Proyecto independiente.** Nació dentro del repo de Bonitu Plays y se
+publicaba con él; **el 2026-08-24 salió a repositorio, bucket y distribución
+propios**. No comparte código, estilos ni datos con el juego de niveles ni con
+el recetario.
 
-> **El proyecto acabará saliendo de Bonitu** (Miguel, 2026-08-24). La separación
-> es el destino, no sólo una norma de estilo, y eso manda en las decisiones de
-> arquitectura: **no lo acoples a la infraestructura del padre**. Si hace falta
-> un servicio nuevo —base de datos, analítica, dominio, páginas legales—, se le
-> monta el suyo desde el principio aunque cueste más, para no tener que migrarlo
-> después. Lo que hoy es compartido y habrá que sustituir: el despliegue (S3
-> `bonituplay` + CloudFront `E3LRZQIIEJH24`), el dominio, y las páginas de
-> privacidad, cookies y aviso legal, que hoy son las del padre.
+> **No lo acoples a la infraestructura de Bonitu.** Si hace falta un servicio
+> nuevo —base de datos, analítica, dominio—, se le monta el suyo. Lo único que
+> sigue heredado son las páginas de privacidad, cookies y aviso legal, que son
+> las de bonitu.es y hay que escribirle las propias: ver
+> [INFRAESTRUCTURA.md](INFRAESTRUCTURA.md).
 
 ## Lo esencial en 30 segundos
 
@@ -640,11 +638,12 @@ patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
 
 **"Publicar" aquí significa desplegar, no crear un Artifact.**
 
-**Billions tiene alojamiento propio en marcha** —bucket `billions-cine` en
-eu-west-1 y su propio `deploy-billions.yml`, que sincroniza sólo `billions/`—.
-Los pasos de creación y las decisiones están en
-[INFRAESTRUCTURA.md](INFRAESTRUCTURA.md). Lo de abajo describe el despliegue
-compartido con Bonitu, que sigue vivo mientras dure la mudanza.
+Push a `main` → GitHub Actions (`.github/workflows/deploy.yml`) → bucket
+`billions-cine` (eu-west-1) + invalidación de CloudFront `EJYIWS894T0ZX`.
+En producción: **https://d1qd7dxsg5ongd.cloudfront.net**
+
+Los detalles de la infraestructura y lo que queda pendiente están en
+[INFRAESTRUCTURA.md](INFRAESTRUCTURA.md).
 
 - Raíz del repo: `/Users/miguelgarciarodriguez/Dropbox/Claude/Bonitu` (rama `main`).
 - Push a `main` → GitHub Actions → `aws s3 sync --delete` al bucket `bonituplay`

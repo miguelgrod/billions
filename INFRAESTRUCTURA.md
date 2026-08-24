@@ -1,16 +1,16 @@
 # Billions — alojamiento propio
 
-El proyecto **acabará saliendo de Bonitu**, así que su alojamiento se monta
-aparte desde el principio: bucket propio, distribución propia y un workflow que
-sólo mira `billions/`. Cuando se mude a su repositorio, se lleva
-`.github/workflows/deploy-billions.yml` y basta con cambiar la ruta.
+El proyecto **salió de Bonitu el 2026-08-24**: repositorio
+(`miguelgrod/billions`), bucket y distribución propios. El historial se extrajo
+con `git subtree split --prefix=billions`, así que los 34 commits originales
+siguen aquí.
 
 | | Bonitu (padre) | Billions |
 |---|---|---|
 | Bucket | `bonituplay` | **`billions-cine`** |
 | Región | us-east-1 | **eu-west-1** (Irlanda) |
 | CloudFront | `E3LRZQIIEJH24` | pendiente → variable `BILLIONS_CF_ID` |
-| Workflow | `deploy.yml` (repo entero) | `deploy-billions.yml` (sólo `billions/`) |
+| Workflow | `deploy.yml` en `miguelgrod/bonitu` | `deploy.yml` en `miguelgrod/billions` |
 
 ## Cómo se crea (consola de AWS)
 
@@ -87,4 +87,3 @@ Si falta alguno, el workflow falla nombrando la acción exacta.
   guarde un apodo en una clasificación.
 - **Atribución de fuentes**: The Numbers, FilmAffinity y Wikipedia. Se quitaron
   todas las leyendas y no queda ninguna.
-- **Repositorio propio.**
