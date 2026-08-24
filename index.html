@@ -5,11 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Billions · ¿Cuánto sabes de cine?</title>
   <meta name="description" content="Juego de cine: taquilla, estrenos, directores, repartos y Óscars." />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <!-- Tailwind y la tipografía se sirven desde aquí, no desde un CDN ajeno.
+       Pedirlos fuera entregaba la IP de cada visitante a Google y a Tailwind sin
+       que hiciera falta: son archivos estáticos y caben en el bucket. Así el
+       sitio no hace NINGUNA petición a terceros y la política de privacidad
+       puede decirlo de verdad. Sigue sin haber build. -->
+  <script src="vendor/tailwind.js?v=2810894e"></script>
   <style>
+    /* Inter variable, sólo los subconjuntos latinos: es lo que necesita el
+       castellano y los títulos en inglés. `swap` para que el texto se lea desde
+       el primer instante aunque la fuente aún no haya llegado. */
+    @font-face {
+      font-family: 'Inter';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('fonts/inter-latin-ext.woff2') format('woff2');
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: 'Inter';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('fonts/inter-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
     /* En dispositivos Apple esto resuelve a San Francisco de verdad; en el resto,
        Inter, que es la sustituta más cercana. */
     :root {
@@ -345,7 +367,7 @@
         </header>
 
         <!-- Las ocho temáticas con su esfera: el color se aprende aquí, no jugando -->
-        <div id="intro-cats" class="aparece grid w-full max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"></div>
+        <div id="intro-cats" class="aparece grid w-full max-w-4xl grid-cols-4 gap-2 sm:grid-cols-8 sm:gap-2.5"></div>
 
         <ol class="aparece grid w-full max-w-5xl gap-4 text-left sm:grid-cols-3 sm:gap-10">
           <li class="flex items-start gap-4 sm:flex-col sm:items-center sm:gap-3 sm:text-center">
@@ -378,6 +400,14 @@
             Empezar a jugar
           </button>
           <p id="intro-best" class="h-5 text-sm text-white/40"></p>
+          <!-- Discreto pero presente: las legales son obligatorias y la
+               atribución a las fuentes estaba pendiente desde que se quitaron
+               las leyendas del tablero. -->
+          <p class="text-xs text-white/25">
+            Datos de The Numbers, FilmAffinity y Wikipedia ·
+            <a href="privacidad.html" class="underline underline-offset-2 hover:text-white/60">Privacidad</a> ·
+            <a href="aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a>
+          </p>
         </div>
       </div>
     </div>
@@ -405,6 +435,6 @@
   <script src="actors.js?v=cd0f29e3" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="main.js?v=d9ac259b" defer></script>
+  <script src="main.js?v=b0879c6b" defer></script>
 </body>
 </html>

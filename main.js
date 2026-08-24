@@ -800,18 +800,32 @@ function pintaIntro() {
       </div>`;
   }).join('');
 
-  // Cada temática con su esfera al lado: el código de color se aprende aquí y
-  // no a base de fallar partidas.
+  // Cada temática como un cartelito, con una foto suya de fondo igual que las
+  // burbujas: el código de color y el tipo de imagen se aprenden aquí y no a
+  // base de fallar partidas. Comparten el `usadas` de las esferas, así que en
+  // toda la portada no se repite ninguna imagen.
   els.introCats.innerHTML = CATEGORIAS.map((cat) => {
     const color = COLORES[cat];
-    const { luz, medio, hondo } = ESFERA[cat];
-    return `<span class="glass flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left sm:gap-3 sm:px-3.5 sm:py-3">
-      <span class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9"
-            style="background:radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%);
-                   box-shadow:0 6px 16px -6px ${medio}88">
-        ${iconoHTML(cat, { clase: 'h-[18px] w-[18px]', color: hondo, grosor: 1.9 })}
+    const { medio, hondo } = ESFERA[cat];
+    const img = imagenPara(cat, usadas);
+    const encuadre = ES_PERSONA.has(cat) ? 'center 22%' : 'center';
+    // comillas simples: las dobles cerrarían el atributo style
+    const fondo = img
+      ? `url('${img}') ${encuadre}/cover`
+      : `linear-gradient(160deg, ${medio}, ${hondo})`;
+    return `<span class="cartel group relative block overflow-hidden rounded-xl sm:rounded-2xl"
+                  style="aspect-ratio:3/4;background:${fondo};box-shadow:0 14px 30px -14px rgba(0,0,0,.8)">
+      <!-- velo de color: identifica la categoría y deja legible el rótulo -->
+      <span class="pointer-events-none absolute inset-0"
+            style="background:linear-gradient(to top, ${hondo}f2 0%, ${hondo}bf 34%, ${medio}4d 72%, ${medio}1a 100%)"></span>
+      <span class="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 px-1 pb-2 pt-6 sm:gap-1.5 sm:pb-2.5">
+        ${iconoHTML(cat, { clase: 'h-4 w-4 sm:h-[18px] sm:w-[18px]', color: '#fff', grosor: 1.9 })}
+        <span class="text-center text-[10px] font-semibold leading-none tracking-tight text-white sm:text-[11px]"
+              style="text-shadow:0 1px 6px rgba(0,0,0,.7)">${ETIQUETAS[cat]}</span>
       </span>
-      <span class="text-[13px] font-semibold leading-tight sm:text-sm" style="color:${color}">${ETIQUETAS[cat]}</span>
+      <!-- filo de color, que es lo que los hace parecer carteles enmarcados -->
+      <span class="pointer-events-none absolute inset-0 rounded-xl sm:rounded-2xl"
+            style="box-shadow:inset 0 0 0 1px ${color}59"></span>
     </span>`;
   }).join('');
 }

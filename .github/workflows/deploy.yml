@@ -38,7 +38,7 @@ jobs:
       - name: Sincronizar con S3
         run: |
           aws s3 sync . "s3://${BUCKET}" --delete \
-            --exclude "index.html" \
+            --exclude "*.html" \
             --exclude "*.md" \
             --exclude "*.xlsx" \
             --exclude ".git/*" \
@@ -50,12 +50,14 @@ jobs:
             --exclude "*/.DS_Store" \
             --cache-control "public, max-age=31536000, immutable"
 
-      # index.html es la puerta de entrada y la que trae las huellas nuevas: si
-      # se guardase, el navegador seguiría pidiendo las versiones viejas de todo
-      # lo demás y el despliegue no se notaría.
-      - name: Subir index.html sin caché
+      # Las páginas HTML van sin caché. index.html porque es la puerta de entrada
+      # y la que trae las huellas nuevas —si se guardase, el navegador seguiría
+      # pidiendo las versiones viejas de todo lo demás—, y las legales porque
+      # tienen que poder corregirse el mismo día.
+      - name: Subir las páginas HTML sin caché
         run: |
-          aws s3 cp index.html "s3://${BUCKET}/index.html" \
+          aws s3 cp . "s3://${BUCKET}" --recursive \
+            --exclude "*" --include "*.html" \
             --cache-control "no-cache, must-revalidate" \
             --content-type "text/html; charset=utf-8"
 

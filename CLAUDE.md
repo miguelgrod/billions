@@ -21,9 +21,18 @@ el recetario.
 
 ## Lo esencial en 30 segundos
 
-- **Sin build ni dependencias.** Tailwind entra por el CDN Play (`cdn.tailwindcss.com`),
-  que compila las clases en el navegador. Se abre con doble clic o
-  `python3 -m http.server`.
+- **Sin build ni dependencias.** Tailwind es el CDN Play, que compila las clases
+  en el navegador, pero **servido desde `vendor/tailwind.js`**, no desde
+  `cdn.tailwindcss.com`. Igual la tipografía Inter, en `fonts/`.
+  **El sitio no hace NINGUNA petición externa**, y eso no es una optimización:
+  pedir esos archivos fuera entregaba la IP de cada visitante a Google y a
+  Tailwind, lo que obliga a declararlo y discutiblemente a pedir consentimiento.
+  Alojándolos, la política de privacidad puede decir la verdad en dos párrafos y
+  no hace falta banner de cookies. **Si añades una biblioteca, tráetela.**
+- **Páginas legales propias**: `privacidad.html` y `aviso-legal.html`, enlazadas
+  al pie de la portada junto a la atribución de fuentes. Si alguna vez se guarda
+  algo en un servidor —una clasificación, por ejemplo—, hay que actualizarlas
+  **antes** de ponerlo en marcha.
 - **Antes de desplegar un cambio de datos, pasa `tools/sella-versiones.py`.**
   Pone la huella del contenido en cada `<script src>` (`actores.js?v=3d235854`).
   Sin eso, un navegador que ya se había guardado `actores.js` seguía usándolo:
