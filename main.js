@@ -161,13 +161,56 @@ const getCookiePreferences = () => {
   }
 };
 
+// Guardar va entre try/catch como todo lo que toca localStorage: en modo
+// privado lanza. Y aquí importa más que en el récord — con el muro puesto, una
+// excepción al pulsar "Aceptar" dejaría la página bloqueada para siempre. Si no
+// se puede guardar, la decisión vale para esta visita y el aviso volverá a la
+// siguiente, que es el único fallo aceptable.
+let decisionDeEstaVisita = null;
+
 const saveCookiePreferences = (preferences) => {
   const normalized = COOKIE_CATALOG.reduce((acc, cookie) => {
     acc[cookie.id] = cookie.required || Boolean(preferences[cookie.id]);
     return acc;
   }, {});
-  localStorage.setItem(COOKIE_KEY, JSON.stringify(normalized));
+  decisionDeEstaVisita = normalized;
+  try {
+    localStorage.setItem(COOKIE_KEY, JSON.stringify(normalized));
+  } catch (error) {
+    /* modo privado: nos quedamos con la decisión en memoria */
+  }
   return normalized;
+};
+
+// Si ya hay decisión no hace falta preguntar. `decisionDeEstaVisita` cubre el
+// caso en que localStorage no admita escrituras.
+const hayDecisionDeCookies = () => {
+  if (decisionDeEstaVisita) return true;
+  try {
+    return localStorage.getItem(COOKIE_KEY) !== null;
+  } catch (error) {
+    return false;
+  }
+};
+
+// ---- Muro de cookies -------------------------------------------------------
+// Mientras no haya decisión no se juega ni se hace scroll. El velo tapa el
+// tablero, `inert` en #app apaga de golpe el ratón, el foco y el árbol de
+// accesibilidad de todo lo que hay debajo —incluida la portada, que vive
+// dentro— y el overflow oculto en html/body corta el desplazamiento. El banner
+// y el diálogo quedan fuera de #app a propósito: son lo único que responde.
+const bloqueaHastaDecidir = () => {
+  document.documentElement.classList.add('cookies-bloqueado');
+  document.body.classList.add('cookies-bloqueado');
+  document.getElementById('cookie-velo')?.classList.remove('hidden');
+  document.getElementById('app')?.setAttribute('inert', '');
+};
+
+const liberaTrasDecidir = () => {
+  document.documentElement.classList.remove('cookies-bloqueado');
+  document.body.classList.remove('cookies-bloqueado');
+  document.getElementById('cookie-velo')?.classList.add('hidden');
+  document.getElementById('app')?.removeAttribute('inert');
 };
 
 const deleteCookie = (name) => {
@@ -249,12 +292,13 @@ const closeCookieModal = () => {
 const showCookieBanner = () => {
   const banner = document.getElementById('cookie-banner');
   if (!banner) return;
-  const hasDecision = localStorage.getItem(COOKIE_KEY) !== null;
-  if (hasDecision) {
+  if (hayDecisionDeCookies()) {
     banner.classList.add('hidden');
+    liberaTrasDecidir();
     return;
   }
   banner.classList.remove('hidden');
+  bloqueaHastaDecidir();
 };
 
 const initCookieBanner = () => {
@@ -282,6 +326,7 @@ const initCookieBanner = () => {
       applyCookiePreferences(saved);
       closeCookieModal();
       banner.classList.add('hidden');
+      liberaTrasDecidir();
     };
 
     acceptButton?.addEventListener('click', () => acceptPreferences(allAccepted));
@@ -317,10 +362,12 @@ const initCookieBanner = () => {
   }
 
   const current = getCookiePreferences();
-  if (!localStorage.getItem(COOKIE_KEY)) {
+  if (!hayDecisionDeCookies()) {
     banner?.classList.remove('hidden');
+    bloqueaHastaDecidir();
   } else {
     banner?.classList.add('hidden');
+    liberaTrasDecidir();
   }
   if (current.analytics === false) {
     window['ga-disable-G-2W59RJL0L7'] = true;
@@ -1676,6 +1723,9 @@ function closeIntro() {
 els.play.addEventListener('click', closeIntro);
 
 document.addEventListener('keydown', (e) => {
+  // `inert` no alcanza a los oyentes colgados de document: sin esto se podía
+  // arrancar la partida con Enter por debajo del muro.
+  if (!hayDecisionDeCookies()) return;
   if (introVisible()) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeIntro(); }
     return;

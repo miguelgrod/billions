@@ -50,6 +50,19 @@
        direcciones y deja parte de la interfaz fuera de pantalla. La primera
        declaración queda de reserva para navegadores sin dvh. */
     .alto-ventana { min-height: 100vh; min-height: 100dvh; }
+
+    /* Muro de cookies: hasta que no hay decisión, la página no se desplaza ni
+       responde. El bloqueo va en html Y en body porque según el navegador el
+       desplazamiento cuelga de uno o del otro, y `overscroll-behavior` corta el
+       rebote de iOS, que se desplaza igual con el overflow oculto. */
+    html.cookies-bloqueado, body.cookies-bloqueado {
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    /* El velo se come el gesto antes de que llegue al tablero: sin
+       `touch-action: none`, un arrastre sobre él seguía moviendo la página en
+       móvil aunque no se pudiera pulsar nada. */
+    #cookie-velo { touch-action: none; }
     /* Centrado que no se come el principio. Con `justify-content: center`, si el
        contenido no cabe se desborda por ARRIBA y no hay manera de llegar a él:
        en un portátil bajo el título quedaba fuera de la pantalla. La palabra
@@ -433,6 +446,11 @@
   </div>
 
 
+  <!-- Velo del muro de cookies. Va por encima de todo el juego (la portada
+       está en z-40) y por debajo del propio banner (z-50), así que lo único
+       que queda accesible es la decisión. -->
+  <div id="cookie-velo" class="fixed inset-0 z-[45] hidden bg-black/70 backdrop-blur-sm"></div>
+
   <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 z-50 hidden">
     <div class="glass-fuerte mx-auto max-w-5xl rounded-[28px] p-4 shadow-2xl sm:p-5">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -479,6 +497,6 @@
   <script src="actors.js?v=cd0f29e3" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="main.js?v=d5cd31c8" defer></script>
+  <script src="main.js?v=f9b51321" defer></script>
 </body>
 </html>
