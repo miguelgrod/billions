@@ -249,8 +249,8 @@ const closeCookieModal = () => {
 const showCookieBanner = () => {
   const banner = document.getElementById('cookie-banner');
   if (!banner) return;
-  const prefs = getCookiePreferences();
-  if (prefs.analytics !== undefined && (prefs.analytics === true || prefs.analytics === false)) {
+  const hasDecision = localStorage.getItem(COOKIE_KEY) !== null;
+  if (hasDecision) {
     banner.classList.add('hidden');
     return;
   }
@@ -326,6 +326,8 @@ const initCookieBanner = () => {
     window['ga-disable-G-2W59RJL0L7'] = true;
   }
 };
+
+initCookieBanner();
 
 const els = {
   trivial: document.getElementById('trivial'),
