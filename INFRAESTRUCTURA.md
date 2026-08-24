@@ -1,0 +1,90 @@
+# Billions — alojamiento propio
+
+El proyecto **acabará saliendo de Bonitu**, así que su alojamiento se monta
+aparte desde el principio: bucket propio, distribución propia y un workflow que
+sólo mira `billions/`. Cuando se mude a su repositorio, se lleva
+`.github/workflows/deploy-billions.yml` y basta con cambiar la ruta.
+
+| | Bonitu (padre) | Billions |
+|---|---|---|
+| Bucket | `bonituplay` | **`billions-cine`** |
+| Región | us-east-1 | **eu-west-1** (Irlanda) |
+| CloudFront | `E3LRZQIIEJH24` | pendiente → variable `BILLIONS_CF_ID` |
+| Workflow | `deploy.yml` (repo entero) | `deploy-billions.yml` (sólo `billions/`) |
+
+## Cómo se crea (consola de AWS)
+
+### 1. El bucket
+
+1. **S3 → Crear bucket**
+2. Nombre `billions-cine`, región **Europa (Irlanda) eu-west-1**
+3. **Bloquear todo el acceso público: DEJARLO ACTIVADO.** No es un descuido: el
+   bucket no se abre a internet, sólo lo lee CloudFront mediante OAC. Es más
+   seguro que el patrón antiguo de bucket público, y obliga a que todo el
+   tráfico pase por HTTPS.
+4. El resto por defecto → Crear
+
+### 2. La distribución de CloudFront
+
+5. **CloudFront → Crear distribución**
+6. **Origen**: elegir `billions-cine.s3.eu-west-1.amazonaws.com`.
+   **Ojo: el endpoint REST, no el de "website hosting".** El de website es
+   HTTP a secas y no funciona con OAC.
+7. **Acceso al origen** → *Origin access control settings (recomendado)* →
+   *Crear nuevo OAC* → aceptar los valores por defecto
+8. CloudFront avisa de que hay que actualizar la política del bucket: pulsar
+   **Copiar política**, ir a S3 → `billions-cine` → Permisos → Política del
+   bucket → pegar y guardar
+9. **Protocolo del visor**: *Redirect HTTP to HTTPS*
+10. **Política de caché**: crear una propia —por ejemplo `billions-con-query`—
+    con **cadenas de consulta: Todas**.
+    **Esto no es opcional.** Los `<script src>` llevan la versión en la
+    consulta (`main.js?v=d9ac259b`); con la política `CachingOptimized`, que
+    ignora la consulta, CloudFront devolvería el archivo viejo para la URL
+    nueva y el despliegue no se notaría. Es el mismo fallo que ya nos mordió
+    en el navegador, un piso más arriba.
+11. **Objeto raíz predeterminado**: `index.html`
+12. **Clase de precio**: sólo Norteamérica y Europa (más barato; el público
+    está aquí)
+13. Crear y esperar a que despliegue. Apuntar el **ID de la distribución** y
+    el **dominio** (`dXXXXXXXX.cloudfront.net`)
+
+### 3. Conectar el despliegue
+
+14. En GitHub → Settings → Secrets and variables → Actions → **Variables** →
+    nueva variable `BILLIONS_CF_ID` con el ID de la distribución.
+    Mientras no exista, el workflow despliega igual y se salta la invalidación.
+
+### 4. Permisos que necesita el usuario IAM
+
+Los secretos `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` ya existen para
+Bonitu, pero puede que su usuario no tenga permiso sobre el bucket nuevo. Hace
+falta, sobre `arn:aws:s3:::billions-cine` y `arn:aws:s3:::billions-cine/*`:
+
+- `s3:ListBucket`, `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`
+- y `cloudfront:CreateInvalidation` sobre la distribución
+
+Si falta alguno, el workflow falla nombrando la acción exacta.
+
+## Decisiones que conviene no deshacer
+
+- **Los Excel de origen, `tools/` y la documentación no se suben.** Hoy se
+  sirven en `bonitu.es/billions/` —`top_50_actores_numero_peliculas.xlsx`
+  responde 200— y no pintan nada en un sitio web.
+- **`index.html` va sin caché y todo lo demás un año.** Se puede porque cada
+  `<script src>` lleva la huella de su contenido: si un archivo cambia, cambia
+  su URL. La puerta de entrada es la única que tiene que pedirse siempre.
+- **Antes de desplegar datos hay que pasar `tools/sella-versiones.py`**, que es
+  lo que pone esas huellas. Sin ellas, el año de caché juega en contra.
+
+## Lo que falta para la independencia completa
+
+- **Dominio propio.** Hasta entonces la URL es la de CloudFront. Con dominio
+  hacen falta además un certificado en ACM (**en us-east-1**, es el único sitio
+  donde CloudFront los lee) y el CNAME en la distribución.
+- **Páginas legales propias**: privacidad, cookies y aviso legal son hoy las de
+  bonitu.es y Billions no enlaza ninguna. Pasan a ser obligatorias el día que se
+  guarde un apodo en una clasificación.
+- **Atribución de fuentes**: The Numbers, FilmAffinity y Wikipedia. Se quitaron
+  todas las leyendas y no queda ninguna.
+- **Repositorio propio.**

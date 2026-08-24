@@ -638,7 +638,13 @@ patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
 
 ## Publicar
 
-**"Publicar" aquí significa desplegar a bonitu.es, no crear un Artifact.**
+**"Publicar" aquí significa desplegar, no crear un Artifact.**
+
+**Billions tiene alojamiento propio en marcha** —bucket `billions-cine` en
+eu-west-1 y su propio `deploy-billions.yml`, que sincroniza sólo `billions/`—.
+Los pasos de creación y las decisiones están en
+[INFRAESTRUCTURA.md](INFRAESTRUCTURA.md). Lo de abajo describe el despliegue
+compartido con Bonitu, que sigue vivo mientras dure la mudanza.
 
 - Raíz del repo: `/Users/miguelgarciarodriguez/Dropbox/Claude/Bonitu` (rama `main`).
 - Push a `main` → GitHub Actions → `aws s3 sync --delete` al bucket `bonituplay`
