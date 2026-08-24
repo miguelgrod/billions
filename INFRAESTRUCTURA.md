@@ -55,16 +55,34 @@ siguen aquí.
     nueva variable `BILLIONS_CF_ID` con el ID de la distribución.
     Mientras no exista, el workflow despliega igual y se salta la invalidación.
 
-### 4. Permisos que necesita el usuario IAM
+### 4. El usuario que despliega
 
-Los secretos `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` ya existen para
-Bonitu, pero puede que su usuario no tenga permiso sobre el bucket nuevo. Hace
-falta, sobre `arn:aws:s3:::billions-cine` y `arn:aws:s3:::billions-cine/*`:
+**Usuario propio, no el de Bonitu.** Reutilizar aquellas llaves volvería a atar
+los dos proyectos justo por donde se separaron, y además GitHub no deja
+recuperar el valor de un secreto ya guardado.
 
-- `s3:ListBucket`, `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`
-- y `cloudfront:CreateInvalidation` sobre la distribución
+Usuario IAM `billions-deploy`, sin acceso a la consola, con esta política y
+nada más:
 
-Si falta alguno, el workflow falla nombrando la acción exacta.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "ListarElBucket", "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::billions-cine" },
+    { "Sid": "EscribirElSitio", "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::billions-cine/*" },
+    { "Sid": "InvalidarLaCache", "Effect": "Allow",
+      "Action": "cloudfront:CreateInvalidation",
+      "Resource": "arn:aws:cloudfront::859741819165:distribution/EJYIWS894T0ZX" }
+  ]
+}
+```
+
+Sus llaves van a los secretos `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY` del
+repositorio. Si falta un permiso, el workflow falla nombrando la acción exacta.
 
 ## Decisiones que conviene no deshacer
 
