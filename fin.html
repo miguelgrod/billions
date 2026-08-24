@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billions · Resultado</title>
+  <script src="vendor/tailwind.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #07080c;
+      color: rgba(255,255,255,0.9);
+    }
+    .display {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+      letter-spacing: -0.06em;
+      font-weight: 700;
+    }
+    .glass {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(18px) saturate(120%);
+      -webkit-backdrop-filter: blur(18px) saturate(120%);
+    }
+    .glass-fuerte {
+      background: rgba(15,16,22,0.52);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+    }
+    .foco {
+      transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, border-color .2s ease;
+    }
+    .foco:hover { transform: translateY(-1px); }
+    .foco:active { transform: translateY(0); }
+  </style>
+</head>
+<body class="min-h-screen overflow-hidden antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-20" style="background:#000"></div>
+  <div class="pointer-events-none fixed inset-0 -z-20"
+       style="background-image:url('imgs/bg_game.webp');background-size:cover;background-position:center;opacity:.18"></div>
+  <div class="pointer-events-none fixed inset-0 -z-10"
+       style="background:
+         radial-gradient(65% 50% at 18% 12%, rgba(255,159,10,.12), transparent 60%),
+         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.12), transparent 60%),
+         radial-gradient(65% 60% at 50% 92%, rgba(191,90,242,.10), transparent 60%)"></div>
+
+  <main class="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-8 sm:px-6">
+    <div class="glass-fuerte w-full max-w-2xl rounded-[32px] p-6 shadow-2xl sm:p-8">
+      <div class="mb-6 text-center">
+        <p id="fin-titulo" class="display text-4xl leading-none text-white sm:text-5xl">Fin de la partida</p>
+      </div>
+
+      <div class="mb-6 flex items-end justify-center gap-3">
+        <span class="display text-[64px] leading-none text-white sm:text-[88px]" id="fin-score">0</span>
+        <span id="fin-etiqueta" class="mb-2 text-sm uppercase tracking-[0.18em] text-white/50">PUNTOS</span>
+      </div>
+
+      <div class="glass rounded-[24px] p-4 sm:p-5">
+        <div id="fin-detalle" class="text-sm leading-relaxed text-white/75"></div>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <button id="fin-grabar" type="button" class="foco rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+          Grabar puntuación
+        </button>
+        <a href="index.html" class="foco inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black">
+          Jugar otra vez
+        </a>
+      </div>
+
+      <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-left shadow-[0_16px_36px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-[10px] font-medium uppercase tracking-[0.26em] text-white/45">Apoya el juego</p>
+          <span class="inline-flex rounded-full border border-[#FFDD00]/40 bg-[#FFDD00]/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#FFDD00]">café</span>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-white/80">
+          Si te ha gustado, puedes compartirlo y apoyar su desarrollo invitándome a un café.
+        </p>
+        <div class="mt-4 flex justify-center">
+          <a href="https://www.buymeacoffee.com/miguelgrod" target="_blank" rel="noreferrer noopener"
+             class="foco inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#FFDD00] via-[#FFD21A] to-[#FFCA28] px-4 py-2.5 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(255,221,0,0.22)] transition-transform duration-200 hover:scale-[1.02]">
+            Invítame a un café
+          </a>
+        </div>
+        <div class="mt-5 border-t border-white/10 pt-4">
+          <p class="text-center text-[10px] font-medium uppercase tracking-[0.22em] text-white/50">Compartir</p>
+          <div class="mt-3 flex items-center justify-center gap-2.5">
+            <a id="share-wa" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-base font-bold text-white shadow-[0_10px_24px_rgba(37,211,102,0.28)]" aria-label="Compartir por WhatsApp">W</a>
+            <a id="share-x" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-base font-bold text-black shadow-[0_10px_24px_rgba(255,255,255,0.15)]" aria-label="Compartir en X">X</a>
+            <a id="share-fb" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-base font-bold text-white shadow-[0_10px_24px_rgba(24,119,242,0.26)]" aria-label="Compartir en Facebook">f</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const FIN_KEY = 'billions.lastResult';
+    const result = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(FIN_KEY) || '{}');
+      } catch (error) {
+        return {};
+      }
+    })();
+
+    const titleEl = document.getElementById('fin-titulo');
+    const scoreEl = document.getElementById('fin-score');
+    const labelEl = document.getElementById('fin-etiqueta');
+    const detailEl = document.getElementById('fin-detalle');
+
+    if (result.titulo) titleEl.textContent = result.titulo;
+    if (typeof result.score === 'number') scoreEl.textContent = result.score;
+    if (result.etiqueta) labelEl.textContent = result.etiqueta.toUpperCase();
+    if (result.detalle) detailEl.innerHTML = result.detalle;
+
+    const shareUrl = 'https://ganoyo.com/';
+    const shareText = encodeURIComponent('He jugado a Billions · ¿Cuánto sabes de cine? ¿Te apuntas?');
+    document.getElementById('share-wa').href = `https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}`;
+    document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
+    document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+
+    document.getElementById('fin-grabar').addEventListener('click', () => {
+      // Sin acción por ahora; lo habilitaremos más adelante.
+    });
+  </script>
+</body>
+</html>
