@@ -532,10 +532,22 @@ clasificación pública. Vive en Supabase (proyecto `vupsyrunkwsqegdvtcbg`,
   - **Los nombres se escapan al pintarlos.** Los escribe cualquiera y van a un
     `innerHTML`: sin escapar, el primero que escriba `<img onerror=…>` como alias
     ejecuta código en el navegador de todos los demás.
-  - **Quien acaba de registrar su marca se guarda el identificador**
-    (`billions.miPuntuacion`) y su fila sale resaltada; la página se desplaza
-    hasta ella. En una lista de cien, encontrarse leyendo nombre por nombre es
-    incómodo.
+  - **Al llegar de registrar, la lista no empieza por el número uno: empieza
+    donde está el jugador.** Se guarda su identificador (`billions.miPuntuacion`),
+    se calcula su **puesto real** y se cargan 60 filas a partir de 20 antes que
+    él, con su fila resaltada, un distintivo «Tú» y la caja ya desplazada hasta
+    ahí. Desde ese punto puede subir y bajar para ver a los de alrededor.
+    - **El puesto se cuenta con los que empatan y llegaron antes**, no sólo con
+      los que tienen más puntos: sin esa segunda mitad, dos empatados
+      compartirían número y el ancla caería en la fila equivocada.
+    - **La tabla tiene su propio desplazamiento vertical** (`max-h-[62vh]`) con
+      la cabecera fija. El fondo de esa cabecera va en los `th` y no en el
+      `thead`: puesto en el `thead` no lo pintan todos los navegadores y las
+      filas se transparentaban al pasar por debajo.
+    - **El anclaje se hace sin animación**: la lista tiene que aparecer ya
+      colocada, no desplazarse sola delante del jugador.
+    - Si la lista no empieza por el primero aparece **«Ver a los primeros»**.
+    - Si su entrada ya no existe —borrada— se cae al top sin decir nada.
   - **La tabla se desplaza dentro de su caja** (`overflow-x-auto`): un nombre
     largo no puede empujar la página entera a lo ancho en un móvil.
   - Tres estados probados: con datos, vacía («Sé el primero») y con el servidor
