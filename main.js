@@ -24,9 +24,6 @@ const COOKIE_CATALOG = [
     enabledByDefault: false,
   },
 ];
-const VIDAS = 3;           // se permiten dos fallos; el tercero acaba la partida
-const TIEMPO = 10000;      // milisegundos para responder
-const PUNTOS_MAX = 100;    // se cobran enteros al instante y bajan hasta 0
 const TOAST_MS = 3000;     // lo que el aviso de resultado permanece visible
 const REVEAL_MS = 3200;    // tiempo para leer la respuesta antes de la ronda siguiente
 const GAMEOVER_MS = 3500;  // tiempo para leerla antes de la pantalla de fin
@@ -34,35 +31,11 @@ const COUNT_MS = 900;      // duración del contador de recaudación
 const OUT_MS = 260;        // salida de las tarjetas al cambiar de nivel
 const STAGGER_MS = 70;     // desfase entre tarjetas al entrar
 
-// Dificultad de los duelos: la marca lo parecidos que son los dos valores.
-// En taquilla es el ratio entre recaudaciones (2.0 = una dobla a la otra);
-// en estrenos, los años de diferencia. Ambas empiezan holgadas y se estrechan.
-const RATIO_INICIAL = 2.0, RATIO_SUELO = 1.12, RATIO_CAIDA = 0.85, BANDA = 1.45;
-// En estrenos, la diferencia de años NUNCA pasa de ANIOS_MAX. Preguntar si se
-// estrenó antes una de 1950 o una de 1995 no mide saber de cine: la gracia está
-// en distinguir estrenos próximos, no lejanos. Aquí el número es el máximo
-// admisible y baja con el nivel; en taquilla y en crítica el ratio y la nota
-// funcionan igual.
-const ANIOS_MAX = 5, ANIOS_SUELO = 1, ANIOS_CAIDA = 0.89;
-
-// Al elegir un "intruso" (director o actor que no es de la película) se coge de
-// una película lejana en el tiempo: no tenemos el reparto completo, sólo cinco
-// nombres, así que la distancia temporal es lo que evita afirmar en falso que
-// dos actores no coincidieron.
-const HUECO_SEGURO = 12;
-// Reparto: años de diferencia de edad admisibles entre los dos intérpretes.
-// Sin tope salían parejas como Zendaya (1996) contra Ben Kingsley (1943): un
-// cuarto de las preguntas separaba a los dos por más de 45 años y la mayor
-// llegaba a 128. No es dificultad, es que la pareja resulte verosímil.
-const EDAD_MAX = 22;
 
 // ---- Campo de burbujas ----
 // Veinte burbujas repartidas por la pantalla, cuatro de cada categoría. No hay
 // recorrido ni ficha ni dado: el jugador pulsa la burbuja que quiere y esa
 // plantea la pregunta de su categoría.
-const BURBUJAS = 20;
-const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat',
-                    'critica', 'filmografia', 'bso'];
 // En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
 // filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
 const REJILLA_ANCHA = { columnas: 5, filas: 4 };
@@ -429,11 +402,9 @@ const state = {
   best: 0,
   vidas: VIDAS,
   round: 1,
-  vistas: new Set(),    // películas ya preguntadas en esta partida
   ronda: null,          // la ronda en juego
   next: null,           // ronda precargada para la siguiente
   locked: true,
-  ultima: '',           // firma de la ronda anterior, para no repetirla
   semilla: 0,           // de aquí salen el campo y las veinte rondas
   bitacora: [],         // qué burbuja pulsó, qué respondió y cuánto tardó
   newRecord: false,
@@ -450,512 +421,6 @@ const state = {
   corriendo: false,     // bandera propia: t0 puede valer 0 y ser válido
   raf: 0,               // identificador de la animación de la barra
 };
-
-/* ---------- utilidades ---------- */
-
-/* ---------- el azar de la partida ----------
-
-   Dos generadores, y no es un capricho: todo lo que decide QUÉ se pregunta y
-   cuál es la respuesta sale de `azarPartida`, que va sembrado, de modo que una
-   partida entera se puede reproducir a partir de un número. Lo que sólo decide
-   cómo se ve —dónde cae cada burbuja, cuánto deriva, qué foto lleva de fondo—
-   se queda en `Math.random`.
-
-   Si lo decorativo compartiera el generador sembrado, la secuencia dependería
-   del tamaño de la pantalla y de qué imágenes hay en disco, y dos personas con
-   la misma semilla jugarían partidas distintas. */
-
-// mulberry32: un PRNG de 32 bits, corto y de calidad de sobra para esto.
-function mulberry32(semilla) {
-  let a = semilla >>> 0;
-  return function () {
-    a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const semillaAlAzar = () => (Math.random() * 4294967296) >>> 0;
-let semillaPartida = semillaAlAzar();
-let azarPartida = mulberry32(semillaPartida);
-
-// Vuelve a empezar la partida desde esta semilla. Devuelve la que ha quedado,
-// que es la que hay que guardar para poder reproducirla.
-function siembra(semilla) {
-  semillaPartida = (semilla === undefined ? semillaAlAzar() : semilla) >>> 0;
-  azarPartida = mulberry32(semillaPartida);
-  return semillaPartida;
-}
-
-const rnd = (n) => Math.floor(azarPartida() * n);
-const pick = (arr) => arr[rnd(arr.length)];
-const coin = () => azarPartida() < 0.5;
-
-// Las tres de siempre, para lo que sólo se ve y no se juega.
-const rndAdorno = (n) => Math.floor(Math.random() * n);
-const pickAdorno = (arr) => arr[rndAdorno(arr.length)];
-const fmtMoney = (n) => '$' + n.toLocaleString('es-ES', { maximumFractionDigits: 0 });
-
-/* ---------- imágenes ---------- */
-
-const posterOf = (m) =>
-  typeof POSTERS !== 'undefined' && POSTERS[m.r] ? 'posters/' + POSTERS[m.r] : null;
-const directorPhoto = (n) =>
-  typeof DIRECTOR_PHOTOS !== 'undefined' && DIRECTOR_PHOTOS[n] ? 'directors/' + DIRECTOR_PHOTOS[n] : null;
-const actorPhoto = (n) =>
-  typeof ACTOR_PHOTOS !== 'undefined' && ACTOR_PHOTOS[n] ? 'actors/' + ACTOR_PHOTOS[n] : null;
-const composerPhoto = (n) =>
-  typeof COMPOSER_PHOTOS !== 'undefined' && COMPOSER_PHOTOS[n] ? 'composers/' + COMPOSER_PHOTOS[n] : null;
-
-/* ---------- edades ---------- */
-
-const nacio = (n) => (typeof NACIMIENTOS !== 'undefined' ? NACIMIENTOS[n] : undefined);
-// Si de alguno de los dos no hay fecha, se deja pasar en vez de descartar: son
-// muy pocos y quedarse sin pareja es peor que no poder juzgar la diferencia.
-const edadCerca = (a, b, tope = EDAD_MAX) => {
-  const x = nacio(a), y = nacio(b);
-  return x === undefined || y === undefined ? true : Math.abs(x - y) <= tope;
-};
-
-/* ---------- fondos de datos ----------
-   Nada entra en juego sin fotografía: las películas siempre tienen carátula,
-   pero hay directores y actores sin foto, y esos quedan fuera. */
-
-const PELIS = MOVIES.filter(posterOf);
-const CON_DIRECTOR = PELIS.filter((m) => (m.d || []).length && m.d.every(directorPhoto));
-const CON_REPARTO = PELIS.filter((m) => reparto(m).length >= 2);
-// Como en dirección, se exige foto de todos los firmantes: si a una banda
-// sonora a cuatro manos le falta la cara de uno, la carta quedaría a medias.
-const CON_BSO = PELIS.filter((m) => (m.bso || []).length && m.bso.every(composerPhoto));
-// Una película entra en cada temática para la que tenga datos: no hace falta
-// que los tenga todos. Las clásicas, por ejemplo, no siempre traen recaudación.
-const CON_TAQUILLA = PELIS.filter((m) => typeof m.g === 'number');
-const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
-const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
-const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
-const CATEGORIAS_OSCAR = [...new Set(CON_CATEGORIA.flatMap((m) => m.oc))];
-// En qué años trabajó cada actor, hasta donde alcanzan nuestros datos. Es lo que
-// permite escoger un intruso cuya carrera conocida no roce la película por la
-// que se pregunta.
-const ANIOS_DE_ACTOR = (() => {
-  const mapa = new Map();
-  CON_REPARTO.forEach((p) => reparto(p).forEach((n) => {
-    if (!mapa.has(n)) mapa.set(n, []);
-    mapa.get(n).push(p.y);
-  }));
-  return mapa;
-})();
-const REPARTOS = [...ANIOS_DE_ACTOR.keys()];
-// Los cincuenta con más películas rodadas (actores.js). La foto la trae cada
-// uno consigo, así que aquí sólo hay que comprobar que venga.
-// La foto la trae cada uno consigo y tools/build-actores.py garantiza que el
-// archivo existe: aquí sólo se comprueba que venga el dato.
-const TOP_ACTORES = (typeof ACTORES_TOP !== 'undefined' ? ACTORES_TOP : [])
-  .filter((a) => a.f && typeof a.p === 'number');
-const fotoActorTop = (a) => 'actors/' + a.f;
-const DIRECTORES = [...new Set(CON_DIRECTOR.flatMap((m) => m.d))];
-const COMPOSITORES = [...new Set(CON_BSO.flatMap((m) => m.bso))];
-// En qué años compuso cada uno, hasta donde alcanzan nuestros datos: es lo que
-// permite medir si un intruso es de la época de la película o de otra.
-const ANIOS_DE_COMPOSITOR = (() => {
-  const mapa = new Map();
-  CON_BSO.forEach((m) => m.bso.forEach((n) => {
-    if (!mapa.has(n)) mapa.set(n, []);
-    mapa.get(n).push(m.y);
-  }));
-  return mapa;
-})();
-
-function reparto(m) {
-  return (m.a || []).filter(actorPhoto);
-}
-
-// Deja fuera las películas ya preguntadas en esta partida. Si quedasen muy
-// pocas, devuelve el depósito entero: antes repetir que quedarse sin preguntas.
-function frescas(pool, minimo = 10) {
-  const libres = pool.filter((m) => !state.vistas.has(m.r));
-  return libres.length >= minimo ? libres : pool;
-}
-
-/* ---------- construcción de rondas ---------- */
-
-function bandaRatio(level) {
-  const lo = RATIO_SUELO + (RATIO_INICIAL - RATIO_SUELO) * Math.pow(RATIO_CAIDA, level - 1);
-  return [lo, lo * BANDA];
-}
-
-// Filmografía: cuántas películas ha rodado cada uno, medido como ratio igual
-// que la taquilla. El tope de 2.0 (2.9 con la banda) es el mismo criterio de no
-// enfrentar cosas dispares que rige en los demás duelos.
-const FILMO_INICIAL = 2.0, FILMO_SUELO = 1.3, FILMO_CAIDA = 0.87;
-// Y además una diferencia mínima en películas, porque los recuentos no son
-// exactos: el Excel marca cada cifra como verificada, estimada o provisional y
-// le asigna su margen (`tol`). El duelo exige que la diferencia supere la suma
-// de los dos márgenes; si no, no lo decidiría el jugador sino el criterio de la
-// fuente. Un provisional contra un verificado necesita 18 películas de hueco;
-// dos verificados, con 10 les basta.
-const FILMO_MINIMO = 10;
-const margen = (a, b) => Math.max(FILMO_MINIMO, (a.tol || 0) + (b.tol || 0));
-
-// Diferencia de nota admisible: como mucho punto y medio, y estrechándose hasta
-// un par de décimas. Punto y medio ya es un abismo en FilmAffinity, donde el
-// catálogo entero cabe entre el 4,8 y el 9.
-const NOTA_MAX = 1.5, NOTA_SUELO = 0.2, NOTA_CAIDA = 0.86;
-
-function bandaFilmo(level) {
-  const lo = FILMO_SUELO + (FILMO_INICIAL - FILMO_SUELO) * Math.pow(FILMO_CAIDA, level - 1);
-  return [lo, lo * BANDA];
-}
-
-function huecoNota(level) {
-  return NOTA_SUELO + (NOTA_MAX - NOTA_SUELO) * Math.pow(NOTA_CAIDA, level - 1);
-}
-
-// Diferencia de años admisible: cinco al principio, uno al final.
-function huecoAnios(level) {
-  return Math.max(ANIOS_SUELO,
-    Math.round(ANIOS_SUELO + (ANIOS_MAX - ANIOS_SUELO) * Math.pow(ANIOS_CAIDA, level - 1)));
-}
-
-// Los nombres propios van resaltados dentro del enunciado: la pregunta dice de
-// qué película o de quién habla, en vez de remitir a las tarjetas.
-const nom = (t) => `<b class="font-semibold text-white">${t}</b>`;
-
-const cartaPeli = (m, opts = {}) => ({
-  img: posterOf(m),
-  titulo: m.t,
-  sub: opts.sinAnio ? null : String(m.y),
-  valor: opts.valor,
-  dinero: !!opts.dinero,
-  decimal: !!opts.decimal,
-});
-
-const cartaPersona = (nombre, foto, rol, valor, sufijo) => ({
-  img: foto, titulo: nombre, sub: rol, retrato: true, valor, sufijo,
-});
-
-// ---- Taquilla: ¿cuál recaudó más? ----
-function rondaTaquilla(level) {
-  const ratio = (a, b) => (a.g > b.g ? a.g / b.g : b.g / a.g);
-  const pool = frescas(CON_TAQUILLA);
-  let [lo, hi] = bandaRatio(level);
-  for (let i = 0; i < 40; i++) {
-    const a = pick(pool);
-    // el `b.g !== a.g` es imprescindible: varias películas antiguas comparten
-    // cifra redondeada, y un duelo empatado no tendría respuesta correcta
-    const rivales = pool.filter((b) => b !== a && b.g !== a.g
-      && ratio(a, b) >= lo && ratio(a, b) <= hi);
-    if (rivales.length) {
-      const b = pick(rivales);
-      const [x, y] = coin() ? [a, b] : [b, a];
-      return {
-        tipo: 'taquilla',
-        pregunta: `¿Qué recaudó más en todo el mundo, ${nom(x.t)} o ${nom(y.t)}?`,
-        modo: 'elige',
-        cartas: [cartaPeli(x, { valor: x.g, dinero: true }),
-                 cartaPeli(y, { valor: y.g, dinero: true })],
-        correcta: x.g > y.g ? 0 : 1,
-        pelis: [x, y],
-        firma: [x.r, y.r].sort((p, q) => p - q).join('-'),
-      };
-    }
-    if (i % 8 === 7) { lo *= 0.92; hi *= 1.12; }
-  }
-  return null;
-}
-
-// ---- Estrenos: ¿cuál se estrenó antes? ----
-function rondaAnio(level) {
-  // El máximo manda: la pareja nunca se separa más de lo que diga el nivel, y
-  // el nivel nunca pasa de ANIOS_MAX. El mínimo va pegado al máximo para que un
-  // nivel bajo no suelte por sorpresa un duelo de un año, que es el difícil.
-  const maximo = huecoAnios(level);
-  const minimo = Math.max(1, maximo - 1);
-  const pool = frescas(PELIS);
-  for (let i = 0; i < 40; i++) {
-    const a = pick(pool);
-    const rivales = pool.filter((b) => {
-      // `minimo` nunca baja de 1, así que el empate a año queda descartado: un
-      // duelo de estreno empatado no tendría respuesta correcta
-      const d = Math.abs(a.y - b.y);
-      return d >= minimo && d <= maximo;
-    });
-    if (rivales.length) {
-      const b = pick(rivales);
-      const [x, y] = coin() ? [a, b] : [b, a];
-      return {
-        tipo: 'anio',
-        pregunta: `¿Qué se estrenó antes, ${nom(x.t)} o ${nom(y.t)}?`,
-        modo: 'elige',
-        // el año va oculto: es justo lo que hay que adivinar
-        cartas: [cartaPeli(x, { sinAnio: true, valor: x.y }),
-                 cartaPeli(y, { sinAnio: true, valor: y.y })],
-        correcta: x.y < y.y ? 0 : 1,
-        pelis: [x, y],
-        firma: [x.r, y.r].sort((p, q) => p - q).join('-'),
-      };
-    }
-  }
-  return null;
-}
-
-// ---- Director: ¿dirigió esta persona esta película? ----
-function rondaDirector(level) {
-  const m = pick(frescas(CON_DIRECTOR));
-  const verdadero = coin();
-  let nombre;
-  if (verdadero) {
-    nombre = pick(m.d);
-  } else {
-    // cuanto más alto el nivel, más plausible el intruso: mismo momento del cine
-    const cerca = level > 6;
-    const candidatos = DIRECTORES.filter((n) => {
-      if (m.d.includes(n)) return false;
-      if (!cerca) return true;
-      return CON_DIRECTOR.some((o) => o.d.includes(n) && Math.abs(o.y - m.y) <= 6);
-    });
-    nombre = pick(candidatos.length ? candidatos : DIRECTORES.filter((n) => !m.d.includes(n)));
-  }
-  if (!nombre) return null;
-  const real = m.d.length > 1 ? `La dirigieron ${m.d.join(' y ')}` : `La dirigió ${m.d[0]}`;
-  return {
-    tipo: 'director',
-    pregunta: `¿Dirigió ${nom(nombre)} la película ${nom(m.t)}?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m), cartaPersona(nombre, directorPhoto(nombre), 'Director')],
-    correcta: verdadero,
-    pelis: [m],
-    explica: `${real}.`,
-    firma: `dir-${m.r}-${nombre}`,
-  };
-}
-
-// ---- Banda sonora: ¿compuso esta persona la de esta película? ----
-// Calcada de la de dirección, incluido el equilibrio: la respuesta se sortea
-// primero y luego se busca a quién nombrar, para que ni el sí ni el no salgan
-// gratis.
-function rondaBso(level) {
-  const m = pick(frescas(CON_BSO));
-  const verdadero = coin();
-  let nombre;
-  if (verdadero) {
-    nombre = pick(m.bso);
-  } else {
-    // cuanto más alto el nivel, más plausible el intruso: de la misma época,
-    // que es cuando de verdad hay que saberse quién firmó qué
-    const cerca = level > 6;
-    const candidatos = COMPOSITORES.filter((n) => {
-      if (m.bso.includes(n)) return false;
-      if (!cerca) return true;
-      return (ANIOS_DE_COMPOSITOR.get(n) || []).some((y) => Math.abs(y - m.y) <= 6);
-    });
-    nombre = pick(candidatos.length ? candidatos : COMPOSITORES.filter((n) => !m.bso.includes(n)));
-  }
-  if (!nombre) return null;
-  const real = m.bso.length > 1
-    ? `La compusieron ${m.bso.join(' y ')}`
-    : `La compuso ${m.bso[0]}`;
-  return {
-    tipo: 'bso',
-    pregunta: `¿Compuso ${nom(nombre)} la banda sonora de ${nom(m.t)}?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m), cartaPersona(nombre, composerPhoto(nombre), 'Compositor')],
-    correcta: verdadero,
-    pelis: [m],
-    explica: `${real}.`,
-    firma: `bso-${m.r}-${nombre}`,
-  };
-}
-
-// ---- Reparto: ¿coincidieron estos dos actores? ----
-function rondaActores(level) {
-  const m = pick(frescas(CON_REPARTO));
-  const cast = reparto(m);
-  const juntos = coin();
-  let candidatos;
-  if (juntos) {
-    candidatos = cast;
-  } else {
-    const hueco = Math.max(HUECO_SEGURO, Math.round(30 - level));
-    // El intruso tiene que estar lejos en TODA su filmografía conocida, no sólo
-    // en una película. Antes se cogía el reparto de las películas lejanas, y
-    // bastaba con que el actor tuviera una lejana para entrar: podía tener otra
-    // del mismo año que la preguntada y aun así afirmarse que no coincidieron.
-    candidatos = REPARTOS.filter((n) => !(m.a || []).includes(n)
-      && (ANIOS_DE_ACTOR.get(n) || []).every((y) => Math.abs(y - m.y) >= hueco));
-    if (!candidatos.length) return null;
-  }
-  // Varias tiradas buscando dos de una quinta parecida. Si no aparece ninguna
-  // —un reparto con un niño y un veterano, por ejemplo—, vale la última que
-  // salga: quedarse sin ronda es peor, porque la burbuja acabaría soltando la
-  // pregunta de otra categoría.
-  let a = null, b = null;
-  for (let i = 0; i < 12; i++) {
-    const x = pick(cast);
-    const otros = candidatos.filter((n) => n !== x);
-    if (!otros.length) continue;
-    const cerca = otros.filter((n) => edadCerca(x, n));
-    a = x;
-    b = pick(cerca.length ? cerca : otros);
-    if (cerca.length) break;
-  }
-  if (!a || !b) return null;
-  return {
-    tipo: 'actores',
-    pregunta: `¿Coincidieron ${nom(a)} y ${nom(b)} en ${nom(m.t)}?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m),
-             cartaPersona(a, actorPhoto(a), 'Reparto'),
-             cartaPersona(b, actorPhoto(b), 'Reparto')],
-    correcta: juntos,
-    pelis: [m],
-    explica: juntos ? `Sí: los dos están en ${m.t}.` : `No: ${b} no sale en ${m.t}.`,
-    firma: `act-${m.r}-${a}-${b}`,
-  };
-}
-
-// ---- Óscars: ¿ganó alguno? ----
-function rondaOscar() {
-  // se equilibra a propósito: sin esto saldría "no" tres de cada cuatro veces
-  const conPremio = coin();
-  const pool = frescas(CON_OSCAR.filter((m) => (m.o > 0) === conPremio), 6);
-  if (!pool.length) return null;
-  const m = pick(pool);
-  return {
-    tipo: 'oscar',
-    pregunta: `¿Ganó ${nom(m.t)} algún Óscar?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m)],
-    correcta: m.o > 0,
-    pelis: [m],
-    explica: m.o > 0
-      ? `Ganó ${m.o} ${m.o === 1 ? 'Óscar' : 'Óscars'}.`
-      : 'No ganó ninguno.',
-    firma: `osc-${m.r}`,
-  };
-}
-
-// ---- Crítica: ¿cuál tiene mejor nota en FilmAffinity? ----
-function rondaCritica(level) {
-  const maximo = huecoNota(level);
-  const minimo = Math.max(0.1, maximo * 0.55);
-  const pool = frescas(CON_NOTA);
-  for (let i = 0; i < 40; i++) {
-    const a = pick(pool);
-    const rivales = pool.filter((b) => {
-      // la resta de dos notas de una decimal arrastra ruido binario (8.1 - 7.2
-      // da 0.8999…), y sin redondear la comparación con la banda falla por poco
-      const d = Math.round(Math.abs(a.fa - b.fa) * 10) / 10;
-      return d >= minimo && d <= maximo;
-    });
-    if (rivales.length) {
-      const b = pick(rivales);
-      const [x, y] = coin() ? [a, b] : [b, a];
-      return {
-        tipo: 'critica',
-        pregunta: `¿Cuál tiene mejor nota en FilmAffinity, ${nom(x.t)} o ${nom(y.t)}?`,
-        modo: 'elige',
-        cartas: [cartaPeli(x, { valor: x.fa, decimal: true }),
-                 cartaPeli(y, { valor: y.fa, decimal: true })],
-        correcta: x.fa > y.fa ? 0 : 1,
-        pelis: [x, y],
-        firma: `fa-${[x.r, y.r].sort((p, q) => p - q).join('-')}`,
-      };
-    }
-  }
-  return null;
-}
-
-// ---- Filmografía: ¿quién ha rodado más películas? ----
-function rondaFilmografia(level) {
-  const ratio = (a, b) => (a.p > b.p ? a.p / b.p : b.p / a.p);
-  const pool = TOP_ACTORES;
-  let [lo, hi] = bandaFilmo(level);
-  for (let i = 0; i < 40; i++) {
-    const a = pick(pool);
-    // Siete actores comparten las 55 películas y cinco las 60: un duelo
-    // empatado no tendría respuesta correcta, así que `FILMO_MINIMO` los
-    // descarta de paso.
-    const rivales = pool.filter((b) => b !== a
-      && Math.abs(b.p - a.p) >= margen(a, b)
-      && ratio(a, b) >= lo && ratio(a, b) <= hi);
-    if (rivales.length) {
-      const b = pick(rivales);
-      const [x, y] = coin() ? [a, b] : [b, a];
-      return {
-        tipo: 'filmografia',
-        pregunta: `¿Quién ha rodado más películas, ${nom(x.n)} o ${nom(y.n)}?`,
-        modo: 'elige',
-        cartas: [cartaPersona(x.n, fotoActorTop(x), 'Intérprete', x.p, ' películas'),
-                 cartaPersona(y.n, fotoActorTop(y), 'Intérprete', y.p, ' películas')],
-        correcta: x.p > y.p ? 0 : 1,
-        // no lleva `pelis`: el depósito son personas, no películas, y `vistas`
-        // guarda identificadores de película
-        firma: `fi-${[x.n, y.n].sort().join('-')}`,
-      };
-    }
-    if (i % 8 === 7) { lo *= 0.94; hi *= 1.1; }
-  }
-  return null;
-}
-
-// ---- Categoría: ¿ganó el Óscar a tal cosa? ----
-function rondaCategoria() {
-  const m = pick(frescas(CON_CATEGORIA, 6));
-  const acertada = coin();
-  const ajenas = CATEGORIAS_OSCAR.filter((c) => !m.oc.includes(c));
-  const cat = acertada ? pick(m.oc) : pick(ajenas);
-  if (!cat) return null;
-  return {
-    tipo: 'oscarcat',
-    pregunta: `¿Ganó ${nom(m.t)} el Óscar a ${nom(cat)}?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m)],
-    correcta: acertada,
-    pelis: [m],
-    explica: `Ganó ${m.oc.length === 1 ? 'el Óscar a' : 'los Óscars a'} ${m.oc.join(', ')}.`,
-    firma: `cat-${m.r}-${cat}`,
-  };
-}
-
-const TIPOS = [
-  { id: 'taquilla', peso: 3, crea: rondaTaquilla, hay: () => CON_TAQUILLA.length > 1 },
-  { id: 'anio', peso: 2, crea: rondaAnio, hay: () => PELIS.length > 1 },
-  { id: 'director', peso: 2, crea: rondaDirector, hay: () => CON_DIRECTOR.length > 1 },
-  { id: 'actores', peso: 2, crea: rondaActores, hay: () => CON_REPARTO.length > 1 },
-  { id: 'oscar', peso: 2, crea: rondaOscar, hay: () => CON_OSCAR.length > 1 },
-  { id: 'oscarcat', peso: 2, crea: rondaCategoria, hay: () => CON_CATEGORIA.length > 1 },
-  { id: 'critica', peso: 2, crea: rondaCritica, hay: () => CON_NOTA.length > 1 },
-  { id: 'filmografia', peso: 2, crea: rondaFilmografia, hay: () => TOP_ACTORES.length > 1 },
-  { id: 'bso', peso: 2, crea: rondaBso, hay: () => CON_BSO.length > 1 && COMPOSITORES.length > 1 },
-];
-
-// `categoria` la impone la burbuja elegida; sin ella se sortea por peso
-function nuevaRonda(level, categoria) {
-  const disponibles = TIPOS.filter((t) => t.hay());
-  const forzado = categoria && TIPOS.find((t) => t.id === categoria && t.hay());
-  for (let intento = 0; intento < 30; intento++) {
-    const tipo = forzado || porPeso(disponibles);
-    const r = tipo.crea(level);
-    if (r && r.firma !== state.ultima) {
-      state.ultima = r.firma;
-      (r.pelis || []).forEach((m) => state.vistas.add(m.r));
-      return r;
-    }
-  }
-  return rondaTaquilla(level) || rondaOscar();
-}
-
-function porPeso(tipos) {
-  const total = tipos.reduce((s, t) => s + t.peso, 0);
-  let n = azarPartida() * total;
-  for (const t of tipos) {
-    n -= t.peso;
-    if (n <= 0) return t;
-  }
-  return tipos[tipos.length - 1];
-}
 
 /* ---------- pintado ---------- */
 
@@ -1228,29 +693,9 @@ function imagenPara(cat, usadas) {
 // azar. Se ve repartido por la pantalla y, a diferencia de sortear posiciones
 // libres, nunca se solapan.
 function reparteBurbujas() {
-  // Veinte burbujas entre nueve categorías no reparten exacto: cada una sale dos
-  // veces y dos salen una tercera. Las agraciadas se sortean en cada partida,
-  // así que no son siempre las mismas las que aparecen más.
-  // Se reparte a mano en vez de quitar sobrantes al azar: quitando al azar podía
-  // caer tres veces sobre la misma categoría y dejarla sin ninguna burbuja.
-  // Sólo las que de verdad pueden plantear pregunta: si un archivo de datos no
-  // llegara a cargar, su categoría se queda fuera del campo en vez de dar una
-  // burbuja que al pulsarla suelta la pregunta de otra.
-  const jugables = CATEGORIAS.filter((c) => {
-    const t = TIPOS.find((x) => x.id === c);
-    return t && t.hay();
-  });
-  const usables = jugables.length ? jugables : CATEGORIAS;
-  const base = Math.floor(BURBUJAS / usables.length);
-  const extra = BURBUJAS % usables.length;
-  const cats = [];
-  usables.forEach((c) => { for (let i = 0; i < base; i++) cats.push(c); });
-  // Estas dos barajas sí salen del azar sembrado: qué categorías hay en el campo
-  // y en qué orden es parte de la partida, no de cómo se ve.
-  const sobran = [...usables];
-  barajaEnSitio(sobran);
-  cats.push(...sobran.slice(0, extra));
-  barajaEnSitio(cats);
+  // Qué categoría lleva cada burbuja lo decide el motor, porque es parte de la
+  // partida. Aquí sólo se reparten por la pantalla, que es cosa de cómo se ve.
+  const cats = reparteCategorias();
 
   const campo = [];
   const usadas = new Set();
@@ -1284,13 +729,6 @@ function reparteBurbujas() {
     }
   }
   return campo;
-}
-
-function barajaEnSitio(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = rnd(i + 1);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
 }
 
 // El diámetro se calcula midiendo el contenedor. Sacarlo sólo del ancho (vw)
@@ -1521,9 +959,6 @@ function pintaBarra(fraccion) {
 }
 
 // Responder al instante vale PUNTOS_MAX; agotar el tiempo, 0
-const puntosPor = (ms) =>
-  Math.max(0, Math.round(PUNTOS_MAX * (1 - Math.min(ms, TIEMPO) / TIEMPO)));
-
 /* ---------- vidas ---------- */
 
 // Tres puntos: los gastados quedan como aro vacío. `perdida` late al apagarse
@@ -1787,7 +1222,7 @@ function startGame(semilla) {
   paraCronometro();
   // Lo primero: sembrar. A partir de aquí, el campo y las veinte rondas salen
   // de este número, así que guardándolo se puede reproducir la partida entera.
-  state.semilla = siembra(semilla);
+  state.semilla = reiniciaMotor(semilla);
   state.bitacora = [];
   state.score = 0;
   state.puntos = 0;
@@ -1795,8 +1230,6 @@ function startGame(semilla) {
   state.round = 1;
   state.ronda = null;
   state.next = null;
-  state.ultima = '';
-  state.vistas = new Set();
   state.campo = reparteBurbujas();
   state.completadas = new Set();
   state.actual = null;
@@ -1852,11 +1285,9 @@ const refreshGameToIntro = () => {
   state.puntos = 0;
   state.vidas = VIDAS;
   state.round = 1;
-  state.vistas = new Set();
   state.ronda = null;
   state.next = null;
-  state.ultima = '';
-  state.semilla = siembra();
+  state.semilla = reiniciaMotor();
   state.bitacora = [];
   state.campo = reparteBurbujas();
   state.completadas = new Set();

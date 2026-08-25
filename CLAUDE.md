@@ -54,7 +54,8 @@ el recetario.
 | `404.html` / `500.html` | Páginas de error, autónomas y con **rutas absolutas**: se sirven para cualquier URL, también `/lo/que/sea/` |
 | `fin.html` | Pantalla de fin de partida, página aparte. Lee el resultado de `localStorage` (`billions.lastResult`) y ofrece apoyo, compartir y volver a jugar |
 | `index.html` | Tablero, pantalla previa, aviso superpuesto. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
-| `main.js` | Estado, rondas, revelado, récord. Sin módulos: variables globales y `defer` |
+| `motor.js` | **El motor de la partida**: azar sembrado, depósitos de datos, generadores de ronda y fórmula de puntos. No toca el DOM, para que pueda correr también fuera del navegador |
+| `main.js` | Estado, pintado, revelado, récord. Sin módulos: variables globales y `defer` |
 | `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` identificador, `t` título, `g` recaudación (puede faltar), `y` año, `o` Óscars, `fa` nota FA, `d` director(es), `a` reparto, `oc` categorías |
 | `posters.js` | `const POSTERS` — puesto → nombre de archivo en `posters/` |
 | `posters/*.jpg` | 100 carátulas, 300 px de ancho |
@@ -490,6 +491,35 @@ personas con la misma semilla jugarían partidas distintas.
   el generador sembrado sólo se consume al barajar el campo y al pulsar cada
   burbuja. Si alguna vez se precarga una ronda por adelantado, hay que contar ese
   consumo o la reproducción deja de cuadrar.
+
+## El motor, aparte del juego
+
+`motor.js` tiene todo lo que decide **qué se pregunta y cuánto vale**: las reglas
+(`VIDAS`, `TIEMPO`, `PUNTOS_MAX`, las bandas de dificultad), el azar sembrado,
+los depósitos (`PELIS`, `CON_BSO`…), los generadores de ronda con su tabla
+`TIPOS`, `reparteCategorias()` y `puntosPor()`. `main.js` se queda con la
+pantalla: pintar, medir, animar, el reloj, el récord y los avisos.
+
+**La regla que sostiene la separación: en `motor.js` no se toca el DOM.** Ni
+pintar, ni medir la ventana, ni `localStorage`. Es lo único que permite ejecutar
+ese mismo archivo fuera del navegador para rehacer una partida desde su semilla y
+comprobar si la puntuación es la que dice ser. Si la validación tuviera su propia
+copia de estas reglas, las dos se desincronizarían a la primera y la
+clasificación empezaría a rechazar partidas buenas.
+
+- **`juego.vistas` y `juego.ultima` viven en el motor**, no en el `state` de
+  main.js: hacen falta para reproducir la partida igual que se jugó.
+- **`reiniciaMotor(semilla)`** siembra y olvida lo de la partida anterior.
+- **El reparto de categorías es del motor; la posición y la foto de cada burbuja
+  no.** `reparteBurbujas()` (main.js) pide las categorías y sólo reparte por la
+  pantalla.
+- `index.html` carga `motor.js` después de los datos y antes de `main.js`.
+
+Comprobado tras la extracción: la misma semilla da el mismo campo que antes, y
+una partida real de cuatro rondas (396 puntos) se revalida fuera del navegador
+con el resultado exacto. Manipular el campo se detecta —no sale de esa semilla—;
+**los tiempos no**, porque los declara el cliente: falsearlos a 0 ms sube la
+puntuación. Contra eso no vale reconstruir, hacen falta reglas de plausibilidad.
 
 ## La bitácora de la partida
 
