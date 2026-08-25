@@ -728,9 +728,13 @@ fuera. Dos cosas que no hay que romper:
 - **Se mapean 403 y 404 al mismo `/404.html`.** Con OAC el bucket no da permiso
   de listado, así que un objeto que no existe se responde como **403**, no como
   404: sin el mapeo del 403 la página de error no llegaría a verse nunca.
-- Lo configura el workflow de despliegue (`Configurar páginas de error en
-  CloudFront`), y es **idempotente**: si la distribución ya tiene respuestas de
-  error, no la toca. Necesita la variable `BILLIONS_CF_ID`.
+- **Se configuran a mano en la consola de CloudFront**, no desde el workflow.
+  Se intentó automatizarlo y falló: `billions-deploy` sólo tiene
+  `cloudfront:CreateInvalidation`, y darle `UpdateDistribution` —que deja
+  reescribir la distribución entera— no compensa para algo que se hace una vez.
+  Peor aún, el paso iba antes de la invalidación y al fallar la saltaba, así que
+  se llevaba por delante el resto del despliegue. Los pasos están en
+  INFRAESTRUCTURA.md.
 
 ## Publicar
 

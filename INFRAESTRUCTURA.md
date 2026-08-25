@@ -95,10 +95,10 @@ certificado y el DNS se hicieron a mano:
 
     **Pendiente el 2026-08-25**: `404.html` y `500.html` ya están en el bucket,
     pero una URL inventada sigue devolviendo el XML de S3 (`403 AccessDenied`,
-    `x-cache: Error from cloudfront`), señal de que ese paso no ha llegado a
-    correr. En cuanto exista la variable, el siguiente despliegue lo arregla
-    solo. A mano es Distribución → **Error pages** → Create custom error
-    response, tres veces:
+    `x-cache: Error from cloudfront`). **Hay que configurarlo a mano**: se probó
+    a hacerlo desde el workflow y el usuario de despliegue no tiene permiso
+    (`UpdateDistribution`), así que el job fallaba entero. Distribución →
+    **Error pages** → Create custom error response, tres veces:
 
     | Código HTTP | Página          | Código de respuesta | TTL |
     |---|---|---|---|
