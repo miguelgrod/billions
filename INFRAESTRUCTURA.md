@@ -88,8 +88,27 @@ certificado y el DNS se hicieron a mano:
 ### 3. Conectar el despliegue
 
 14. En GitHub → Settings → Secrets and variables → Actions → **Variables** →
-    nueva variable `BILLIONS_CF_ID` con el ID de la distribución.
-    Mientras no exista, el workflow despliega igual y se salta la invalidación.
+    nueva variable `BILLIONS_CF_ID` con el ID de la distribución
+    (`EJYIWS894T0ZX`).
+    Mientras no exista, el workflow despliega igual y se salta **dos** pasos: la
+    invalidación y la configuración de las páginas de error.
+
+    **Pendiente el 2026-08-25**: `404.html` y `500.html` ya están en el bucket,
+    pero una URL inventada sigue devolviendo el XML de S3 (`403 AccessDenied`,
+    `x-cache: Error from cloudfront`), señal de que ese paso no ha llegado a
+    correr. En cuanto exista la variable, el siguiente despliegue lo arregla
+    solo. A mano es Distribución → **Error pages** → Create custom error
+    response, tres veces:
+
+    | Código HTTP | Página          | Código de respuesta | TTL |
+    |---|---|---|---|
+    | 403 | `/404.html` | 404 | 10 |
+    | 404 | `/404.html` | 404 | 10 |
+    | 500 | `/500.html` | 500 | 0  |
+
+    **El 403 no es opcional**: con OAC el bucket no da permiso de listado, así
+    que un objeto que no existe se responde como 403 y no como 404. Sin esa
+    fila, la página de error no se ve nunca.
 
 ### 4. El usuario que despliega
 
