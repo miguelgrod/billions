@@ -491,6 +491,37 @@ personas con la misma semilla jugarían partidas distintas.
   burbuja. Si alguna vez se precarga una ronda por adelantado, hay que contar ese
   consumo o la reproducción deja de cuadrar.
 
+## La bitácora de la partida
+
+Cada jugada resuelta se anota en `state.bitacora` (`anota()`), y al acabar la
+partida entera viaja dentro de `billions.lastResult` bajo la clave `partida`:
+
+```js
+partida: {
+  semilla: 2056266588,
+  campo: ['actores', 'actores', 'oscarcat', …],   // categoría de cada burbuja
+  jugadas: [{ b: 0, r: true, ms: 118 }, …],       // burbuja, respuesta, tiempo
+  datos: { 'movies.js': '3f1b4c92', … },          // con qué versión se jugó
+}
+```
+
+- **`r` a `null` es que se agotó el tiempo**, que no es lo mismo que fallar. En
+  las rondas de sí/no es un booleano; en los duelos, el índice de la tarjeta.
+- **`b` es el índice de la burbuja, no la categoría.** La categoría se saca del
+  campo, y el campo sale de la semilla: guardar las dos cosas permite detectar
+  que no cuadran.
+- **`datos` es imprescindible para reproducir.** Si se regenera `movies.js`, las
+  mismas semillas dejan de dar las mismas rondas. Las huellas ya las pone
+  `tools/sella-versiones.py` en cada `<script src>`, así que `versionDeDatos()`
+  se limita a leerlas del DOM.
+- **El orden de las jugadas es el orden en que se pulsaron las burbujas**, y eso
+  no es azar: es lo único que pone el jugador, junto con la respuesta y el
+  tiempo. Reproducir la partida es sembrar, repartir el campo y volver a llamar
+  a `nuevaRonda()` en ese mismo orden.
+- Comprobado con una partida real: sembrando fuera del navegador salen el mismo
+  campo, las mismas rondas, las mismas respuestas correctas y **los mismos 396
+  puntos** que dio el juego.
+
 ## Detalles del juego
 
 - **Contrato de película:** `{ r: puesto, t: título, g: recaudación mundial, y: año }`.

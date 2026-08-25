@@ -435,6 +435,7 @@ const state = {
   locked: true,
   ultima: '',           // firma de la ronda anterior, para no repetirla
   semilla: 0,           // de aquí salen el campo y las veinte rondas
+  bitacora: [],         // qué burbuja pulsó, qué respondió y cuánto tardó
   newRecord: false,
   timer: null,
   campo: [],            // posición, tamaño y categoría de cada burbuja
@@ -1584,14 +1585,25 @@ const hideToast = () => els.toast.classList.remove('toast-show');
 
 /* ---------- juego ---------- */
 
+// La partida se anota jugada a jugada. Con esto y la semilla se puede
+// reconstruir entera: la burbuja dice qué categoría se preguntó, y de ahí sale
+// la ronda; la respuesta y el tiempo son lo único que pone el jugador.
+// `r` a null es que se agotó el tiempo, que no es lo mismo que fallar.
+function anota(eleccion, ms) {
+  state.bitacora.push({ b: state.actual, r: eleccion, ms: Math.round(ms) });
+}
+
 function responde(eleccion) {
   if (state.locked) return;
-  resuelve(eleccion === state.ronda.correcta, paraCronometro());
+  const ms = paraCronometro();
+  anota(eleccion, ms);
+  resuelve(eleccion === state.ronda.correcta, ms);
 }
 
 function tiempoAgotado() {
   if (state.locked) return;
   paraCronometro();
+  anota(null, TIEMPO);
   pintaBarra(0);
   resuelve(false, TIEMPO, true);
 }
@@ -1697,6 +1709,19 @@ function precarga(r) {
   r.cartas.forEach((c) => { if (c.img) new Image().src = c.img; });
 }
 
+// Con qué versión de los datos se jugó. Reproducir una partida exige el mismo
+// `movies.js` que tenía delante el jugador: si se regenera el catálogo, las
+// mismas semillas dejan de dar las mismas rondas. La huella ya está puesta en
+// cada `<script src>` por tools/sella-versiones.py, así que basta con leerla.
+function versionDeDatos() {
+  const datos = {};
+  document.querySelectorAll('script[src]').forEach((s) => {
+    const m = s.getAttribute('src').match(/^([\w.-]+\.js)\?v=([a-f0-9]+)$/);
+    if (m && m[1] !== 'main.js') datos[m[1]] = m[2];
+  });
+  return datos;
+}
+
 function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
   const payload = {
     titulo,
@@ -1707,6 +1732,13 @@ function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
     record,
     completadas: state.completadas.size,
     total: BURBUJAS,
+    // La partida en crudo: con esto se puede rehacer y comprobar entera.
+    partida: {
+      semilla: state.semilla,
+      campo: state.campo.map((b) => b.cat),
+      jugadas: state.bitacora,
+      datos: versionDeDatos(),
+    },
   };
   try {
     localStorage.setItem('billions.lastResult', JSON.stringify(payload));
@@ -1756,6 +1788,7 @@ function startGame(semilla) {
   // Lo primero: sembrar. A partir de aquí, el campo y las veinte rondas salen
   // de este número, así que guardándolo se puede reproducir la partida entera.
   state.semilla = siembra(semilla);
+  state.bitacora = [];
   state.score = 0;
   state.puntos = 0;
   state.vidas = VIDAS;
@@ -1824,6 +1857,7 @@ const refreshGameToIntro = () => {
   state.next = null;
   state.ultima = '';
   state.semilla = siembra();
+  state.bitacora = [];
   state.campo = reparteBurbujas();
   state.completadas = new Set();
   state.newRecord = false;
