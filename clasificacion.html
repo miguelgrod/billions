@@ -56,8 +56,7 @@
             <tr class="text-[10px] uppercase tracking-[0.18em] text-white/40">
               <th class="px-4 py-3 font-medium sm:px-5">#</th>
               <th class="px-2 py-3 font-medium">Jugador</th>
-              <th class="px-2 py-3 text-right font-medium">Puntos</th>
-              <th class="hidden px-4 py-3 text-right font-medium sm:table-cell sm:px-5">Burbujas</th>
+              <th class="px-4 py-3 text-right font-medium sm:px-5">Puntos</th>
             </tr>
           </thead>
           <tbody id="tabla" class="divide-y divide-white/5"></tbody>
@@ -105,8 +104,7 @@
         <tr class="${f.id === mia ? 'mia' : ''}">
           <td class="px-4 py-3 font-semibold sm:px-5 ${MEDALLA[i] || 'text-white/35'}">${i + 1}</td>
           <td class="px-2 py-3 font-medium text-white">${escapa(f.alias)}</td>
-          <td class="px-2 py-3 text-right font-semibold tabular-nums text-white">${f.puntos}</td>
-          <td class="hidden px-4 py-3 text-right tabular-nums text-white/50 sm:table-cell sm:px-5">${f.burbujas}/20</td>
+          <td class="px-4 py-3 text-right font-semibold tabular-nums text-white sm:px-5">${f.puntos}</td>
         </tr>`).join('');
     }
 
@@ -114,7 +112,7 @@
       try {
         const res = await fetch(
           `${SUPABASE}/rest/v1/puntuaciones` +
-          `?select=id,alias,puntos,burbujas&order=puntos.desc,creado_en.asc&limit=${CUANTAS}`,
+          `?select=id,alias,puntos&order=puntos.desc,creado_en.asc&limit=${CUANTAS}`,
           { headers: { apikey: CLAVE, Authorization: `Bearer ${CLAVE}` } });
         if (!res.ok) throw new Error(res.status);
         const filas = await res.json();

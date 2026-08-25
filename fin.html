@@ -222,13 +222,17 @@
             localStorage.setItem(ALIAS_KEY, nombre);
             if (datos.id) localStorage.setItem('billions.miPuntuacion', datos.id);
           } catch (e) { /* modo privado */ }
-          di(`Guardado: ${datos.puntos} puntos a nombre de ${nombre}.`, 'text-[#30D158]');
+          di(`Guardado: ${datos.puntos} puntos. Vamos a la clasificación…`, 'text-[#30D158]');
           alias.disabled = true;
           enviar.textContent = 'Guardado';
+          // Se deja leer la confirmación y se pasa solo a la clasificación, que
+          // es a donde quiere ir quien acaba de registrar su marca. El enlace
+          // queda debajo por si el salto no llega a producirse.
           form.insertAdjacentHTML('beforeend',
             '<p class="mt-4 text-center"><a href="clasificacion.html" ' +
-            'class="foco inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 ' +
-            'text-sm font-semibold text-black">Ver dónde has quedado</a></p>');
+            'class="text-xs text-white/40 underline underline-offset-2 hover:text-white/70">' +
+            'Ir ahora</a></p>');
+          setTimeout(() => { location.href = 'clasificacion.html'; }, 1200);
         } else {
           // La función explica en castellano por qué no la acepta.
           di(datos.error || 'No se ha podido guardar.', 'text-[#FF375F]');

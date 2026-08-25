@@ -520,10 +520,15 @@ clasificación pública. Vive en Supabase (proyecto `vupsyrunkwsqegdvtcbg`,
 - Probado contra el servidor real: partida legítima aceptada; respuestas de
   100 ms, campo manipulado, partida a medias, datos falseados y falta de alias,
   todas rechazadas con su motivo en castellano.
-- **Se consulta en `clasificacion.html`**, enlazada desde el pie de la portada y
-  desde la pantalla de fin —antes y después de registrar, porque mirar la tabla
-  no debería exigir apuntarse—. Es una página autónoma: sólo Tailwind y un
-  `fetch`.
+- **Se consulta en `clasificacion.html`**, a la que se llega desde tres sitios:
+  el **icono de podio de la cabecera del juego** (`imgs/podio.svg`, junto al de
+  reinicio), el pie de la portada y la pantalla de fin. Es una página autónoma:
+  sólo Tailwind y un `fetch`.
+  - **Tras guardar se va sola a la clasificación**, con 1,2 s de margen para leer
+    la confirmación: es a donde quiere ir quien acaba de registrar su marca.
+    Debajo queda un enlace «Ir ahora» por si el salto no llega a producirse.
+  - **La tabla es sólo puesto, nombre y puntos.** Las burbujas completadas se
+    quitaron: el marcador ya las refleja y en móvil competían por el ancho.
   - **Los nombres se escapan al pintarlos.** Los escribe cualquiera y van a un
     `innerHTML`: sin escapar, el primero que escriba `<img onerror=…>` como alias
     ejecuta código en el navegador de todos los demás.
