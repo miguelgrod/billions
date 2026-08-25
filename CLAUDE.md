@@ -459,6 +459,38 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
 6. **Las dos películas de 2026 sin datos ampliados** (*Michael*, *The Super Mario
    Galaxy Movie*) sólo aparecen en rondas de taquilla y estreno.
 
+## El azar de la partida
+
+**Hay dos generadores, y no se pueden mezclar.**
+
+- **`azarPartida`** va sembrado (`mulberry32`, semilla de 32 bits) y decide todo
+  lo que se pregunta: el reparto de categorías del campo y las veinte rondas con
+  sus intrusos y sus respuestas. Lo usan `rnd()`, `pick()`, `coin()`,
+  `barajaEnSitio()` y `porPeso()`.
+- **`Math.random`** se queda con lo que sólo se ve: dónde cae cada burbuja,
+  cuánto deriva, su escala y qué foto lleva de fondo (`pickAdorno()`,
+  `imagenPara()`).
+
+**El motivo de la separación es que la partida sea reproducible.** Con la semilla
+—y la lista de burbujas que pulsó el jugador, que es su entrada y no azar— se
+puede reconstruir la partida entera y comprobar si las respuestas eran las
+correctas. Si lo decorativo compartiera el generador sembrado, la secuencia
+dependería del tamaño de la pantalla y de qué imágenes hay en disco, y dos
+personas con la misma semilla jugarían partidas distintas.
+
+- `siembra(n)` fija la semilla y devuelve la que queda; sin argumento sortea una.
+  La llaman `startGame()` —antes de repartir el campo— y `refreshGameToIntro()`.
+- `startGame(semilla)` acepta una semilla, que es como se rejuega una partida
+  concreta. Sin argumento, partida nueva.
+- La semilla en juego vive en `state.semilla`.
+- Comprobado: la misma semilla da la misma partida, y **da la misma en un móvil
+  de 390 px y en un escritorio de 1280** —donde la rejilla del campo cambia de
+  4×5 a 5×4— mientras que las fotos de fondo sí varían.
+- **`state.next` no se usa**: no hay generación especulativa de rondas, así que
+  el generador sembrado sólo se consume al barajar el campo y al pulsar cada
+  burbuja. Si alguna vez se precarga una ronda por adelantado, hay que contar ese
+  consumo o la reproducción deja de cuadrar.
+
 ## Detalles del juego
 
 - **Contrato de película:** `{ r: puesto, t: título, g: recaudación mundial, y: año }`.

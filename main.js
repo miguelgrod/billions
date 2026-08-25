@@ -434,6 +434,7 @@ const state = {
   next: null,           // ronda precargada para la siguiente
   locked: true,
   ultima: '',           // firma de la ronda anterior, para no repetirla
+  semilla: 0,           // de aquí salen el campo y las veinte rondas
   newRecord: false,
   timer: null,
   campo: [],            // posición, tamaño y categoría de cada burbuja
@@ -451,9 +452,48 @@ const state = {
 
 /* ---------- utilidades ---------- */
 
-const rnd = (n) => Math.floor(Math.random() * n);
+/* ---------- el azar de la partida ----------
+
+   Dos generadores, y no es un capricho: todo lo que decide QUÉ se pregunta y
+   cuál es la respuesta sale de `azarPartida`, que va sembrado, de modo que una
+   partida entera se puede reproducir a partir de un número. Lo que sólo decide
+   cómo se ve —dónde cae cada burbuja, cuánto deriva, qué foto lleva de fondo—
+   se queda en `Math.random`.
+
+   Si lo decorativo compartiera el generador sembrado, la secuencia dependería
+   del tamaño de la pantalla y de qué imágenes hay en disco, y dos personas con
+   la misma semilla jugarían partidas distintas. */
+
+// mulberry32: un PRNG de 32 bits, corto y de calidad de sobra para esto.
+function mulberry32(semilla) {
+  let a = semilla >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const semillaAlAzar = () => (Math.random() * 4294967296) >>> 0;
+let semillaPartida = semillaAlAzar();
+let azarPartida = mulberry32(semillaPartida);
+
+// Vuelve a empezar la partida desde esta semilla. Devuelve la que ha quedado,
+// que es la que hay que guardar para poder reproducirla.
+function siembra(semilla) {
+  semillaPartida = (semilla === undefined ? semillaAlAzar() : semilla) >>> 0;
+  azarPartida = mulberry32(semillaPartida);
+  return semillaPartida;
+}
+
+const rnd = (n) => Math.floor(azarPartida() * n);
 const pick = (arr) => arr[rnd(arr.length)];
-const coin = () => Math.random() < 0.5;
+const coin = () => azarPartida() < 0.5;
+
+// Las tres de siempre, para lo que sólo se ve y no se juega.
+const rndAdorno = (n) => Math.floor(Math.random() * n);
+const pickAdorno = (arr) => arr[rndAdorno(arr.length)];
 const fmtMoney = (n) => '$' + n.toLocaleString('es-ES', { maximumFractionDigits: 0 });
 
 /* ---------- imágenes ---------- */
@@ -908,7 +948,7 @@ function nuevaRonda(level, categoria) {
 
 function porPeso(tipos) {
   const total = tipos.reduce((s, t) => s + t.peso, 0);
-  let n = Math.random() * total;
+  let n = azarPartida() * total;
   for (const t of tipos) {
     n -= t.peso;
     if (n <= 0) return t;
@@ -1166,13 +1206,13 @@ const MEJOR_VALORADAS = [...CON_NOTA].sort((a, b) => b.fa - a.fa).slice(0, 40);
 
 function imagenPara(cat, usadas) {
   const fuentes = {
-    taquilla: () => posterOf(pick(TOP_TAQUILLA)),
-    anio: () => posterOf(pick(CLASICAS.length ? CLASICAS : PELIS)),
-    director: () => directorPhoto(pick(DIRECTORES)),
-    actores: () => actorPhoto(pick(ACTORES_EN_JUEGO)),
-    oscar: () => posterOf(pick(PREMIADAS.length ? PREMIADAS : PELIS)),
-    filmografia: () => (TOP_ACTORES.length ? fotoActorTop(pick(TOP_ACTORES)) : null),
-    bso: () => (COMPOSITORES.length ? composerPhoto(pick(COMPOSITORES)) : null),
+    taquilla: () => posterOf(pickAdorno(TOP_TAQUILLA)),
+    anio: () => posterOf(pickAdorno(CLASICAS.length ? CLASICAS : PELIS)),
+    director: () => directorPhoto(pickAdorno(DIRECTORES)),
+    actores: () => actorPhoto(pickAdorno(ACTORES_EN_JUEGO)),
+    oscar: () => posterOf(pickAdorno(PREMIADAS.length ? PREMIADAS : PELIS)),
+    filmografia: () => (TOP_ACTORES.length ? fotoActorTop(pickAdorno(TOP_ACTORES)) : null),
+    bso: () => (COMPOSITORES.length ? composerPhoto(pickAdorno(COMPOSITORES)) : null),
   };
   const dame = fuentes[cat] || fuentes.taquilla;
   // varios intentos para no repetir imagen en el mismo campo
@@ -1204,6 +1244,8 @@ function reparteBurbujas() {
   const extra = BURBUJAS % usables.length;
   const cats = [];
   usables.forEach((c) => { for (let i = 0; i < base; i++) cats.push(c); });
+  // Estas dos barajas sí salen del azar sembrado: qué categorías hay en el campo
+  // y en qué orden es parte de la partida, no de cómo se ve.
   const sobran = [...usables];
   barajaEnSitio(sobran);
   cats.push(...sobran.slice(0, extra));
@@ -1222,6 +1264,8 @@ function reparteBurbujas() {
         img: imagenPara(cats[i], usadas),
         // el desorden se mide en fracción de celda: con rejillas distintas, un
         // valor fijo en porcentaje de pantalla se come filas enteras
+        // De aquí abajo todo es adorno y va con Math.random: la posición y la
+        // deriva dependen de la rejilla, y la rejilla del tamaño de la pantalla.
         x: ((c + 0.5) / columnas) * 100 + (Math.random() - 0.5) * (100 / columnas) * 0.3,
         y: ((f + 0.5) / filas) * 100 + (Math.random() - 0.5) * (100 / filas) * 0.3,
         escala: 0.74 + Math.random() * 0.52,
@@ -1707,8 +1751,11 @@ function gameOver() {
   });
 }
 
-function startGame() {
+function startGame(semilla) {
   paraCronometro();
+  // Lo primero: sembrar. A partir de aquí, el campo y las veinte rondas salen
+  // de este número, así que guardándolo se puede reproducir la partida entera.
+  state.semilla = siembra(semilla);
   state.score = 0;
   state.puntos = 0;
   state.vidas = VIDAS;
@@ -1776,6 +1823,7 @@ const refreshGameToIntro = () => {
   state.ronda = null;
   state.next = null;
   state.ultima = '';
+  state.semilla = siembra();
   state.campo = reparteBurbujas();
   state.completadas = new Set();
   state.newRecord = false;
