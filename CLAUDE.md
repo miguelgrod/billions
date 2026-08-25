@@ -719,8 +719,24 @@ patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
 
 ## Páginas de error
 
-`404.html` y `500.html` siguen el mismo lenguaje que el resto y no piden nada
-fuera. Dos cosas que no hay que romper:
+`404.html` y `500.html` se dibujan con el lenguaje de la portada: vista completa,
+esferas a la deriva por detrás, el fondo bokeh con sus tres luces y el número del
+error en la tipografía de titulares. Cosas que no hay que romper:
+
+- **Sus esferas son de degradado puro, sin fotos.** La portada las pinta con una
+  carátula o un retrato debajo, pero eso obliga a cargar `movies.js`,
+  `posters.js` y compañía, y una página de error tiene que pintarse sola y
+  cuanto antes. La rampa es la misma de las nueve categorías, así que se
+  reconocen como piezas del juego aunque no lleven imagen.
+- **La deriva es la del campo**: dos ejes con periodos distintos, un nivel del
+  DOM por eje, y el diámetro medido del contenedor (por eso repintan al cambiar
+  el tamaño de la ventana).
+- **Los bloques con `max-w-*` llevan `w-full`**, como en la portada: sin él, un
+  `max-w-md` dentro de un flex column toma su ancho de contenido.
+- El pie va en un `<footer>` absoluto, fuera del flujo del `<main>`: dentro, su
+  `mt-auto` se comía el centrado y empujaba el número contra el borde de arriba.
+
+Y las dos de siempre:
 
 - **Sus rutas son absolutas** (`/vendor/tailwind.js`, `/imgs/bg_game.webp`).
   CloudFront las sirve para cualquier URL que falle, y con rutas relativas el
