@@ -290,6 +290,9 @@ vaciarlo y se pierde al tercer fallo.
   `localStorage` bajo `billions.lastResult` y hace `location.href = 'fin.html'`.
   - **El traspaso va por `localStorage` y no por la URL**: el detalle es HTML
     con marcado, y meterlo en la barra de direcciones sería feo y frágil.
+  - **No repite la solución de la última pregunta.** `gameOver()` ya no recibe
+    el `detalle` del aviso: ésa se ha visto en el toast, que es donde toca, y en
+    el resumen sólo van los puntos y el récord.
   - Lleva el pie legal (privacidad y aviso legal), como la portada. Enlace de
     cookies no: el banner y sus preferencias viven en `index.html`, que es donde
     se carga `main.js`.

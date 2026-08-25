@@ -1610,7 +1610,7 @@ function resuelve(correcto, ms, agotado) {
       state.timer = setTimeout(volverAlTablero, GAMEOVER_MS);
     } else {
       showToast('fail', 'Sin vidas', detalle);
-      state.timer = setTimeout(() => gameOver(detalle), GAMEOVER_MS);
+      state.timer = setTimeout(gameOver, GAMEOVER_MS);
     }
   }
 }
@@ -1691,12 +1691,14 @@ function victoria() {
   });
 }
 
-function gameOver(detalle) {
+// La pantalla de fin no repite la solución de la última pregunta: ésa ya se ha
+// visto en el aviso, y ahí es donde toca. En el resumen sólo van los puntos.
+function gameOver() {
   paraCronometro();
-  const detalleFinal = detalle +
+  const detalleFinal =
     (state.newRecord
-      ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
-      : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
+      ? '<span class="text-[#30D158]">¡Nuevo récord!</span>'
+      : `<span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
   guardaResultadoFinal({
     titulo: 'Fin de la partida',
     etiqueta: `puntos · ${state.completadas.size} de ${BURBUJAS} burbujas`,
