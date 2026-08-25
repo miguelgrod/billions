@@ -59,9 +59,39 @@
     Contacto: <a href="mailto:hola@ganoyo.com">hola@ganoyo.com</a></p>
 
     <h2>Qué datos se tratan</h2>
-    <p><strong>Ninguno.</strong> Billions es un juego que funciona por completo
-    en tu navegador. No hay registro, ni cuentas, ni formularios, ni suscripción,
-    ni ningún sitio donde escribir tu nombre o tu correo.</p>
+    <p><strong>Jugar no requiere dar ningún dato.</strong> Billions funciona por
+    completo en tu navegador: no hay registro, ni cuentas, ni suscripción. Puedes
+    jugar todas las partidas que quieras sin que se guarde nada en ningún
+    servidor.</p>
+    <p>Sólo se trata algún dato si <strong>tú decides</strong> registrar una
+    puntuación en la clasificación pública, al terminar una partida. Se explica
+    en el apartado siguiente.</p>
+
+    <h2>La clasificación pública</h2>
+    <p>Al acabar una partida puedes pulsar «Grabar puntuación» y escribir un
+    nombre. Sólo entonces, y sólo si pulsas «Guardar», se envían a nuestro
+    servidor:</p>
+    <ul>
+      <li><strong>El nombre que hayas escrito.</strong> Lo eliges tú y aparece
+      públicamente en la clasificación. <strong>No hace falta que sea tu nombre
+      real</strong>, y te recomendamos que no lo sea: un apodo cumple igual.</li>
+      <li><strong>Tu puntuación</strong> y el desarrollo de la partida (qué
+      preguntas salieron, qué respondiste y cuánto tardaste). Sirve para
+      comprobar que la puntuación es real y no está manipulada; no se muestra a
+      nadie.</li>
+      <li><strong>Una huella de tu dirección IP</strong>, no la dirección. Es el
+      resultado de aplicarle una función criptográfica junto a un valor secreto
+      que sólo conoce el servidor, y sirve únicamente para frenar el envío
+      masivo y automatizado de puntuaciones. No permite recuperar tu IP ni
+      identificarte.</li>
+    </ul>
+    <p><strong>Base legal:</strong> tu consentimiento, que das al pulsar
+    «Guardar». Si no lo pulsas, no se envía nada.</p>
+    <p><strong>Conservación:</strong> las puntuaciones se guardan mientras la
+    clasificación siga en pie, o hasta que pidas que se borre la tuya.</p>
+    <p><strong>Publicidad de los datos:</strong> el nombre y la puntuación son
+    públicos —ésa es la finalidad de una clasificación— y cualquiera puede
+    verlos. El resto no.</p>
 
     <h2>Cookies y tecnologías similares</h2>
     <p>Este sitio utiliza <strong>cookies de analítica de Google Analytics</strong>
@@ -93,6 +123,15 @@
     Es una decisión deliberada: pedirlas a un tercero habría entregado tu
     dirección IP a esa empresa en cada visita, sin que aportara nada.</p>
 
+    <h2>Dónde se guarda la clasificación</h2>
+    <p>Las puntuaciones se almacenan en <strong>Supabase</strong>, sobre una base
+    de datos alojada en la <strong>región de Irlanda (eu-west-1)</strong>, dentro
+    de la Unión Europea. Supabase actúa como encargado del tratamiento. Consulta
+    su <a href="https://supabase.com/privacy" target="_blank" rel="noopener">política de privacidad</a>.</p>
+    <p>El juego <strong>no se comunica con ese servidor mientras juegas</strong>:
+    la única petición se produce cuando pulsas «Guardar», y otra cuando se
+    consulta la clasificación.</p>
+
     <h2>Alojamiento</h2>
     <p>El sitio está alojado en <strong>Amazon Web Services</strong> (Amazon Web
     Services EMEA SARL), con los archivos almacenados en la región de Irlanda
@@ -107,15 +146,20 @@
     Consulta la <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener">política de privacidad de AWS</a>.</p>
 
     <h2>Menores de edad</h2>
-    <p>El juego es apto para cualquier edad y, al no recoger datos, no requiere
-    verificación ni consentimiento parental.</p>
+    <p>El juego es apto para cualquier edad y jugar no requiere dar ningún dato.
+    Si eres menor y quieres aparecer en la clasificación, usa un apodo que no
+    permita identificarte y no escribas tu nombre y apellidos.</p>
 
     <h2>Tus derechos</h2>
     <p>El Reglamento (UE) 2016/679 te reconoce los derechos de acceso,
-    rectificación, supresión, limitación, portabilidad y oposición. Como
-    <strong>no conservamos ningún dato tuyo</strong>, no hay información que
-    facilitar ni que borrar; aun así, puedes escribir a
-    <a href="mailto:hola@ganoyo.com">hola@ganoyo.com</a> para cualquier consulta.</p>
+    rectificación, supresión, limitación, portabilidad y oposición.</p>
+    <p>Si nunca has registrado una puntuación, <strong>no conservamos ningún
+    dato tuyo</strong> y no hay nada que facilitar ni que borrar.</p>
+    <p>Si has registrado alguna y quieres <strong>corregir el nombre o borrar la
+    entrada</strong>, escribe a
+    <a href="mailto:hola@ganoyo.com">hola@ganoyo.com</a> indicando el nombre con
+    el que aparece y la puntuación, y se retirará. También puedes retirar tu
+    consentimiento en cualquier momento por esa misma vía.</p>
     <p>También puedes presentar una reclamación ante la
     <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española
     de Protección de Datos</a>.</p>

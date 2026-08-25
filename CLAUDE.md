@@ -492,6 +492,42 @@ personas con la misma semilla jugarían partidas distintas.
   burbuja. Si alguna vez se precarga una ronda por adelantado, hay que contar ese
   consumo o la reproducción deja de cuadrar.
 
+## La clasificación global
+
+Al acabar una partida, «Grabar puntuación» pide un nombre y la registra en una
+clasificación pública. Vive en Supabase (proyecto `vupsyrunkwsqegdvtcbg`,
+**Irlanda**, el mismo `eu-west-1` que el bucket).
+
+- **Es la única excepción a «el sitio no hace ninguna petición externa»**, y sólo
+  ocurre **si el jugador pulsa Guardar**. Jugar no habla con ningún servidor. Por
+  eso sigue sin hacer falta consentimiento para jugar: el consentimiento es el
+  propio botón.
+- **El marcador no se envía: se deduce.** El cliente manda la semilla y lo que
+  hizo el jugador; los puntos los calcula el servidor rehaciendo la partida. No
+  hay ningún número que falsear.
+- **La clave que va en el JavaScript es pública por diseño y sólo puede leer.**
+  La tabla tiene RLS con una única política de lectura, y los permisos se dan
+  columna a columna: `partida` y `huella` no salen de la base de datos. Escribir
+  sólo se puede a través de la función.
+- **La IP no se guarda**, sólo una huella con la sal `BILLIONS_SAL`, que vive en
+  los secretos de la función.
+- **La función descarga el motor y los datos del propio sitio** y comprueba su
+  huella sha1 contra la que declara la partida (`versionDeDatos()`). Si
+  regeneras `movies.js` y despliegas, **las partidas empezadas antes se rechazan
+  con un 409** hasta que se juegue una nueva: no se puede rehacer una partida con
+  unos datos que ya no están. Es a propósito.
+- Probado contra el servidor real: partida legítima aceptada; respuestas de
+  100 ms, campo manipulado, partida a medias, datos falseados y falta de alias,
+  todas rechazadas con su motivo en castellano.
+- **`privacidad.html` se actualizó antes de encender esto**, como manda la regla
+  del proyecto: qué se guarda, base legal, dónde, cuánto y cómo pedir el borrado.
+
+Archivos: [supabase/schema.sql](supabase/schema.sql) (tabla y permisos) y
+[supabase/functions/registrar/index.ts](supabase/functions/registrar/index.ts)
+(validación). **Se despliegan a mano desde el panel de Supabase**, no con el
+workflow: el despliegue de GitHub sólo sube el sitio, y `supabase/` está excluido
+del sync.
+
 ## El motor, aparte del juego
 
 `motor.js` tiene todo lo que decide **qué se pregunta y cuánto vale**: las reglas

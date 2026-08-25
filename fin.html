@@ -67,10 +67,33 @@
         <button id="fin-grabar" type="button" class="foco rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
           Grabar puntuación
         </button>
+        <!-- El nombre se pide sólo al pulsar: quien no quiera aparecer en la
+             clasificación no tiene que ver un formulario ni rechazarlo. -->
         <a href="index.html" class="foco inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black">
           Jugar otra vez
         </a>
       </div>
+
+      <!-- Formulario de la clasificación, oculto hasta que se pide -->
+      <form id="fin-form" class="mt-5 hidden">
+        <label for="fin-alias" class="block text-center text-[11px] font-medium uppercase tracking-[0.22em] text-white/45">
+          Con qué nombre quieres aparecer
+        </label>
+        <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <input id="fin-alias" name="alias" type="text" maxlength="20" required
+                 autocomplete="nickname" enterkeyhint="send" placeholder="Tu nombre"
+                 class="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3 text-center text-sm text-white outline-none placeholder:text-white/30 focus:border-white/40 sm:w-64">
+          <button type="submit" id="fin-enviar"
+                  class="foco rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">
+            Guardar
+          </button>
+        </div>
+        <p class="mt-3 text-center text-xs leading-relaxed text-white/40">
+          Se guardan tu nombre y tu puntuación en una clasificación pública.
+          <a href="privacidad.html" class="underline underline-offset-2 hover:text-white/70">Cómo se tratan tus datos</a>.
+        </p>
+        <p id="fin-aviso" class="mt-3 hidden text-center text-sm"></p>
+      </form>
 
       <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-left shadow-[0_16px_36px_rgba(0,0,0,0.25)] backdrop-blur-sm">
         <div class="flex items-center justify-between gap-3">
@@ -138,8 +161,73 @@
     document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
     document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
 
-    document.getElementById('fin-grabar').addEventListener('click', () => {
-      // Sin acción por ahora; lo habilitaremos más adelante.
+    /* ---------- la clasificación global ---------- */
+
+    // La clave es pública por diseño: va en el JavaScript y sólo puede LEER la
+    // clasificación. Guardar exige pasar por la función, que rehace la partida
+    // antes de aceptarla, así que sacarla de aquí no sirve para colar nada.
+    const SUPABASE = 'https://vupsyrunkwsqegdvtcbg.supabase.co';
+    const CLAVE = 'sb_publishable_vrmWVzv3RQOd51uIhXCJGQ_ka7aGRJs';
+    const ALIAS_KEY = 'billions.alias';
+
+    const grabar = document.getElementById('fin-grabar');
+    const form = document.getElementById('fin-form');
+    const alias = document.getElementById('fin-alias');
+    const enviar = document.getElementById('fin-enviar');
+    const aviso = document.getElementById('fin-aviso');
+
+    // Sin partida no hay nada que registrar: se llega aquí abriendo la página
+    // suelta, sin haber jugado.
+    if (!result.partida) {
+      grabar.disabled = true;
+      grabar.classList.add('opacity-40');
+      grabar.title = 'Juega una partida para poder registrarla';
+    }
+
+    function di(texto, color) {
+      aviso.textContent = texto;
+      aviso.className = `mt-3 text-center text-sm ${color}`;
+    }
+
+    grabar.addEventListener('click', () => {
+      form.classList.remove('hidden');
+      grabar.classList.add('hidden');
+      try { alias.value = localStorage.getItem(ALIAS_KEY) || ''; } catch (e) { /* modo privado */ }
+      alias.focus();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = alias.value.trim();
+      if (!nombre) { di('Escribe un nombre.', 'text-white/60'); return; }
+
+      enviar.disabled = true;
+      di('Guardando…', 'text-white/60');
+      try {
+        const res = await fetch(`${SUPABASE}/functions/v1/registrar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: CLAVE,
+            Authorization: `Bearer ${CLAVE}`,
+          },
+          body: JSON.stringify({ alias: nombre, partida: result.partida }),
+        });
+        const datos = await res.json().catch(() => ({}));
+        if (res.ok) {
+          try { localStorage.setItem(ALIAS_KEY, nombre); } catch (e) { /* modo privado */ }
+          di(`Guardado: ${datos.puntos} puntos a nombre de ${nombre}.`, 'text-[#30D158]');
+          alias.disabled = true;
+          enviar.textContent = 'Guardado';
+        } else {
+          // La función explica en castellano por qué no la acepta.
+          di(datos.error || 'No se ha podido guardar.', 'text-[#FF375F]');
+          enviar.disabled = false;
+        }
+      } catch (error) {
+        di('No hay conexión con el servidor.', 'text-[#FF375F]');
+        enviar.disabled = false;
+      }
     });
   </script>
 </body>
