@@ -180,11 +180,20 @@
     const aviso = document.getElementById('fin-aviso');
 
     // Sin partida no hay nada que registrar: se llega aquí abriendo la página
-    // suelta, sin haber jugado.
+    // suelta, o desde el modo de pruebas, que inventa el resultado.
     if (!result.partida) {
       grabar.disabled = true;
       grabar.classList.add('opacity-40');
-      grabar.title = 'Juega una partida para poder registrarla';
+      grabar.title = result.ficticia
+        ? 'Resultado de pruebas: no se puede registrar'
+        : 'Juega una partida para poder registrarla';
+      if (result.ficticia) {
+        // Decirlo en la pantalla y no sólo en el título: si no, el botón
+        // apagado parece una avería.
+        grabar.insertAdjacentHTML('afterend',
+          '<p class="w-full text-center text-xs text-[#FF9F0A]">' +
+          'Resultado de pruebas · no se registra en la clasificación</p>');
+      }
     }
 
     function di(texto, color) {

@@ -590,6 +590,30 @@ con el resultado exacto. Manipular el campo se detecta —no sale de esa semilla
 **los tiempos no**, porque los declara el cliente: falsearlos a 0 ms sube la
 puntuación. Contra eso no vale reconstruir, hacen falta reglas de plausibilidad.
 
+## Modo de pruebas
+
+`index.html?debug` enciende un modo para trabajar en la pantalla de fin sin
+jugarse veinte rondas cada vez. Aparece un rótulo naranja abajo y se habilitan
+dos teclas:
+
+| Tecla | Qué hace |
+|---|---|
+| `F` | Fin de partida con puntos y burbujas inventados |
+| `V` | Victoria, con las 20 burbujas |
+
+- **`?debug=850` fija los puntos** en vez de sortearlos, que es lo cómodo para
+  mirar cómo queda una cifra concreta.
+- **Lo que produce va marcado como `ficticia`** y **sin `partida`**:
+  `fin.html` deshabilita «Grabar puntuación» y lo dice en pantalla. Una partida
+  inventada no se puede reproducir y el servidor la rechazaría igualmente, pero
+  es mejor decirlo que dejar que alguien se choque con un error que no entiende.
+  **Si tocas esto, no dejes que un resultado ficticio llegue a la clasificación.**
+- **Los atajos van en `capture` y antes que el resto**: el muro de cookies
+  bloquea el teclado del juego, y aquí interesa poder saltar al final aunque no
+  se haya decidido todavía. No se roban las teclas si se está escribiendo en un
+  campo.
+- **Sin `?debug` no existe nada de esto**: ni rótulo, ni teclas, ni oyentes.
+
 ## La bitácora de la partida
 
 Cada jugada resuelta se anota en `state.bitacora` (`anota()`), y al acabar la

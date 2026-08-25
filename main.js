@@ -406,6 +406,7 @@ const state = {
   next: null,           // ronda precargada para la siguiente
   locked: true,
   semilla: 0,           // de aquí salen el campo y las veinte rondas
+  ficticia: false,      // resultado inventado por el modo de pruebas
   bitacora: [],         // qué burbuja pulsó, qué respondió y cuánto tardó
   newRecord: false,
   timer: null,
@@ -1157,6 +1158,35 @@ function versionDeDatos() {
   return datos;
 }
 
+/* ---------- modo de pruebas ----------
+
+   Se enciende con `?debug` en la URL y sirve para trabajar en la pantalla de fin
+   sin jugarse veinte rondas cada vez. Con `?debug=850` fija los puntos.
+
+   Lo que produce va marcado como **ficticio**, y `fin.html` lo respeta
+   deshabilitando el registro: una partida inventada no se puede reproducir, así
+   que el servidor la rechazaría de todos modos, pero es mejor decirlo en la
+   pantalla que dejar que el jugador se choque con un error que no entiende. */
+
+const DEBUG = (() => {
+  const v = new URLSearchParams(location.search).get('debug');
+  if (v === null) return null;
+  const puntos = parseInt(v, 10);
+  return { puntos: Number.isFinite(puntos) && puntos >= 0 ? puntos : null };
+})();
+
+function finFicticio(gana) {
+  const puntos = DEBUG.puntos ?? (gana ? 1200 + rndAdorno(700) : 200 + rndAdorno(800));
+  const burbujas = gana ? BURBUJAS : 3 + rndAdorno(12);
+  state.puntos = puntos;
+  state.completadas = new Set(Array.from({ length: burbujas }, (_, i) => i));
+  state.vidas = gana ? 1 + rndAdorno(3) : 0;
+  state.newRecord = puntos > state.best;
+  state.ficticia = true;
+  if (gana) victoria();
+  else gameOver();
+}
+
 function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
   const payload = {
     titulo,
@@ -1167,8 +1197,10 @@ function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
     record,
     completadas: state.completadas.size,
     total: BURBUJAS,
-    // La partida en crudo: con esto se puede rehacer y comprobar entera.
-    partida: {
+    // La partida en crudo: con esto se puede rehacer y comprobar entera. En el
+    // modo de pruebas no va ninguna, y `ficticia` es lo que lo delata.
+    ficticia: Boolean(state.ficticia),
+    partida: state.ficticia ? null : {
       semilla: state.semilla,
       campo: state.campo.map((b) => b.cat),
       jugadas: state.bitacora,
@@ -1224,6 +1256,7 @@ function startGame(semilla) {
   // de este número, así que guardándolo se puede reproducir la partida entera.
   state.semilla = reiniciaMotor(semilla);
   state.bitacora = [];
+  state.ficticia = false;
   state.score = 0;
   state.puntos = 0;
   state.vidas = VIDAS;
@@ -1331,6 +1364,30 @@ function closeIntro() {
 }
 
 els.play.addEventListener('click', closeIntro);
+
+// Atajos del modo de pruebas. Van en `capture` y antes que nada: el muro de
+// cookies bloquea el teclado del juego, y aquí interesa poder saltar al final
+// aunque no se haya decidido todavía.
+if (DEBUG) {
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tecla = e.key.toLowerCase();
+    if (tecla !== 'f' && tecla !== 'v') return;
+    // No secuestrar la tecla mientras se escribe en un campo.
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    e.preventDefault();
+    e.stopPropagation();
+    finFicticio(tecla === 'v');
+  }, true);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const rotulo = document.createElement('div');
+    rotulo.className = 'fixed bottom-3 left-1/2 z-[70] -translate-x-1/2 rounded-full ' +
+      'border border-[#FF9F0A]/40 bg-[#FF9F0A]/15 px-4 py-2 text-xs font-medium text-[#FF9F0A] backdrop-blur';
+    rotulo.textContent = 'Modo de pruebas · F: fin de partida · V: victoria';
+    document.body.appendChild(rotulo);
+  });
+}
 
 document.addEventListener('keydown', (e) => {
   // `inert` no alcanza a los oyentes colgados de document: sin esto se podía
