@@ -69,6 +69,9 @@
         </button>
         <!-- El nombre se pide sólo al pulsar: quien no quiera aparecer en la
              clasificación no tiene que ver un formulario ni rechazarlo. -->
+        <a href="clasificacion.html" class="foco inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+          Ver clasificación
+        </a>
         <a href="index.html" class="foco inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black">
           Jugar otra vez
         </a>
@@ -215,10 +218,17 @@
         });
         const datos = await res.json().catch(() => ({}));
         if (res.ok) {
-          try { localStorage.setItem(ALIAS_KEY, nombre); } catch (e) { /* modo privado */ }
+          try {
+            localStorage.setItem(ALIAS_KEY, nombre);
+            if (datos.id) localStorage.setItem('billions.miPuntuacion', datos.id);
+          } catch (e) { /* modo privado */ }
           di(`Guardado: ${datos.puntos} puntos a nombre de ${nombre}.`, 'text-[#30D158]');
           alias.disabled = true;
           enviar.textContent = 'Guardado';
+          form.insertAdjacentHTML('beforeend',
+            '<p class="mt-4 text-center"><a href="clasificacion.html" ' +
+            'class="foco inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 ' +
+            'text-sm font-semibold text-black">Ver dónde has quedado</a></p>');
         } else {
           // La función explica en castellano por qué no la acepta.
           di(datos.error || 'No se ha podido guardar.', 'text-[#FF375F]');

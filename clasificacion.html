@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billions · Clasificación</title>
+  <script src="vendor/tailwind.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #07080c;
+      color: rgba(255,255,255,0.9);
+    }
+    .display {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+      letter-spacing: -0.06em;
+      font-weight: 700;
+    }
+    .glass-fuerte {
+      background: rgba(15,16,22,0.52);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+    }
+    .foco { transition: transform .2s cubic-bezier(.2,.8,.2,1); }
+    .foco:hover { transform: scale(1.03); }
+    .foco:active { transform: scale(1); }
+    /* La fila de quien acaba de registrar su marca, para encontrarse de un vistazo */
+    .mia { background: rgba(48,209,88,.10); box-shadow: inset 2px 0 0 #30D158; }
+    @media (prefers-reduced-motion: reduce) { .foco { transition: none; } }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-20" style="background:#000"></div>
+  <div class="pointer-events-none fixed inset-0 -z-20"
+       style="background-image:url('imgs/bg_game.webp');background-size:cover;background-position:center;opacity:.18"></div>
+  <div class="pointer-events-none fixed inset-0 -z-10"
+       style="background:
+         radial-gradient(65% 50% at 18% 12%, rgba(255,159,10,.12), transparent 60%),
+         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.12), transparent 60%),
+         radial-gradient(65% 60% at 50% 92%, rgba(191,90,242,.10), transparent 60%)"></div>
+
+  <main class="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-4 py-10 sm:px-6">
+    <header class="text-center">
+      <p class="display leading-none text-white" style="font-size:clamp(2.2rem,7vw,3.5rem)">Clasificación</p>
+      <p class="mt-2 text-sm text-white/50">Las mejores partidas de Billions</p>
+    </header>
+
+    <div class="glass-fuerte mt-8 w-full overflow-hidden rounded-[28px] shadow-2xl">
+      <!-- La tabla se desplaza dentro de su caja: en un móvil estrecho, los
+           nombres largos no deben empujar la página entera a lo ancho. -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <th class="px-4 py-3 font-medium sm:px-5">#</th>
+              <th class="px-2 py-3 font-medium">Jugador</th>
+              <th class="px-2 py-3 text-right font-medium">Puntos</th>
+              <th class="hidden px-4 py-3 text-right font-medium sm:table-cell sm:px-5">Burbujas</th>
+            </tr>
+          </thead>
+          <tbody id="tabla" class="divide-y divide-white/5"></tbody>
+        </table>
+      </div>
+      <p id="estado" class="px-5 py-8 text-center text-sm text-white/50">Cargando…</p>
+    </div>
+
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <a href="index.html" class="foco inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">
+        Jugar
+      </a>
+    </div>
+
+    <p class="mt-auto pt-10 text-center text-xs text-white/25">
+      Datos de The Numbers, FilmAffinity y Wikipedia ·
+      <a href="privacidad.html" class="underline underline-offset-2 hover:text-white/60">Privacidad</a> ·
+      <a href="aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a>
+    </p>
+  </main>
+
+  <script>
+    // Clave pública: sólo puede leer la clasificación. Registrar exige pasar por
+    // la función, que rehace la partida antes de aceptarla.
+    const SUPABASE = 'https://vupsyrunkwsqegdvtcbg.supabase.co';
+    const CLAVE = 'sb_publishable_vrmWVzv3RQOd51uIhXCJGQ_ka7aGRJs';
+    const CUANTAS = 100;
+
+    const tabla = document.getElementById('tabla');
+    const estado = document.getElementById('estado');
+
+    // Quien acaba de registrar su marca se guarda el identificador, para poder
+    // encontrarse en la lista sin ir leyendo nombre por nombre.
+    let mia = null;
+    try { mia = localStorage.getItem('billions.miPuntuacion'); } catch (e) { /* modo privado */ }
+
+    const escapa = (s) => String(s).replace(/[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Oro, plata y bronce; el resto, en gris.
+    const MEDALLA = ['text-[#FFD60A]', 'text-white/70', 'text-[#FF9F0A]'];
+
+    function pinta(filas) {
+      tabla.innerHTML = filas.map((f, i) => `
+        <tr class="${f.id === mia ? 'mia' : ''}">
+          <td class="px-4 py-3 font-semibold sm:px-5 ${MEDALLA[i] || 'text-white/35'}">${i + 1}</td>
+          <td class="px-2 py-3 font-medium text-white">${escapa(f.alias)}</td>
+          <td class="px-2 py-3 text-right font-semibold tabular-nums text-white">${f.puntos}</td>
+          <td class="hidden px-4 py-3 text-right tabular-nums text-white/50 sm:table-cell sm:px-5">${f.burbujas}/20</td>
+        </tr>`).join('');
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE}/rest/v1/puntuaciones` +
+          `?select=id,alias,puntos,burbujas&order=puntos.desc,creado_en.asc&limit=${CUANTAS}`,
+          { headers: { apikey: CLAVE, Authorization: `Bearer ${CLAVE}` } });
+        if (!res.ok) throw new Error(res.status);
+        const filas = await res.json();
+        if (!filas.length) {
+          estado.textContent = 'Todavía no hay ninguna partida registrada. Sé el primero.';
+          return;
+        }
+        pinta(filas);
+        estado.classList.add('hidden');
+        // Si el jugador está en la lista, se le lleva a su fila.
+        const suya = tabla.querySelector('.mia');
+        if (suya) suya.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } catch (error) {
+        estado.textContent = 'No se ha podido cargar la clasificación. Inténtalo más tarde.';
+      }
+    })();
+  </script>
+</body>
+</html>

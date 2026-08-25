@@ -51,6 +51,7 @@ el recetario.
 
 | Archivo | Qué es |
 |---|---|
+| `clasificacion.html` | Tabla de las 100 mejores partidas. Autónoma: lee Supabase con `fetch` y no carga `main.js` ni los datos |
 | `404.html` / `500.html` | Páginas de error, autónomas y con **rutas absolutas**: se sirven para cualquier URL, también `/lo/que/sea/` |
 | `fin.html` | Pantalla de fin de partida, página aparte. Lee el resultado de `localStorage` (`billions.lastResult`) y ofrece apoyo, compartir y volver a jugar |
 | `index.html` | Tablero, pantalla previa, aviso superpuesto. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
@@ -519,6 +520,21 @@ clasificación pública. Vive en Supabase (proyecto `vupsyrunkwsqegdvtcbg`,
 - Probado contra el servidor real: partida legítima aceptada; respuestas de
   100 ms, campo manipulado, partida a medias, datos falseados y falta de alias,
   todas rechazadas con su motivo en castellano.
+- **Se consulta en `clasificacion.html`**, enlazada desde el pie de la portada y
+  desde la pantalla de fin —antes y después de registrar, porque mirar la tabla
+  no debería exigir apuntarse—. Es una página autónoma: sólo Tailwind y un
+  `fetch`.
+  - **Los nombres se escapan al pintarlos.** Los escribe cualquiera y van a un
+    `innerHTML`: sin escapar, el primero que escriba `<img onerror=…>` como alias
+    ejecuta código en el navegador de todos los demás.
+  - **Quien acaba de registrar su marca se guarda el identificador**
+    (`billions.miPuntuacion`) y su fila sale resaltada; la página se desplaza
+    hasta ella. En una lista de cien, encontrarse leyendo nombre por nombre es
+    incómodo.
+  - **La tabla se desplaza dentro de su caja** (`overflow-x-auto`): un nombre
+    largo no puede empujar la página entera a lo ancho en un móvil.
+  - Tres estados probados: con datos, vacía («Sé el primero») y con el servidor
+    caído.
 - **`privacidad.html` se actualizó antes de encender esto**, como manda la regla
   del proyecto: qué se guarda, base legal, dónde, cuánto y cómo pedir el borrado.
 
