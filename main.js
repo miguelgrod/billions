@@ -1132,14 +1132,14 @@ function pintaIntro() {
     const fondo = img
       ? `url('${img}') ${encuadre}/cover`
       : `linear-gradient(160deg, ${medio}, ${hondo})`;
-    return `<span class="cartel group relative block overflow-hidden rounded-xl sm:rounded-2xl"
+    return `<span class="cartel group relative block w-[calc(20%-0.3rem)] overflow-hidden rounded-xl sm:w-auto sm:rounded-2xl"
                   style="aspect-ratio:3/4;background:${fondo};box-shadow:0 14px 30px -14px rgba(0,0,0,.8)">
       <!-- velo de color: identifica la categoría y deja legible el rótulo -->
       <span class="pointer-events-none absolute inset-0"
             style="background:linear-gradient(to top, ${hondo}f2 0%, ${hondo}bf 34%, ${medio}4d 72%, ${medio}1a 100%)"></span>
-      <span class="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 px-1 pb-2 pt-6 sm:gap-1.5 sm:pb-2.5">
-        ${iconoHTML(cat, { clase: 'h-4 w-4 sm:h-[18px] sm:w-[18px]', color: '#fff', grosor: 1.9 })}
-        <span class="text-center text-[10px] font-semibold leading-none tracking-tight text-white sm:text-[11px]"
+      <span class="absolute inset-x-0 bottom-0 flex flex-col items-center gap-0.5 px-0.5 pb-1.5 pt-5 sm:gap-1.5 sm:px-1 sm:pb-2.5 sm:pt-6">
+        ${iconoHTML(cat, { clase: 'h-3 w-3 sm:h-[18px] sm:w-[18px]', color: '#fff', grosor: 1.9 })}
+        <span class="text-center text-[8px] font-semibold leading-[1.15] tracking-tight text-white sm:text-[11px]"
               style="text-shadow:0 1px 6px rgba(0,0,0,.7)">${ETIQUETAS[cat]}</span>
       </span>
       <!-- filo de color, que es lo que los hace parecer carteles enmarcados -->

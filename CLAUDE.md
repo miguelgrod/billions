@@ -258,6 +258,17 @@ vaciarlo y se pierde al tercer fallo.
   portada sola. **La rejilla sí hay que tocarla**: son `grid-cols-3
   sm:grid-cols-9` en `index.html`, y con nueve fichas en cuatro columnas la
   última fila se quedaba con una suelta.
+- **En móvil la portada se queda en título, fichas y botón.** Los tres pasos
+  (`<ol>`) van `hidden sm:grid`: se comían 194 px de los 667 de un iPhone SE y
+  empujaban el botón fuera de la pantalla. Medido, la portada pasaba de 1005 px
+  de alto a los 667 disponibles; ahora entra justa en ambos. El juego se explica
+  solo en la primera ronda.
+  - **Las nueve fichas van en dos filas de cinco y cuatro**, con la foto, el
+    icono y el rótulo más pequeños. Ahí estaban 441 de los 1005 px.
+  - **El contenedor es flex en móvil y grid de tablet en adelante.** Con nueve
+    fichas en cinco columnas, la segunda fila se queda con cuatro y una rejilla
+    las alinea a la izquierda dejando un hueco; el flex las centra. Por eso la
+    ficha lleva `w-[calc(20%-0.3rem)] sm:w-auto`.
 - **`justify-content: safe center` y no `center` a secas.** Centrando sin más, si
   el contenido no cabe se desborda por arriba y **no hay manera de llegar a él**:
   en un portátil bajo el título quedaba fuera de la pantalla. `safe` deja de
