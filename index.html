@@ -207,19 +207,6 @@
     }
     .esfera-elegida { animation: latido 1.1s ease-out 2; }
 
-    /* Estallido de la pantalla de victoria */
-    @keyframes sube {
-      0%   { opacity: 0; transform: translateY(30px) scale(.4); }
-      35%  { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-70px) scale(1); }
-    }
-    .sube { animation: sube 2.2s cubic-bezier(.2,.7,.3,1) infinite; }
-    @keyframes destello {
-      0%, 100% { opacity: .5; transform: scale(1); }
-      50%      { opacity: 1; transform: scale(1.06); }
-    }
-    .destello { animation: destello 1.8s ease-in-out infinite; }
-
     /* Rótulo de la temática al salir la burbuja */
     @keyframes rotuloIn {
       0%   { opacity: 0; transform: scale(.82); filter: blur(6px); }
@@ -290,8 +277,6 @@
       #app { max-height: 100dvh; overflow: hidden; }
       /* Make the main sections scroll internally if needed */
       #burbujas, #board, #cards { max-height: calc(100dvh - 120px); overflow: auto; }
-      /* Modals fit inside viewport */
-      #gameover .glass-fuerte { max-height: 92dvh; overflow: auto; }
       /* Slightly reduce paddings to gain vertical space */
       #app { padding-top: 8px; padding-bottom: 8px; }
       header { padding-top: 4px; padding-bottom: 4px; }
@@ -401,7 +386,7 @@
         </header>
 
         <!-- Las ocho temáticas con su esfera: el color se aprende aquí, no jugando -->
-        <div id="intro-cats" class="aparece grid w-full max-w-4xl grid-cols-4 gap-2 sm:grid-cols-8 sm:gap-2.5"></div>
+        <div id="intro-cats" class="aparece grid w-full max-w-4xl grid-cols-3 gap-2 sm:grid-cols-9 sm:gap-2.5"></div>
 
         <ol class="aparece grid w-full max-w-5xl gap-4 text-left sm:grid-cols-3 sm:gap-10">
           <li class="flex items-start gap-4 sm:flex-col sm:items-center sm:gap-3 sm:text-center">
@@ -444,20 +429,6 @@
             <button id="cookie-link" type="button" class="underline underline-offset-2 hover:text-white/60">Cookies</button>
           </p>
         </div>
-      </div>
-    </div>
-
-    <!-- Fin de partida -->
-    <div id="gameover" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-xl">
-      <div id="go-card" class="glass-fuerte aparece relative w-full max-w-sm overflow-hidden rounded-[32px] p-8 text-center shadow-2xl">
-        <div id="go-fiesta" class="pointer-events-none absolute inset-x-0 top-0 hidden h-28"></div>
-        <div id="go-title" class="relative text-sm font-medium text-white/50">Fin de la partida</div>
-        <div id="go-score" class="display my-2 text-[68px] leading-none text-white">0</div>
-        <p id="go-label" class="text-sm text-white/55"></p>
-        <p id="go-detail" class="mt-5 text-sm leading-relaxed text-white/75"></p>
-        <button id="restart" class="foco mt-7 w-full rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-black">
-          Jugar otra vez
-        </button>
       </div>
     </div>
 
@@ -513,12 +484,13 @@
     </div>
   </div>
 
-  <script src="movies.js?v=54203923" defer></script>
+  <script src="movies.js?v=3f1b4c92" defer></script>
   <script src="posters.js?v=3e6b8c75" defer></script>
   <script src="directors.js?v=97f46507" defer></script>
   <script src="actors.js?v=cd0f29e3" defer></script>
+  <script src="composers.js?v=01eff1c1" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="main.js?v=0e841b9c" defer></script>
+  <script src="main.js?v=0a8b50e0" defer></script>
 </body>
 </html>

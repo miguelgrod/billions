@@ -66,6 +66,34 @@ def split_people(celda):
     return [p if len(p.split()) > 1 else f'{p} {apellido}' for p in partes]
 
 
+# La columna de compositor no siempre trae una composición original: a veces es
+# una recopilación ('Varios'), una adaptación de música ajena (Joplin en The
+# Sting, Mozart en Amadeus) o una aportación parcial. De ninguna de ésas se puede
+# preguntar «¿compuso X la banda sonora de Y?» y esperar una respuesta
+# inequívoca, así que esas películas se quedan sin ronda de banda sonora.
+AMBIGUA = re.compile(r'varios|adapt|dir\. musical|parcial|selecci[oó]n|supervisi[oó]n', re.I)
+
+
+def compositores(celda):
+    """'Nino Rota & Carmine Coppola' -> ['Nino Rota', 'Carmine Coppola'].
+
+    El paréntesis que queda es el seudónimo ('Abigail Mead (Vivian Kubrick)') y
+    sobra: se pregunta por el nombre con el que firma la banda sonora.
+    """
+    texto = (celda or '').strip()
+    if not texto or texto in ('—', '-', 'N/D') or AMBIGUA.search(texto):
+        return []
+    texto = re.sub(r'\s*\([^)]*\)', '', texto).strip()
+    # Un nombre de una sola palabra es legítimo aquí (Vangelis), y 'Varios' ya
+    # lo ha descartado AMBIGUA antes de llegar.
+    nombres = []
+    for parte in re.split(r'\s*/\s*', texto):
+        for n in split_people(parte):
+            if n not in nombres:
+                nombres.append(n)
+    return nombres
+
+
 def categorias_oscar(celda):
     """'Mejor Actor de Reparto (Heath Ledger)' -> 'Mejor Actor de Reparto'.
 
@@ -121,6 +149,7 @@ def main():
             except ValueError:
                 pass                                  # 'N/D' en los estrenos recientes
             m['oc'] = categorias_oscar(amp.get('N', ''))
+            m['bso'] = compositores(amp.get('O', ''))
         peliculas.append(m)
 
     ya = {m.get('g') for m in peliculas}
@@ -150,6 +179,8 @@ def main():
             campos.append('a: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['a']) + ']')
             if m.get('oc'):
                 campos.append('oc: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['oc']) + ']')
+            if m.get('bso'):
+                campos.append('bso: [' + ', '.join(json.dumps(n, ensure_ascii=False) for n in m['bso']) + ']')
         return '  { ' + ', '.join(campos) + ' },'
 
     with open(os.path.join(ROOT, 'movies.js'), 'w', encoding='utf-8') as f:
@@ -160,6 +191,7 @@ def main():
         f.write('// g = recaudación (puede faltar) · y = año\n')
         f.write('// o = Óscars ganados · d = director(es) · a = reparto principal\n')
         f.write('// fa = nota de FilmAffinity · oc = categorías de Óscar ganadas\n')
+        f.write('// bso = compositor(es) de la banda sonora\n')
         f.write('// Sin o/d/a: la película no está en el Excel ampliado\n')
         f.write('const MOVIES = [\n')
         for m in peliculas:

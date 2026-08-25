@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billions · Página no encontrada</title>
+  <meta name="robots" content="noindex">
+  <!-- Rutas absolutas a propósito: esta página se sirve para cualquier URL que
+       no exista, incluida /lo/que/sea/, y con rutas relativas el navegador
+       buscaría el CSS y el fondo colgando de esa carpeta inventada. -->
+  <script src="/vendor/tailwind.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #07080c;
+      color: rgba(255,255,255,0.9);
+    }
+    .display {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+      letter-spacing: -0.06em;
+      font-weight: 700;
+    }
+    .glass-fuerte {
+      background: rgba(15,16,22,0.52);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+    }
+    .foco { transition: transform .2s cubic-bezier(.2,.8,.2,1); }
+    .foco:hover { transform: translateY(-1px); }
+    .foco:active { transform: translateY(0); }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-20" style="background:#000"></div>
+  <div class="pointer-events-none fixed inset-0 -z-20"
+       style="background-image:url('/imgs/bg_game.webp');background-size:cover;background-position:center;opacity:.18"></div>
+  <div class="pointer-events-none fixed inset-0 -z-10"
+       style="background:
+         radial-gradient(65% 50% at 18% 12%, rgba(255,159,10,.12), transparent 60%),
+         radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.12), transparent 60%),
+         radial-gradient(65% 60% at 50% 92%, rgba(191,90,242,.10), transparent 60%)"></div>
+
+  <main class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-2xl items-center justify-center px-4 py-8">
+    <div class="glass-fuerte w-full rounded-[32px] p-8 text-center shadow-2xl">
+      <p class="display text-[72px] leading-none text-white sm:text-[96px]">404</p>
+      <p class="display mt-3 text-2xl leading-none text-white sm:text-3xl">Esta página no existe</p>
+      <p class="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/70">
+        La dirección que has abierto no lleva a ninguna parte. Puede que el enlace
+        esté mal escrito o que la página ya no esté.
+      </p>
+      <a href="/" class="foco mt-7 inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-[15px] font-semibold text-black">
+        Volver al juego
+      </a>
+    </div>
+  </main>
+
+  <footer class="px-4 pb-8 text-center">
+    <p class="text-xs text-white/25">
+      Datos de The Numbers, FilmAffinity y Wikipedia ·
+      <a href="/privacidad.html" class="underline underline-offset-2 hover:text-white/60">Privacidad</a> ·
+      <a href="/aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a>
+    </p>
+  </footer>
+</body>
+</html>

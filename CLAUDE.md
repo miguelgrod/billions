@@ -1,8 +1,8 @@
 # Billions — juego de taquilla
 
 Quiz web de cine: veinte **burbujas** repartidas por la pantalla, cada una de un
-tipo de pregunta —taquilla, estrenos, directores, repartos, crítica, filmografía
-u Óscars—. Un sorteo
+tipo de pregunta —taquilla, estrenos, directores, repartos, crítica, filmografía,
+banda sonora u Óscars—. Un sorteo
 las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
 revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
@@ -51,7 +51,9 @@ el recetario.
 
 | Archivo | Qué es |
 |---|---|
-| `index.html` | Tablero, pantalla previa, aviso superpuesto, pantalla de fin. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
+| `404.html` / `500.html` | Páginas de error, autónomas y con **rutas absolutas**: se sirven para cualquier URL, también `/lo/que/sea/` |
+| `fin.html` | Pantalla de fin de partida, página aparte. Lee el resultado de `localStorage` (`billions.lastResult`) y ofrece apoyo, compartir y volver a jugar |
+| `index.html` | Tablero, pantalla previa, aviso superpuesto. CSS propio en un `<style>` (animaciones); el resto son clases de Tailwind |
 | `main.js` | Estado, rondas, revelado, récord. Sin módulos: variables globales y `defer` |
 | `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` identificador, `t` título, `g` recaudación (puede faltar), `y` año, `o` Óscars, `fa` nota FA, `d` director(es), `a` reparto, `oc` categorías |
 | `posters.js` | `const POSTERS` — puesto → nombre de archivo en `posters/` |
@@ -59,6 +61,8 @@ el recetario.
 | `posters/_report.json` | Caché de resolución del descargador (qué página y qué archivo de Wikipedia usó cada película) |
 | `directors/*.jpg` | 118 fotos de directores, 400 px de ancho |
 | `actors/*.jpg` | 624 fotos de actores (de 641 personas), 300 px de ancho |
+| `composers/*.jpg` | 77 fotos de compositores (de 96 personas), 300 px de ancho |
+| `composers.js` | `COMPOSERS` (puesto de película → compositores) y `COMPOSER_PHOTOS` (nombre → archivo). Generado por `fetch-people.py --role composers` |
 | `directors.js` / `actors.js` | `DIRECTORS`/`ACTORS` (puesto de película → nombres) y `DIRECTOR_PHOTOS`/`ACTOR_PHOTOS` (nombre → archivo). **Todavía no los carga `index.html`**: los datos están listos, el juego no los usa |
 | `*/\_report.json` | Qué foto se asignó a cada persona, cuáles fueron por vía indirecta y cuáles quedaron en duda |
 | `tools/build-data.py` | Regenera `movies.js` cruzando los dos Excel |
@@ -98,8 +102,8 @@ vaciarlo y se pierde al tercer fallo.
 - **Las posiciones son una rejilla con desorden**: cada burbuja nace en su celda
   y se desplaza un poco al azar (`reparteBurbujas()`). Parece repartido a mano y,
   a diferencia de sortear posiciones libres, no se amontonan.
-- **20 burbujas.** Entre ocho categorías no reparten exacto: cada una sale dos
-  veces y cuatro salen una tercera. **Las agraciadas se sortean en cada partida**,
+- **20 burbujas.** Entre nueve categorías no reparten exacto: cada una sale dos
+  veces y dos salen una tercera. **Las agraciadas se sortean en cada partida**,
   para que no sean siempre las mismas las que aparecen más.
   - **El reparto se hace a mano, no quitando sobrantes al azar**: quitando al
     azar podían caer las tres quitadas sobre la misma categoría y dejarla sin
@@ -126,8 +130,8 @@ vaciarlo y se pierde al tercer fallo.
 - **En móvil la deriva va un 22 % más rápida** (media query sobre
   `animation-duration`): el campo es más pequeño y el mismo recorrido se percibe
   más lento.
-- **El reparto de categorías se baraja en cada partida**, manteniendo cuatro de
-  cada una, así que dos partidas no se ven iguales.
+- **El reparto de categorías se baraja en cada partida**, así que dos partidas
+  no se ven iguales.
 - **Una película no se pregunta dos veces en la misma partida** (`state.vistas` y
   `frescas()`): cada generador trabaja sobre el depósito ya filtrado y la ronda
   declara sus películas en `r.pelis`. Sin esto, en una partida de 20 rondas se
@@ -135,7 +139,7 @@ vaciarlo y se pierde al tercer fallo.
   menos de diez sin usar, se vuelve al depósito entero: antes repetir que
   quedarse sin preguntas.
 - **Los depósitos de imagen de fondo son amplios a propósito** (45 de taquilla,
-  32 de estrenos, 27 premiadas). Con cuatro burbujas de cada categoría por
+  32 de estrenos, 27 premiadas). Con dos o tres burbujas de cada categoría por
   partida, un depósito de quince hacía que se repitieran las mismas carátulas
   partida tras partida.
 - **Cada burbuja lleva de fondo una foto de su temática al ~50 %**, sacada de los
@@ -202,12 +206,16 @@ vaciarlo y se pierde al tercer fallo.
 - **Los iconos de categoría** (`ICONOS`) viven ya sólo en el rótulo. En el fondo
   de las burbujas van fotos, no iconos.
 - **La paleta de las burbujas son pasteles del rosa al turquesa**, la gama de
-  la referencia que pasó Miguel. Los ocho tonos están repartidos por igual
-  (178°–343°, en pasos de 23,6°): ese paso regular es lo que los mantiene
-  distinguibles siendo todos de la misma familia. **Si se añade una categoría hay
-  que volver a repartir la rampa entera, no encajarla en un hueco.** Al entrar
-  Filmografía se hizo así: meterla en el hueco más ancho la habría dejado a 18°
-  de sus dos vecinas, menos separación de la que ya había entre las demás.
+  la referencia que pasó Miguel. Los nueve tonos están repartidos por igual
+  (178°–343°, en pasos de 20,7°): ese paso regular es lo que los mantiene
+  distinguibles siendo todos de la misma familia. Las tres paradas de cada esfera
+  salen siempre de la misma fórmula sobre ese tono: luz al 100/92,9 de saturación
+  y luminosidad, medio al 80,4/78 y hondo al 44,9/58. **Si se añade una categoría
+  hay que volver a repartir la rampa entera, no encajarla en un hueco.** Al
+  entrar Filmografía se hizo así: meterla en el hueco más ancho la habría dejado
+  a 18° de sus dos vecinas, menos separación de la que ya había entre las demás.
+  Al entrar Banda sonora se repartió otra vez, y por eso cambiaron de tono los
+  ocho colores anteriores.
 - **Los números van en blanco, no en un color de acento.** El color vive en las
   burbujas; un acento naranja al lado de estos pasteles desentonaba. El verde,
   el naranja y el rojo se reservan para lo semántico: acierto, fallo y tiempo. Las pequeñas llevan un desenfoque leve que da
@@ -244,10 +252,12 @@ vaciarlo y se pierde al tercer fallo.
     unas esferas de 70 px se perdían en una pantalla entera. Por eso la portada
     también se repinta al cambiar el tamaño de la ventana.
 - **La portada se dibuja con las piezas del juego**: doce esferas flotando y las
-  ocho temáticas como fichas con su esfera, su icono y su color —el código de
+  nueve temáticas como fichas con su esfera, su icono y su color —el código de
   color se aprende ahí y no a base de fallar partidas—. Sale de la misma tabla
   `COLORES`/`ICONOS`/`ETIQUETAS`, así que añadir una categoría actualiza la
-  portada sola.
+  portada sola. **La rejilla sí hay que tocarla**: son `grid-cols-3
+  sm:grid-cols-9` en `index.html`, y con nueve fichas en cuatro columnas la
+  última fila se quedaba con una suelta.
 - **`justify-content: safe center` y no `center` a secas.** Centrando sin más, si
   el contenido no cabe se desborda por arriba y **no hay manera de llegar a él**:
   en un portátil bajo el título quedaba fuera de la pantalla. `safe` deja de
@@ -274,10 +284,28 @@ vaciarlo y se pierde al tercer fallo.
   cabeceo propio que tenían antes (`flotaIntro`) se retiró: además de no
   parecerse al juego, se quedaba fuera de la regla de `prefers-reduced-motion`,
   que sólo nombra las clases de deriva.
-- **Al completar las 20 hay pantalla de enhorabuena** (`victoria()`), con
-  esferas subiendo detrás del título y un texto distinto según se haya fallado o
-  no. `gameOver()` limpia ese marcado con `innerHTML`, porque si no la derrota
-  siguiente heredaría la celebración.
+- **La partida acaba en una página aparte, `fin.html`**, no en un aviso
+  superpuesto: se cambió el 2026-08-25. Tanto `victoria()` como `gameOver()`
+  arman el texto y llaman a `guardaResultadoFinal()`, que deja el resultado en
+  `localStorage` bajo `billions.lastResult` y hace `location.href = 'fin.html'`.
+  - **El traspaso va por `localStorage` y no por la URL**: el detalle es HTML
+    con marcado, y meterlo en la barra de direcciones sería feo y frágil.
+  - Lleva el pie legal (privacidad y aviso legal), como la portada. Enlace de
+    cookies no: el banner y sus preferencias viven en `index.html`, que es donde
+    se carga `main.js`.
+  - **`fin.html` se apaña con lo que reciba.** Si el almacenamiento no está
+    disponible —modo privado— el `try/catch` traga y la página se pinta con sus
+    valores por defecto, en vez de quedarse en blanco.
+  - **Es una página autónoma**: no carga `main.js` ni los datos del juego, sólo
+    Tailwind y un `<script>` en línea. Por eso no la toca `sella-versiones.py`.
+  - Lleva el bloque de apoyo (Buy Me a Coffee) y los tres enlaces de compartir.
+    De ahí se vuelve al juego con un enlace normal a `index.html`.
+  - **«Grabar puntuación» está puesto pero no hace nada todavía.** Cuando lo
+    haga, si guarda algo en un servidor hay que actualizar `privacidad.html`
+    **antes** de ponerlo en marcha.
+  - **El overlay `#gameover` que había en `index.html` ya no existe**, ni la
+    celebración de esferas (`pintaFiesta()`, las animaciones `.sube` y
+    `.destello`): se borraron al quedar sin uso. `fin.html` no las tiene.
 
 ## El catálogo
 
@@ -318,7 +346,7 @@ eso *El Padrino* y compañía no aparecían nunca.
     si es más alta que ancha** (`MAX_RATIO`). Es la comprobación que faltaba: un
     logotipo va de 2:1 a 10:1 y se cae solo.
 
-## Los siete tipos de ronda
+## Los ocho tipos de ronda
 
 | Tipo | Pregunta | Respuesta | Depósito |
 |---|---|---|---|
@@ -330,6 +358,7 @@ eso *El Padrino* y compañía no aparecían nunca.
 | `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
 | `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 27 |
 | `filmografia` | ¿Quién ha rodado más películas, *X* o *Y*? | Elegir tarjeta | 50 actores |
+| `bso` | ¿Compuso *X* la banda sonora de *Y*? | Sí / No | 157 |
 
 - **`filmografia` no juega con películas, sino con personas.** Su depósito es
   `actores.js` (los 50 con más largometrajes rodados, de Samuel L. Jackson con
@@ -344,6 +373,28 @@ eso *El Padrino* y compañía no aparecían nunca.
   un verificado necesita 18 de hueco; dos verificados se apañan con 10.
   De paso descarta los empates, que los hay. No es dificultad: es que el duelo
   no lo decida el criterio de quien contó.
+- **`bso` es la ronda de dirección con otro dato**: mismo modo sí/no, mismas dos
+  cartas —carátula y retrato— y el mismo equilibrio, que sortea la respuesta
+  antes de buscar a quién nombrar. El intruso se aprieta con el nivel: a partir
+  del 6 tiene que haber compuesto algo a menos de seis años de la película, que
+  es cuando de verdad hay que saberse quién firmó qué.
+  - **De la columna de compositor sólo entra la composición original.** El Excel
+    marca también recopilaciones («Varios (supervisión musical)» en *Pulp
+    Fiction*), adaptaciones de música ajena (Joplin en *The Sting*, Mozart en
+    *Amadeus*), direcciones musicales y aportaciones parciales (*Django
+    Unchained*). De ninguna se puede preguntar «¿compuso X la banda sonora de Y?»
+    y esperar una respuesta inequívoca, así que esas películas se quedan sin
+    ronda de banda sonora. Lo decide `AMBIGUA`, la misma expresión en
+    `build-data.py` y en `fetch-people.py`: **si tocas una, toca la otra.**
+  - **El paréntesis que sí se conserva es el seudónimo** («Abigail Mead (Vivian
+    Kubrick)» en *Full Metal Jacket*): se pregunta por el nombre con el que
+    firma la banda sonora.
+  - **Un nombre de una sola palabra es legítimo** —Vangelis en *Blade Runner*—.
+    Filtrar por «nombre y apellido» para tirar el «Varios» suelto lo dejaba
+    fuera; de «Varios» ya se encarga `AMBIGUA` antes.
+  - Medido sobre 20.000 rondas: 49,6 % de síes y **ningún "no" falso**, porque
+    aquí la negación se comprueba contra el dato y no con una heurística como en
+    los repartos.
 - **`oscarcat` tira de un depósito pequeño** (27 películas con desglose de
   premios, 18 categorías). Su umbral en `frescas()` está bajado a 6 por eso.
 - **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae
@@ -543,6 +594,29 @@ siempre el formato vertical.
 Las imágenes tienen copyright de sus estudios y están a título ilustrativo, con
 la atribución en el pie de página.
 
+## Compositores
+
+Los nombres salen de la columna O («Compositor BSO») de la hoja «Listado
+completo», añadida al Excel el 2026-08-25. Las fotos, del mismo script que las
+de directores y actores:
+
+```bash
+python3 tools/fetch-people.py --role composers --width 300
+```
+
+- **La validación de identidad se hace con vocabulario de música** (`COMPOSITOR`),
+  por el mismo motivo que a un director se le exige que su artículo hable de
+  dirigir: hay homónimos de sobra. `score` a secas no vale —lo dice cualquier
+  artículo con una cifra—, así que va pegado a `film`/`soundtrack`.
+- **19 de 96 no tienen foto y no la van a tener por esta vía**: su artículo en la
+  Wikipedia inglesa no lleva ninguna imagen. Comprobado uno a uno con la API
+  (Carter Burwell, Henry Jackman, Steve Jablonsky, Mark Mancina, Wendy Carlos,
+  Pinar Toprak…). Como en las demás categorías, quien no tiene cara se queda
+  fuera: son 157 películas jugables de 180 con compositor.
+- **`fetch-people.py` ya localiza la hoja por su nombre** y no por `sheet3.xml`.
+  Leía el archivo a ciegas, y la hoja de este proyecto ya se ha reordenado una
+  vez.
+
 ## Directores y actores
 
 Los nombres salen de la hoja "Listado completo" de
@@ -642,6 +716,21 @@ volver a lanzarlo sin esa opción para restaurarlo.
 Miguel (2026-08-22) y sus archivos se borraron. Si vuelve a hacer falta, el
 patrón que funcionaba era `<audio preload="auto">` por efecto y un `play()` con
 `catch`, porque el navegador lo bloquea hasta que el usuario interactúa.
+
+## Páginas de error
+
+`404.html` y `500.html` siguen el mismo lenguaje que el resto y no piden nada
+fuera. Dos cosas que no hay que romper:
+
+- **Sus rutas son absolutas** (`/vendor/tailwind.js`, `/imgs/bg_game.webp`).
+  CloudFront las sirve para cualquier URL que falle, y con rutas relativas el
+  navegador buscaría el CSS colgando de la carpeta inventada que se pidió.
+- **Se mapean 403 y 404 al mismo `/404.html`.** Con OAC el bucket no da permiso
+  de listado, así que un objeto que no existe se responde como **403**, no como
+  404: sin el mapeo del 403 la página de error no llegaría a verse nunca.
+- Lo configura el workflow de despliegue (`Configurar páginas de error en
+  CloudFront`), y es **idempotente**: si la distribución ya tiene respuestas de
+  error, no la toca. Necesita la variable `BILLIONS_CF_ID`.
 
 ## Publicar
 

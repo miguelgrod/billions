@@ -62,7 +62,7 @@ const EDAD_MAX = 22;
 // plantea la pregunta de su categoría.
 const BURBUJAS = 20;
 const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat',
-                    'critica', 'filmografia'];
+                    'critica', 'filmografia', 'bso'];
 // En pantalla estrecha la rejilla se pone de pie: cuatro columnas por cinco
 // filas encajan con un móvil vertical y dejan sitio a burbujas más grandes.
 const REJILLA_ANCHA = { columnas: 5, filas: 4 };
@@ -79,29 +79,34 @@ const VACIO_MS = 450;      // el campo vacío se ve un momento antes de celebrar
 // añadidos: es lo que hace que se lean como cuerpos y no como círculos planos.
 const COLORES = {
   oscarcat:    '#F49AB3',   // rosa
-  oscar:       '#F49AD6',   // magenta
-  taquilla:    '#EE9AF4',   // orquídea
-  director:    '#CB9AF4',   // violeta
-  actores:     '#A79AF4',   // lila
-  filmografia: '#9AB0F4',   // azul violáceo
-  anio:        '#9AD3F4',   // azul cielo
+  oscar:       '#F49AD2',   // magenta
+  taquilla:    '#F49AF1',   // orquídea
+  bso:         '#D89AF4',   // malva
+  director:    '#B99AF4',   // violeta
+  actores:     '#9A9AF4',   // lila
+  filmografia: '#9AB9F4',   // azul violáceo
+  anio:        '#9AD8F4',   // azul cielo
   critica:     '#9AF4F1',   // turquesa
 };
-// Ocho tonos repartidos por igual entre el turquesa y el rosa (178°-343°, en
-// pasos de 23,6°): es la gama de la referencia, y el paso regular de tono es lo
+// Nueve tonos repartidos por igual entre el turquesa y el rosa (178°-343°, en
+// pasos de 20,7°): es la gama de la referencia, y el paso regular de tono es lo
 // que los mantiene distinguibles pese a ser todos pasteles de la misma familia.
-// Al entrar Filmografía se volvió a repartir la rampa entera en vez de encajarla
-// en el hueco más ancho, que la habría dejado a 18° de sus dos vecinas —menos
-// separación de la que ya había entre las demás—.
+// Las tres paradas salen siempre de la misma fórmula sobre ese tono: luz al
+// 100/92,9 de saturación y luminosidad, medio al 80,4/78 y hondo al 44,9/58.
+// Cada vez que entra una categoría se vuelve a repartir la rampa entera en vez
+// de encajarla en el hueco más ancho, que la dejaría más cerca de sus dos
+// vecinas de lo que ya están las demás entre sí. Se hizo así al entrar
+// Filmografía y otra vez al entrar Banda sonora.
 const ESFERA = {
-  oscarcat:    { luz: '#FFDBE4', medio: '#F49AB3', hondo: '#C4647B' },
-  oscar:       { luz: '#FFDBF2', medio: '#F49AD6', hondo: '#C464A1' },
-  taquilla:    { luz: '#FEDBFF', medio: '#EE9AF4', hondo: '#C164C4' },
-  director:    { luz: '#F0DBFF', medio: '#CB9AF4', hondo: '#9B64C4' },
-  actores:     { luz: '#E2DBFF', medio: '#A79AF4', hondo: '#7564C4' },
-  filmografia: { luz: '#DBE3FF', medio: '#9AB0F4', hondo: '#6478C4' },
-  anio:        { luz: '#DBF1FF', medio: '#9AD3F4', hondo: '#649EC4' },
-  critica:     { luz: '#DBFFFF', medio: '#9AF4F1', hondo: '#64C4C4' },
+  oscarcat:    { luz: '#FFDBE5', medio: '#F49AB3', hondo: '#C4647F' },
+  oscar:       { luz: '#FFDBF1', medio: '#F49AD2', hondo: '#C464A0' },
+  taquilla:    { luz: '#FFDBFE', medio: '#F49AF1', hondo: '#C464C1' },
+  bso:         { luz: '#F4DBFF', medio: '#D89AF4', hondo: '#A664C4' },
+  director:    { luz: '#E7DBFF', medio: '#B99AF4', hondo: '#8564C4' },
+  actores:     { luz: '#DBDBFF', medio: '#9A9AF4', hondo: '#6464C4' },
+  filmografia: { luz: '#DBE7FF', medio: '#9AB9F4', hondo: '#6485C4' },
+  anio:        { luz: '#DBF4FF', medio: '#9AD8F4', hondo: '#64A6C4' },
+  critica:     { luz: '#DBFFFE', medio: '#9AF4F1', hondo: '#64C4C1' },
 };
 const FADE_MS = 1000;      // fundido de entrada de la pregunta
 const SALIDA_INTRO_MS = 1500;  // la portada se desvanece y descubre el campo
@@ -128,6 +133,11 @@ const ICONOS = {
             '<path d="M8.5 9.6 6 3.5h4.4L12 7M15.5 9.6 18 3.5h-4.4"/>' +
             '<path d="m12 12 .9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/>',
   critica:  '<path d="m12 3.5 2.7 5.6 6 .9-4.4 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.3 10l6-.9z"/>',
+  // corchea doble sobre una onda: la música de la película, no una nota suelta
+  bso:      '<path d="M9.5 17.5V5.2l9-2v12.3"/>' +
+            '<ellipse cx="7" cy="18" rx="2.6" ry="2.1"/>' +
+            '<ellipse cx="16" cy="15.5" rx="2.6" ry="2.1"/>' +
+            '<path d="M9.5 8.3l9-2"/>',
   // una pila de películas: es un recuento, no una película suelta
   filmografia: '<rect x="6.5" y="9" width="15" height="12" rx="2"/>' +
                '<path d="M4.6 6.8h13.6M2.8 4.2h11.4"/>' +
@@ -401,13 +411,6 @@ const els = {
   points: document.getElementById('points'),
   bar: document.getElementById('timer-bar'),
   lives: document.getElementById('lives'),
-  gameover: document.getElementById('gameover'),
-  goTitle: document.getElementById('go-title'),
-  goFiesta: document.getElementById('go-fiesta'),
-  goScore: document.getElementById('go-score'),
-  goLabel: document.getElementById('go-label'),
-  goDetail: document.getElementById('go-detail'),
-  restart: document.getElementById('restart'),
   intro: document.getElementById('intro'),
   introBurbujas: document.getElementById('intro-burbujas'),
   introCats: document.getElementById('intro-cats'),
@@ -461,6 +464,8 @@ const directorPhoto = (n) =>
   typeof DIRECTOR_PHOTOS !== 'undefined' && DIRECTOR_PHOTOS[n] ? 'directors/' + DIRECTOR_PHOTOS[n] : null;
 const actorPhoto = (n) =>
   typeof ACTOR_PHOTOS !== 'undefined' && ACTOR_PHOTOS[n] ? 'actors/' + ACTOR_PHOTOS[n] : null;
+const composerPhoto = (n) =>
+  typeof COMPOSER_PHOTOS !== 'undefined' && COMPOSER_PHOTOS[n] ? 'composers/' + COMPOSER_PHOTOS[n] : null;
 
 /* ---------- edades ---------- */
 
@@ -479,6 +484,9 @@ const edadCerca = (a, b, tope = EDAD_MAX) => {
 const PELIS = MOVIES.filter(posterOf);
 const CON_DIRECTOR = PELIS.filter((m) => (m.d || []).length && m.d.every(directorPhoto));
 const CON_REPARTO = PELIS.filter((m) => reparto(m).length >= 2);
+// Como en dirección, se exige foto de todos los firmantes: si a una banda
+// sonora a cuatro manos le falta la cara de uno, la carta quedaría a medias.
+const CON_BSO = PELIS.filter((m) => (m.bso || []).length && m.bso.every(composerPhoto));
 // Una película entra en cada temática para la que tenga datos: no hace falta
 // que los tenga todos. Las clásicas, por ejemplo, no siempre traen recaudación.
 const CON_TAQUILLA = PELIS.filter((m) => typeof m.g === 'number');
@@ -506,6 +514,17 @@ const TOP_ACTORES = (typeof ACTORES_TOP !== 'undefined' ? ACTORES_TOP : [])
   .filter((a) => a.f && typeof a.p === 'number');
 const fotoActorTop = (a) => 'actors/' + a.f;
 const DIRECTORES = [...new Set(CON_DIRECTOR.flatMap((m) => m.d))];
+const COMPOSITORES = [...new Set(CON_BSO.flatMap((m) => m.bso))];
+// En qué años compuso cada uno, hasta donde alcanzan nuestros datos: es lo que
+// permite medir si un intruso es de la época de la película o de otra.
+const ANIOS_DE_COMPOSITOR = (() => {
+  const mapa = new Map();
+  CON_BSO.forEach((m) => m.bso.forEach((n) => {
+    if (!mapa.has(n)) mapa.set(n, []);
+    mapa.get(n).push(m.y);
+  }));
+  return mapa;
+})();
 
 function reparto(m) {
   return (m.a || []).filter(actorPhoto);
@@ -671,6 +690,43 @@ function rondaDirector(level) {
   };
 }
 
+// ---- Banda sonora: ¿compuso esta persona la de esta película? ----
+// Calcada de la de dirección, incluido el equilibrio: la respuesta se sortea
+// primero y luego se busca a quién nombrar, para que ni el sí ni el no salgan
+// gratis.
+function rondaBso(level) {
+  const m = pick(frescas(CON_BSO));
+  const verdadero = coin();
+  let nombre;
+  if (verdadero) {
+    nombre = pick(m.bso);
+  } else {
+    // cuanto más alto el nivel, más plausible el intruso: de la misma época,
+    // que es cuando de verdad hay que saberse quién firmó qué
+    const cerca = level > 6;
+    const candidatos = COMPOSITORES.filter((n) => {
+      if (m.bso.includes(n)) return false;
+      if (!cerca) return true;
+      return (ANIOS_DE_COMPOSITOR.get(n) || []).some((y) => Math.abs(y - m.y) <= 6);
+    });
+    nombre = pick(candidatos.length ? candidatos : COMPOSITORES.filter((n) => !m.bso.includes(n)));
+  }
+  if (!nombre) return null;
+  const real = m.bso.length > 1
+    ? `La compusieron ${m.bso.join(' y ')}`
+    : `La compuso ${m.bso[0]}`;
+  return {
+    tipo: 'bso',
+    pregunta: `¿Compuso ${nom(nombre)} la banda sonora de ${nom(m.t)}?`,
+    modo: 'sino',
+    cartas: [cartaPeli(m), cartaPersona(nombre, composerPhoto(nombre), 'Compositor')],
+    correcta: verdadero,
+    pelis: [m],
+    explica: `${real}.`,
+    firma: `bso-${m.r}-${nombre}`,
+  };
+}
+
 // ---- Reparto: ¿coincidieron estos dos actores? ----
 function rondaActores(level) {
   const m = pick(frescas(CON_REPARTO));
@@ -831,6 +887,7 @@ const TIPOS = [
   { id: 'oscarcat', peso: 2, crea: rondaCategoria, hay: () => CON_CATEGORIA.length > 1 },
   { id: 'critica', peso: 2, crea: rondaCritica, hay: () => CON_NOTA.length > 1 },
   { id: 'filmografia', peso: 2, crea: rondaFilmografia, hay: () => TOP_ACTORES.length > 1 },
+  { id: 'bso', peso: 2, crea: rondaBso, hay: () => CON_BSO.length > 1 && COMPOSITORES.length > 1 },
 ];
 
 // `categoria` la impone la burbuja elegida; sin ella se sortea por peso
@@ -879,6 +936,7 @@ const ETIQUETAS = {
   oscarcat: 'Categoría',
   critica: 'Crítica',
   filmografia: 'Filmografía',
+  bso: 'Banda sonora',
 };
 
 function cartaHTML(c, i, clicable, anchaEnMovil) {
@@ -1097,7 +1155,7 @@ function pintaIntro() {
 // del propio juego: un director para dirección, un actor para reparto, y
 // carátulas escogidas según el criterio de cada categoría.
 const ACTORES_EN_JUEGO = [...new Set(CON_REPARTO.flatMap(reparto))];
-const ES_PERSONA = new Set(['director', 'actores', 'filmografia']);
+const ES_PERSONA = new Set(['director', 'actores', 'filmografia', 'bso']);
 // Depósitos de imagen de fondo. Son amplios a propósito: con 4 burbujas de cada
 // categoría por partida, un depósito de 15 hace que se repitan las mismas
 // carátulas partida tras partida.
@@ -1114,6 +1172,7 @@ function imagenPara(cat, usadas) {
     actores: () => actorPhoto(pick(ACTORES_EN_JUEGO)),
     oscar: () => posterOf(pick(PREMIADAS.length ? PREMIADAS : PELIS)),
     filmografia: () => (TOP_ACTORES.length ? fotoActorTop(pick(TOP_ACTORES)) : null),
+    bso: () => (COMPOSITORES.length ? composerPhoto(pick(COMPOSITORES)) : null),
   };
   const dame = fuentes[cat] || fuentes.taquilla;
   // varios intentos para no repetir imagen en el mismo campo
@@ -1128,8 +1187,8 @@ function imagenPara(cat, usadas) {
 // azar. Se ve repartido por la pantalla y, a diferencia de sortear posiciones
 // libres, nunca se solapan.
 function reparteBurbujas() {
-  // Veinte burbujas entre ocho categorías no reparten exacto: cada una sale dos
-  // veces y cuatro salen una tercera. Las agraciadas se sortean en cada partida,
+  // Veinte burbujas entre nueve categorías no reparten exacto: cada una sale dos
+  // veces y dos salen una tercera. Las agraciadas se sortean en cada partida,
   // así que no son siempre las mismas las que aparecen más.
   // Se reparte a mano en vez de quitar sobrantes al azar: quitando al azar podía
   // caer tres veces sobre la misma categoría y dejarla sin ninguna burbuja.
@@ -1594,40 +1653,6 @@ function precarga(r) {
   r.cartas.forEach((c) => { if (c.img) new Image().src = c.img; });
 }
 
-// Esferas subiendo tras el título: la celebración se hace con las piezas del
-// propio juego, no con un confeti genérico.
-function pintaFiesta() {
-  const n = 14;
-  els.goFiesta.innerHTML = Array.from({ length: n }, (_, i) => {
-    const cat = CATEGORIAS[i % CATEGORIAS.length];
-    const { luz, medio, hondo } = ESFERA[cat];
-    const d = 8 + rnd(14);
-    return `<span class="sube absolute rounded-full"
-      style="left:${(3 + (i * 94) / n + rnd(6)).toFixed(1)}%;bottom:-16px;
-             width:${d}px;height:${d}px;animation-delay:${(-Math.random() * 2.2).toFixed(2)}s;
-             background:radial-gradient(circle at 32% 26%, ${luz}, ${medio} 55%, ${hondo})"></span>`;
-  }).join('');
-  els.goFiesta.classList.remove('hidden');
-}
-
-function insertBmcButton() {
-  if (document.querySelector('script[data-bmc="billions"]')) return;
-  const script = document.createElement('script');
-  script.type = 'text/javascript';
-  script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
-  script.dataset.bmc = 'billions';
-  script.dataset.name = 'bmc-button';
-  script.dataset.slug = 'miguelgrod';
-  script.dataset.color = '#FFDD00';
-  script.dataset.emoji = '';
-  script.dataset.font = 'Cookie';
-  script.dataset.text = 'Invítame a un café';
-  script.dataset.outlineColor = '#000000';
-  script.dataset.fontColor = '#000000';
-  script.dataset.coffeeColor = '#ffffff';
-  document.body.appendChild(script);
-}
-
 function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
   const payload = {
     titulo,
@@ -1650,14 +1675,6 @@ function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
 function victoria() {
   clearTimeout(state.timer);
   hideToast();
-  pintaFiesta();
-  els.goTitle.innerHTML =
-    '<span class="destello inline-block text-4xl">🎉</span>' +
-    '<div class="display mt-2 text-3xl leading-none text-white">¡Enhorabuena!</div>' +
-    `<div class="mt-1.5 text-sm font-normal text-[#30D158]">Has completado las ${BURBUJAS} burbujas</div>`;
-  els.goTitle.className = 'relative';
-  els.goScore.textContent = state.puntos;
-  els.goLabel.textContent = 'puntos conseguidos';
   const sinFallos = state.vidas === VIDAS;
   const detalle =
     (sinFallos
@@ -1676,12 +1693,6 @@ function victoria() {
 
 function gameOver(detalle) {
   paraCronometro();
-  els.goFiesta.classList.add('hidden');     // por si la anterior fue victoria
-  els.goTitle.innerHTML = 'Fin de la partida';   // borra el marcado de la victoria
-  els.goTitle.className = 'relative text-sm font-medium text-white/50';
-  els.goScore.textContent = state.puntos;
-  els.goLabel.textContent =
-    `puntos · ${state.completadas.size} de ${BURBUJAS} burbujas`;
   const detalleFinal = detalle +
     (state.newRecord
       ? '<br><span class="text-[#30D158]">¡Nuevo récord!</span>'
@@ -1717,8 +1728,6 @@ function startGame() {
   els.score.textContent = '0';
   els.points.textContent = '0';
   pintaVidas(false);
-  els.gameover.classList.add('hidden');
-  els.gameover.classList.remove('flex');
   muestraTablero();
 }
 
@@ -1750,8 +1759,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-els.restart.addEventListener('click', startGame);
-
 const refreshGameToIntro = () => {
   paraCronometro();
   clearTimeout(state.timer);
@@ -1778,8 +1785,6 @@ const refreshGameToIntro = () => {
   els.trivial.classList.remove('flex');
   els.board.classList.add('hidden');
   els.board.classList.remove('flex');
-  els.gameover.classList.add('hidden');
-  els.gameover.classList.remove('flex');
   els.intro.classList.remove('hidden');
   els.intro.classList.remove('intro-fuera');
   els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';
@@ -1818,10 +1823,6 @@ document.addEventListener('keydown', (e) => {
   if (!hayDecisionDeCookies()) return;
   if (introVisible()) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeIntro(); }
-    return;
-  }
-  if (!els.gameover.classList.contains('hidden')) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
     return;
   }
   if (!els.trivial.classList.contains('hidden')) return;   // se elige con el ratón

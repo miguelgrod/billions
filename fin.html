@@ -38,7 +38,7 @@
     .foco:active { transform: translateY(0); }
   </style>
 </head>
-<body class="min-h-screen overflow-hidden antialiased">
+<body class="min-h-screen antialiased">
   <div class="pointer-events-none fixed inset-0 -z-20" style="background:#000"></div>
   <div class="pointer-events-none fixed inset-0 -z-20"
        style="background-image:url('imgs/bg_game.webp');background-size:cover;background-position:center;opacity:.18"></div>
@@ -48,7 +48,7 @@
          radial-gradient(55% 45% at 82% 22%, rgba(10,132,255,.12), transparent 60%),
          radial-gradient(65% 60% at 50% 92%, rgba(191,90,242,.10), transparent 60%)"></div>
 
-  <main class="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-8 sm:px-6">
+  <main class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl items-center justify-center px-4 py-8 sm:px-6">
     <div class="glass-fuerte w-full max-w-2xl rounded-[32px] p-6 shadow-2xl sm:p-8">
       <div class="mb-6 text-center">
         <p id="fin-titulo" class="display text-4xl leading-none text-white sm:text-5xl">Fin de la partida</p>
@@ -100,6 +100,17 @@
       </div>
     </div>
   </main>
+
+  <!-- Las legales son obligatorias y esta página se sirve igual que la portada.
+       Aquí no hay enlace de cookies: el banner y sus preferencias viven en
+       index.html, que es donde se carga main.js. -->
+  <footer class="px-4 pb-8 text-center">
+    <p class="text-xs text-white/25">
+      Datos de The Numbers, FilmAffinity y Wikipedia ·
+      <a href="privacidad.html" class="underline underline-offset-2 hover:text-white/60">Privacidad</a> ·
+      <a href="aviso-legal.html" class="underline underline-offset-2 hover:text-white/60">Aviso legal</a>
+    </p>
+  </footer>
 
   <script>
     const FIN_KEY = 'billions.lastResult';

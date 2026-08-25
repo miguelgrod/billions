@@ -61,6 +61,41 @@ jobs:
             --cache-control "no-cache, must-revalidate" \
             --content-type "text/html; charset=utf-8"
 
+      # CloudFront no sabe solo qué enseñar cuando algo falla: sin esto, una URL
+      # inventada devuelve el XML de S3. Y devuelve 403 y no 404, porque con OAC
+      # el bucket no da permiso de listado y un objeto que no existe se responde
+      # como acceso denegado: por eso se mapean los dos códigos a /404.html.
+      #
+      # El paso es idempotente: si la distribución ya tiene respuestas de error
+      # configuradas, no la toca. Sólo escribe la primera vez.
+      - name: Configurar páginas de error en CloudFront
+        if: ${{ vars.BILLIONS_CF_ID != '' }}
+        run: |
+          set -euo pipefail
+          aws cloudfront get-distribution-config \
+            --id "${{ vars.BILLIONS_CF_ID }}" > /tmp/dist.json
+          if [ "$(jq -r '.DistributionConfig.CustomErrorResponses.Quantity' /tmp/dist.json)" != "0" ]; then
+            echo "Ya tiene respuestas de error configuradas; no se toca."
+            exit 0
+          fi
+          ETAG=$(jq -r '.ETag' /tmp/dist.json)
+          jq '.DistributionConfig.CustomErrorResponses = {
+                "Quantity": 3,
+                "Items": [
+                  { "ErrorCode": 403, "ResponsePagePath": "/404.html",
+                    "ResponseCode": "404", "ErrorCachingMinTTL": 10 },
+                  { "ErrorCode": 404, "ResponsePagePath": "/404.html",
+                    "ResponseCode": "404", "ErrorCachingMinTTL": 10 },
+                  { "ErrorCode": 500, "ResponsePagePath": "/500.html",
+                    "ResponseCode": "500", "ErrorCachingMinTTL": 0 }
+                ]
+              } | .DistributionConfig' /tmp/dist.json > /tmp/config.json
+          aws cloudfront update-distribution \
+            --id "${{ vars.BILLIONS_CF_ID }}" \
+            --if-match "$ETAG" \
+            --distribution-config file:///tmp/config.json > /dev/null
+          echo "Páginas de error configuradas."
+
       - name: Invalidar caché de CloudFront
         if: ${{ vars.BILLIONS_CF_ID != '' }}
         run: |

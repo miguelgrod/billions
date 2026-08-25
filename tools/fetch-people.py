@@ -8,6 +8,7 @@ las de personas suelen ser libres, así que aquí no hay techo de resolución.
   python3 tools/fetch-people.py --role directors
   python3 tools/fetch-people.py --role actors --width 300
   python3 tools/fetch-people.py --role actors --names     # sólo nombres
+  python3 tools/fetch-people.py --role composers --width 300
 """
 import argparse, json, os, re, subprocess, sys, time, unicodedata
 import urllib.parse, urllib.request
@@ -31,7 +32,44 @@ NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 # sigue pasando, porque su artículo dice las dos cosas.
 CINE = re.compile(r'\b(director|directed|directs|directing|film ?mak(er|ing)|'
                   r'screenwriter|animator)\b', re.I)
+# Mismo criterio que tools/build-data.py: si la celda de compositor no es una
+# composición original —una recopilación, una adaptación, una aportación
+# parcial—, no hay a quién buscar ni de quién preguntar.
+AMBIGUA = re.compile(r'varios|adapt|dir\. musical|parcial|selecci[oó]n|supervisi[oó]n', re.I)
 INTERPRETE = re.compile(r'\b(actor|actress|performer|voice artist)\b', re.I)
+# Al compositor hay que exigirle que el artículo hable de MÚSICA, por el mismo
+# motivo que a un director se le exige que hable de dirigir: hay homónimos de
+# sobra. 'score' a secas no vale —lo dice cualquier artículo con una cifra—, así
+# que va pegado a 'film'/'soundtrack'.
+COMPOSITOR = re.compile(r'\b(composer|composed|composing|songwriter|musician|'
+                        r'conductor|film ?scor(e|es|ing)|soundtrack)\b', re.I)
+
+def split_people(celda):
+    """'Anthony & Joe Russo' -> ['Anthony Russo', 'Joe Russo'].
+
+    Cuando dos codirectores comparten apellido, el Excel sólo lo escribe una vez;
+    hay que copiarlo a la primera mitad o Wikipedia no encuentra a nadie.
+    """
+    partes = [p.strip() for p in re.split(r'\s*&\s*|\s+y\s+', celda) if p.strip()]
+    if len(partes) < 2:
+        return partes
+    apellido = partes[-1].split()[-1]
+    return [p if len(p.split()) > 1 else f'{p} {apellido}' for p in partes]
+
+
+def lee_compositores(celda):
+    '''Los nombres de una celda de compositor, o ninguno si no es composición
+    original. Mismo criterio que tools/build-data.py.'''
+    if not celda or AMBIGUA.search(celda):
+        return []
+    celda = re.sub(r'\s*\([^)]*\)', '', celda)          # fuera el seudónimo
+    nombres = []
+    for parte in re.split(r'\s*/\s*', celda):
+        for n in split_people(parte):
+            if n not in nombres:
+                nombres.append(n)
+    return nombres
+
 
 ROLES = {
     'directors': dict(cols=['D'], valida=CINE, carpeta='directors', indice='directors.js',
@@ -42,9 +80,24 @@ ROLES = {
                       consts=('ACTORS', 'ACTOR_PHOTOS'),
                       sufijos=['(actor)', '(actress)'],
                       busca='actor actress film'),
+    'composers': dict(cols=['O'], valida=COMPOSITOR, carpeta='composers', lee=lee_compositores,
+                      indice='composers.js',
+                      consts=('COMPOSERS', 'COMPOSER_PHOTOS'),
+                      sufijos=['(composer)', '(musician)'],
+                      busca='film composer score'),
 }
 
+
 ICONOS = re.compile(r'\.svg$|commons-logo|edit-ltr|symbol|ambox|question_book', re.I)
+# El artículo de una persona no sólo tiene retratos suyos: también su tumba, su
+# firma, su estrella del paseo de la fama o el cartel de su película. La lápida
+# de Horst Buchholz llegó a colarse como foto de actor, y pasaba la validación
+# porque su artículo dice 'actor' igual que cualquier otro.
+# Va sólo sobre cosas que nunca son una cara. Nada de 'poster' ni '_film': ésos
+# aparecen en nombres de archivo legítimos ('..._film_festival.jpg') y de los
+# carteles ya se encarga la validación de identidad.
+NO_RETRATO = re.compile(r'grave|tombstone|cemetery|memorial|plaque|statue|'
+                        r'signature|autograph|walk_of_fame', re.I)
 
 # Excepciones conocidas en las que el artículo bueno se llama de otra manera:
 # tres dúos con artículo conjunto y un seudónimo. Comprobadas a mano.
@@ -104,9 +157,28 @@ def download(url, dest):
             time.sleep(4)
 
 
-def sheet_rows(name):
+def archivo_de_hoja(z, nombre):
+    """Localiza la hoja por su nombre y no por el archivo.
+
+    Dentro del .xlsx, sheet3.xml no tiene por qué ser la tercera pestaña: la
+    correspondencia vive en workbook.xml.rels. La hoja ya se ha reordenado una
+    vez en este proyecto, y leerla a ciegas cogería otra sin avisar.
+    """
+    ns = dict(NS, r='http://schemas.openxmlformats.org/officeDocument/2006/relationships')
+    wb = ET.fromstring(z.read('xl/workbook.xml'))
+    rels = ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
+    destino = {r.get('Id'): r.get('Target').lstrip('/').replace('xl/', '', 1)
+               for r in rels}
+    for hoja in wb.findall('.//m:sheet', ns):
+        if hoja.get('name') == nombre:
+            return destino[hoja.get('{%s}id' % ns['r'])]
+    disponibles = [h.get('name') for h in wb.findall('.//m:sheet', ns)]
+    raise SystemExit(f'No encuentro la hoja «{nombre}». Hay: {disponibles}')
+
+
+def sheet_rows(nombre):
     z = zipfile.ZipFile(XLSX)
-    root = ET.fromstring(z.read(f'xl/worksheets/{name}'))
+    root = ET.fromstring(z.read('xl/' + archivo_de_hoja(z, nombre)))
     rows = []
     for row in root.findall('.//m:row', NS):
         c = {}
@@ -118,19 +190,6 @@ def sheet_rows(name):
         if c.get('A', '').isdigit():
             rows.append(c)
     return rows
-
-
-def split_people(celda):
-    """'Anthony & Joe Russo' -> ['Anthony Russo', 'Joe Russo'].
-
-    Cuando dos codirectores comparten apellido, el Excel sólo lo escribe una vez;
-    hay que copiarlo a la primera mitad o Wikipedia no encuentra a nadie.
-    """
-    partes = [p.strip() for p in re.split(r'\s*&\s*|\s+y\s+', celda) if p.strip()]
-    if len(partes) < 2:
-        return partes
-    apellido = partes[-1].split()[-1]
-    return [p if len(p.split()) > 1 else f'{p} {apellido}' for p in partes]
 
 
 def slug(name):
@@ -228,12 +287,12 @@ def main():
     outdir = os.path.join(ROOT, rol['carpeta'])
 
     # --- nombres desde el Excel ---
-    completo = sheet_rows('sheet3.xml')
+    completo = sheet_rows('Listado completo')
     por_recaudacion, personas = {}, []
     for f in completo:
         nombres = []
         for col in rol['cols']:
-            for n in split_people(f.get(col, '')):
+            for n in rol.get('lee', split_people)(f.get(col, '')):
                 if n not in nombres:
                     nombres.append(n)
         for n in nombres:
@@ -292,11 +351,18 @@ def main():
                     url, extracto, via = url2, extracto2, via2
                 elif not url:
                     url, via = imagen_del_articulo(n, args.width)
+            if url and NO_RETRATO.search(url):
+                url = None          # su tumba, su firma o el cartel de su película
+            # Quien no se pueda identificar con certeza se queda sin foto y fuera
+            # del juego: antes que enseñar a otro, mejor no enseñar a nadie. Se
+            # descargaba igual, y así entraron Bill Murray como Neel Sethi y el
+            # cartel de A Minecraft Movie como Sebastian Hansen.
+            if url and not rol['valida'].search(extracto or ''):
+                dudosos.append((n, (extracto or '')[:90]))
+                url = None
             if not url:
                 sin_foto.append(n)
                 continue
-            if not rol['valida'].search(extracto or ''):
-                dudosos.append((n, (extracto or '')[:90]))
             if via:
                 via_indirecta[n] = via
             ext = '.png' if url.lower().split('?')[0].endswith('.png') else '.jpg'
