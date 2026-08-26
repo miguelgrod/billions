@@ -314,7 +314,17 @@ vaciarlo y se pierde al tercer fallo.
     valores por defecto, en vez de quedarse en blanco.
   - **Es una página autónoma**: no carga `main.js` ni los datos del juego, sólo
     Tailwind y un `<script>` en línea. Por eso no la toca `sella-versiones.py`.
-  - Lleva el bloque de apoyo (Buy Me a Coffee) y los tres enlaces de compartir.
+  - Lleva el bloque de apoyo (**PayPal**, desde el 2026-08-26; antes Buy Me a
+    Coffee) y los tres enlaces de compartir.
+  - **El donativo es un `<form>` a `paypal.com/donate` con botón propio.** Ni la
+    imagen `btn_donate_LG.gif` de `paypalobjects.com` ni el pixel de seguimiento
+    que trae el fragmento oficial: cargarlos entregaría la IP de cada visitante
+    a PayPal sin que nadie haya pedido donar, que es justo lo que la regla de
+    «ninguna petición externa» evita. Con el botón propio, la petición sólo sale
+    al pulsar —el consentimiento es el propio botón, como en la clasificación—.
+    Los campos ocultos (`business`, `no_recurring`, `item_name`,
+    `currency_code`) son los del fragmento de PayPal. `privacidad.html` lo
+    recoge.
     De ahí se vuelve al juego con un enlace normal a `index.html`.
   - **«Grabar puntuación» está puesto pero no hace nada todavía.** Cuando lo
     haga, si guarda algo en un servidor hay que actualizar `privacidad.html`
