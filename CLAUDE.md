@@ -456,6 +456,15 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
    imagen. Es un requisito del diseño, no una optimización.
 2. **En las rondas de estreno el año va oculto** (`sinAnio`), porque es
    justo lo que hay que adivinar. En las de taquilla sí se ve.
+   - **Y se quita también del título** (`tituloSinAnio()`). Siete películas lo
+     llevan dentro para distinguirse de su remake —«The Lion King (1994)»,
+     «Aladdin (2019)», «Beauty and the Beast (2017)»…— y ahí la respuesta iba
+     escrita en la carta y en el propio enunciado. Se quita sólo donde el año
+     está oculto: en taquilla y en crítica hace falta para saber de cuál de las
+     dos se habla, y allí el año se ve de todos modos.
+   - De paso, `rondaAnio()` **descarta la pareja cuyos títulos coincidan sin el
+     año**: hoy no puede darse —los dos «Rey León» se llevan 25 años y la banda
+     no llega—, pero serían dos cartas idénticas sin respuesta posible.
 3. **Los sí/no se equilibran a propósito.** Sólo 27 de 98 películas tienen Óscar,
    así que `rondaOscar()` sortea primero la respuesta y luego busca película. Sin
    eso, responder "no" siempre acertaría tres de cada cuatro veces.

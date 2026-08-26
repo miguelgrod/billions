@@ -260,9 +260,14 @@ function huecoAnios(level) {
 // qué película o de quién habla, en vez de remitir a las tarjetas.
 const nom = (t) => `<b class="font-semibold text-white">${t}</b>`;
 
+// Siete películas llevan el año en el título para distinguirse de su remake
+// —«The Lion King (1994)», «Aladdin (2019)»—. Donde el año es justo lo que hay
+// que adivinar, eso es la respuesta escrita en la carta, así que ahí se quita.
+const tituloSinAnio = (t) => t.replace(/\s*\(\d{4}\)\s*$/, '');
+
 const cartaPeli = (m, opts = {}) => ({
   img: posterOf(m),
-  titulo: m.t,
+  titulo: opts.sinAnio ? tituloSinAnio(m.t) : m.t,
   sub: opts.sinAnio ? null : String(m.y),
   valor: opts.valor,
   dinero: !!opts.dinero,
@@ -317,6 +322,10 @@ function rondaAnio(level) {
       // `minimo` nunca baja de 1, así que el empate a año queda descartado: un
       // duelo de estreno empatado no tendría respuesta correcta
       const d = Math.abs(a.y - b.y);
+      // Y sin el año no pueden quedar dos cartas con el mismo título. Hoy no
+      // puede pasar —los dos «Rey León» se llevan 25 años y la banda no llega
+      // a tanto—, pero es un duelo sin respuesta posible y sale barato cerrarlo.
+      if (tituloSinAnio(a.t) === tituloSinAnio(b.t)) return false;
       return d >= minimo && d <= maximo;
     });
     if (rivales.length) {
@@ -324,7 +333,7 @@ function rondaAnio(level) {
       const [x, y] = coin() ? [a, b] : [b, a];
       return {
         tipo: 'anio',
-        pregunta: `¿Qué se estrenó antes, ${nom(x.t)} o ${nom(y.t)}?`,
+        pregunta: `¿Qué se estrenó antes, ${nom(tituloSinAnio(x.t))} o ${nom(tituloSinAnio(y.t))}?`,
         modo: 'elige',
         // el año va oculto: es justo lo que hay que adivinar
         cartas: [cartaPeli(x, { sinAnio: true, valor: x.y }),
