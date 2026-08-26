@@ -316,6 +316,15 @@ vaciarlo y se pierde al tercer fallo.
     Tailwind y un `<script>` en línea. Por eso no la toca `sella-versiones.py`.
   - Lleva el bloque de apoyo (**PayPal**, desde el 2026-08-26; antes Buy Me a
     Coffee) y los tres enlaces de compartir.
+  - **Los tres logos de compartir son SVG en línea** (simple-icons, CC0), no
+    archivos ni iconos de un CDN: la regla de cero peticiones externas vale
+    también para esto, y así heredan el color del botón.
+  - **Del de Facebook sólo se usa la «f», recortada del glifo original.** El de
+    simple-icons es el disco azul entero con la letra calada: pintado en blanco
+    sobre el botón azul salía un círculo blanco con la «f» azul, el negativo de
+    la marca. Se le quitó el arco del círculo —que aquí ya lo pone el botón— y
+    **lleva un `translate` porque su caja no está centrada en el viewBox**: en
+    el logotipo la letra se apoya en el borde de abajo del disco.
   - **El donativo es un `<form>` a `paypal.com/donate` con botón propio.** Ni la
     imagen `btn_donate_LG.gif` de `paypalobjects.com` ni el pixel de seguimiento
     que trae el fragmento oficial: cargarlos entregaría la IP de cada visitante
