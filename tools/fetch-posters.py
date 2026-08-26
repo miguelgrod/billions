@@ -79,9 +79,31 @@ def busca_en_wiki(idioma, titulo, anio):
 
 
 def load_movies():
+    """Lee movies.js sin evaluarlo: sólo hacen falta puesto, título y año.
+
+    Ojo con cómo se lee. El regex de antes exigía que la ficha terminara justo
+    detrás del año, y desde que el catálogo trae director, reparto y Óscars eso
+    sólo lo cumplían las dos películas sin datos ampliados: el script se quedaba
+    con esas dos y **reescribía posters.js con dos entradas**, dejando al juego
+    sin una sola carátula. Ahora se buscan los campos uno a uno, estén donde
+    estén dentro de la ficha.
+    """
     src = open(os.path.join(ROOT, 'movies.js'), encoding='utf-8').read()
-    rows = re.findall(r'\{ r: (\d+), t: "((?:[^"\\]|\\.)*)", g: (\d+), y: (\d+) \}', src)
-    return [{'r': int(r), 't': t, 'g': int(g), 'y': int(y)} for r, t, g, y in rows]
+    movies = []
+    for ficha in re.findall(r'\{ r: \d+.*?\},?\n', src):
+        r = re.search(r'\br: (\d+)', ficha)
+        t = re.search(r'\bt: "((?:[^"\\]|\\.)*)"', ficha)
+        y = re.search(r'\by: (\d+)', ficha)
+        g = re.search(r'\bg: (\d+)', ficha)
+        if not (r and t and y):
+            continue
+        movies.append({'r': int(r.group(1)), 't': t.group(1),
+                       'y': int(y.group(1)), 'g': int(g.group(1)) if g else None})
+    # Un catálogo vacío sólo puede ser un fallo de lectura, y seguir adelante
+    # significaría reescribir posters.js sin carátulas.
+    if len(movies) < 100:
+        raise SystemExit(f'Sólo he sabido leer {len(movies)} películas de movies.js: no toco posters.js.')
+    return movies
 
 
 # ---------------------------------------------------------------- Wikipedia
@@ -218,6 +240,14 @@ def main():
         print('(reutilizando posters/_report.json; usa --refresh para volver a resolver)\n',
               file=sys.stderr)
         found = {int(k): v for k, v in json.load(open(cache, encoding='utf-8')).items()}
+        # Las que aún no estén en la caché sí hay que resolverlas: si no, una
+        # película nueva se quedaba fuera de posters.js para siempre, y con ella
+        # fuera del juego, porque los depósitos exigen carátula.
+        nuevas = [m for m in movies if m['r'] not in found]
+        if nuevas:
+            print(f'{len(nuevas)} películas nuevas por resolver\n', file=sys.stderr)
+            found.update(collect_tmdb(nuevas, args.key, width) if args.source == 'tmdb'
+                         else collect_wikipedia(nuevas, width))
     else:
         found = (collect_tmdb(movies, args.key, width) if args.source == 'tmdb'
                  else collect_wikipedia(movies, width))
@@ -230,7 +260,17 @@ def main():
         info = found.get(m['r']) or {}
         url = info.get('url')
         if not url:
-            missing.append(m['t'])
+            # Si ya hay carátula en disco, se conserva. Wikipedia falla algún
+            # día suelto, y sin esto una resolución fallida borraba del índice
+            # una película que tenía su cartel perfectamente descargado: se caía
+            # del juego entero, porque los depósitos exigen imagen.
+            previa = next((f'{m["r"]:03d}{e}' for e in ('.jpg', '.png', '.jpeg')
+                           if os.path.exists(os.path.join(outdir, f'{m["r"]:03d}{e}'))), None)
+            if previa:
+                index[m['r']] = previa
+                print(f'   {m["t"]}: sin resolver, se conserva {previa}', file=sys.stderr)
+            else:
+                missing.append(m['t'])
             continue
         ext = '.png' if url.lower().split('?')[0].endswith('.png') else '.jpg'
         name = f'{m["r"]:03d}{ext}'

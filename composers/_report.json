@@ -302,8 +302,23 @@
   "100": [
    "Ludwig Göransson"
   ],
+  "225": [
+   "Mark Mothersbaugh"
+  ],
   "144": [
    "Hans Zimmer"
+  ],
+  "221": [
+   "Rupert Gregson-Williams"
+  ],
+  "222": [
+   "Danny Elfman"
+  ],
+  "223": [
+   "David Arnold"
+  ],
+  "220": [
+   "Michael Giacchino"
   ],
   "175": [
    "John Williams"
@@ -311,14 +326,29 @@
   "145": [
    "John Williams"
   ],
+  "224": [
+   "Tyler Bates"
+  ],
+  "226": [
+   "Michael Giacchino"
+  ],
   "163": [
    "Hans Zimmer"
   ],
   "189": [
    "Steven Price"
   ],
+  "228": [
+   "Hans Zimmer"
+  ],
   "124": [
    "Alan Silvestri"
+  ],
+  "227": [
+   "Michael Giacchino"
+  ],
+  "230": [
+   "Marco Beltrami"
   ],
   "125": [
    "John Williams"
@@ -326,6 +356,12 @@
   "191": [
    "Ryuichi Sakamoto",
    "Alva Noto"
+  ],
+  "235": [
+   "Hans Zimmer"
+  ],
+  "231": [
+   "Thomas Newman"
   ],
   "146": [
    "Brad Fiedel"
@@ -346,6 +382,12 @@
   "186": [
    "Justin Hurwitz"
   ],
+  "214": [
+   "Alexandre Desplat"
+  ],
+  "229": [
+   "Hans Zimmer"
+  ],
   "154": [
    "Max Steiner"
   ],
@@ -355,14 +397,26 @@
   "155": [
    "John Williams"
   ],
+  "219": [
+   "Thomas Newman"
+  ],
   "156": [
    "Alan Silvestri"
+  ],
+  "216": [
+   "A.R. Rahman"
   ],
   "165": [
    "Thomas Newman"
   ],
+  "192": [
+   "Howard Shore"
+  ],
   "104": [
    "John Williams"
+  ],
+  "218": [
+   "Kris Bowers"
   ],
   "172": [
    "Howard Shore"
@@ -383,6 +437,9 @@
   "101": [
    "Nino Rota"
   ],
+  "215": [
+   "Alexandre Desplat"
+  ],
   "111": [
    "Nicola Piovani"
   ],
@@ -395,6 +452,9 @@
   ],
   "158": [
    "Jerry Goldsmith"
+  ],
+  "234": [
+   "Jóhann Jóhannsson"
   ],
   "190": [
    "Alexandre Desplat"
@@ -411,12 +471,18 @@
   "173": [
    "Carter Burwell"
   ],
+  "202": [
+   "Lennie Niehaus"
+  ],
   "149": [
    "Carmine Coppola",
    "Francis Ford Coppola"
   ],
   "167": [
    "Son Lux"
+  ],
+  "203": [
+   "Georges Delerue"
   ],
   "188": [
    "Carmine Coppola",
@@ -431,12 +497,25 @@
   "137": [
    "Jack Nitzsche"
   ],
+  "213": [
+   "Antonio Sánchez"
+  ],
   "138": [
    "The Dust Brothers"
+  ],
+  "212": [
+   "Howard Shore"
   ],
   "102": [
    "Nino Rota",
    "Carmine Coppola"
+  ],
+  "204": [
+   "Javier Navarrete"
+  ],
+  "205": [
+   "Gabriel Yared",
+   "Stéphane Moucha"
   ],
   "182": [
    "Jonny Greenwood"
@@ -465,6 +544,12 @@
   "150": [
    "Justin Hurwitz"
   ],
+  "200": [
+   "Stanley Myers"
+  ],
+  "233": [
+   "Arcade Fire"
+  ],
   "183": [
    "Abigail Mead"
   ],
@@ -481,8 +566,14 @@
   "141": [
    "Adolph Deutsch"
   ],
+  "209": [
+   "David Julyan"
+  ],
   "187": [
    "Ludovico Einaudi"
+  ],
+  "217": [
+   "Marius de Vries"
   ],
   "123": [
    "Franz Waxman"
@@ -501,6 +592,9 @@
    "Antônio Pinto",
    "Ed Côrtes"
   ],
+  "193": [
+   "Jerry Goldsmith"
+  ],
   "162": [
    "Bernard Herrmann"
   ],
@@ -513,20 +607,39 @@
   "142": [
    "Ennio Morricone"
   ],
+  "201": [
+   "Elliot Lawrence"
+  ],
+  "210": [
+   "Jo Yeong-wook"
+  ],
+  "198": [
+   "Bernard Herrmann"
+  ],
+  "206": [
+   "Michael Galasso",
+   "Shigeru Umebayashi"
+  ],
   "119": [
    "Max Steiner"
   ],
   "107": [
-   "Ennio Morricone"
+   "Miklós Rózsa"
   ],
   "108": [
-   "Ennio Morricone"
+   "Miklós Rózsa"
   ],
   "113": [
-   "Ennio Morricone"
+   "Miklós Rózsa"
   ],
   "129": [
-   "Ennio Morricone"
+   "Miklós Rózsa"
+  ],
+  "197": [
+   "Miklós Rózsa"
+  ],
+  "194": [
+   "Dimitri Tiomkin"
   ],
   "130": [
    "Bernard Herrmann"
@@ -621,7 +734,21 @@
   "Christopher Young": "christopher-young.jpg",
   "Junkie XL": "junkie-xl.jpg",
   "Mark Mothersbaugh": "mark-mothersbaugh.jpg",
-  "Abigail Mead": "abigail-mead.jpg"
+  "Abigail Mead": "abigail-mead.jpg",
+  "Dimitri Tiomkin": "dimitri-tiomkin.jpg",
+  "Anton Karas": "anton-karas.jpg",
+  "Stanley Myers": "stanley-myers.jpg",
+  "Lennie Niehaus": "lennie-niehaus.jpg",
+  "Georges Delerue": "georges-delerue.jpg",
+  "Gabriel Yared": "gabriel-yared.jpg",
+  "Shigeru Umebayashi": "shigeru-umebayashi.jpg",
+  "Jean Constantin": "jean-constantin.jpg",
+  "Antonio Sánchez": "antonio-sanchez.jpg",
+  "A.R. Rahman": "a-r-rahman.jpg",
+  "Kris Bowers": "kris-bowers.jpg",
+  "David Arnold": "david-arnold.jpg",
+  "Marco Beltrami": "marco-beltrami.jpg",
+  "Jóhann Jóhannsson": "johann-johannsson.jpg"
  },
  "sin_foto": [
   "Kenyon Hopkins",
@@ -642,9 +769,26 @@
   "Pinar Toprak",
   "Mark Mancina",
   "Steve Jablonsky",
-  "Zhao Ying"
+  "Zhao Ying",
+  "Alessandro Cicognini",
+  "Elliot Lawrence",
+  "Javier Navarrete",
+  "Stéphane Moucha",
+  "Michael Galasso",
+  "Jo Yeong-wook",
+  "Marius de Vries",
+  "Arcade Fire"
  ],
- "dudosos": [],
+ "dudosos": [
+  [
+   "Elliot Lawrence",
+   "Elliot Lawrence Broza (February 14, 1925 – July 2, 2021), known professionally as Elliot L"
+  ],
+  [
+   "Arcade Fire",
+   "Arcade Fire is a Canadian indie rock band from Montreal, Quebec. The band consists of mult"
+  ]
+ ],
  "via_indirecta": {
   "Matty Malneck": "File:Paul Whiteman Orchestra - Motion Picture, June 1930.jpg",
   "Ernest Gold": "File:Ernest Gold.jpg",
@@ -655,6 +799,11 @@
   "Malcolm Arnold": "File:MalcolmArnold.jpg",
   "Don Davis": "Don Davis (composer)",
   "Steven Price": "Steven Price (composer)",
-  "John Powell": "John Powell (film composer)"
+  "John Powell": "John Powell (film composer)",
+  "Dimitri Tiomkin": "File:Dimitri Tiomkin.jpg",
+  "Stanley Myers": "File:Composer Stanley Myers.jpg",
+  "Lennie Niehaus": "File:Lennie Niehaus.jpg",
+  "Jean Constantin": "Jean Constantin (songwriter)",
+  "Antonio Sánchez": "Antonio Sánchez (drummer)"
  }
 }

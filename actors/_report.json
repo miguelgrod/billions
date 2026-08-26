@@ -686,12 +686,47 @@
    "Woody Harrelson",
    "Jenny Slate"
   ],
+  "225": [
+   "Chris Hemsworth",
+   "Tom Hiddleston",
+   "Cate Blanchett",
+   "Jeff Goldblum",
+   "Tessa Thompson"
+  ],
   "144": [
    "Leonardo DiCaprio",
    "Joseph Gordon-Levitt",
    "Elliot Page",
    "Tom Hardy",
    "Ken Watanabe"
+  ],
+  "221": [
+   "Gal Gadot",
+   "Chris Pine",
+   "Robin Wright",
+   "Danny Huston",
+   "David Thewlis"
+  ],
+  "222": [
+   "Tobey Maguire",
+   "Kirsten Dunst",
+   "Willem Dafoe",
+   "James Franco",
+   "Cliff Robertson"
+  ],
+  "223": [
+   "Will Smith",
+   "Jeff Goldblum",
+   "Bill Pullman",
+   "Mary McDonnell",
+   "Judd Hirsch"
+  ],
+  "220": [
+   "Anthony Gonzalez",
+   "Gael García Bernal",
+   "Benjamin Bratt",
+   "Alanna Ubach",
+   "Renée Victor"
   ],
   "175": [
    "Henry Thomas",
@@ -707,6 +742,20 @@
    "Alec Guinness",
    "Peter Cushing"
   ],
+  "224": [
+   "Chris Pratt",
+   "Zoe Saldana",
+   "Dave Bautista",
+   "Vin Diesel",
+   "Bradley Cooper"
+  ],
+  "226": [
+   "Ed Asner",
+   "Jordan Nagai",
+   "Christopher Plummer",
+   "Bob Peterson",
+   "Delroy Lindo"
+  ],
   "163": [
    "Matthew McConaughey",
    "Anne Hathaway",
@@ -721,12 +770,33 @@
    "Paul Sharma",
    "Basher Savage"
   ],
+  "228": [
+   "Timothée Chalamet",
+   "Zendaya",
+   "Austin Butler",
+   "Florence Pugh",
+   "Javier Bardem"
+  ],
   "124": [
    "Tom Hanks",
    "Robin Wright",
    "Gary Sinise",
    "Sally Field",
    "Mykelti Williamson"
+  ],
+  "227": [
+   "Craig T. Nelson",
+   "Holly Hunter",
+   "Samuel L. Jackson",
+   "Jason Lee",
+   "Spencer Fox"
+  ],
+  "230": [
+   "Hugh Jackman",
+   "Patrick Stewart",
+   "Dafne Keen",
+   "Boyd Holbrook",
+   "Stephen Merchant"
   ],
   "125": [
    "Mark Hamill",
@@ -741,6 +811,20 @@
    "Domhnall Gleeson",
    "Will Poulter",
    "Forrest Goodluck"
+  ],
+  "235": [
+   "Fionn Whitehead",
+   "Tom Hardy",
+   "Mark Rylance",
+   "Kenneth Branagh",
+   "Cillian Murphy"
+  ],
+  "231": [
+   "Ben Burtt",
+   "Elissa Knight",
+   "Jeff Garlin",
+   "Fred Willard",
+   "Sigourney Weaver"
   ],
   "146": [
    "Arnold Schwarzenegger",
@@ -784,12 +868,26 @@
    "J.K. Simmons",
    "Rosemarie DeWitt"
   ],
+  "214": [
+   "Colin Firth",
+   "Geoffrey Rush",
+   "Helena Bonham Carter",
+   "Guy Pearce",
+   "Derek Jacobi"
+  ],
   "177": [
    "Jamie Foxx",
    "Christoph Waltz",
    "Leonardo DiCaprio",
    "Kerry Washington",
    "Samuel L. Jackson"
+  ],
+  "229": [
+   "Timothée Chalamet",
+   "Rebecca Ferguson",
+   "Oscar Isaac",
+   "Zendaya",
+   "Jason Momoa"
   ],
   "154": [
    "Clark Gable",
@@ -805,12 +903,26 @@
    "Takashi Naitô",
    "Yasuko Sawaguchi"
   ],
+  "232": [
+   "Leonardo DiCaprio",
+   "Jonah Hill",
+   "Margot Robbie",
+   "Matthew McConaughey",
+   "Kyle Chandler"
+  ],
   "155": [
    "Harrison Ford",
    "Karen Allen",
    "Paul Freeman",
    "John Rhys-Davies",
    "Ronald Lacey"
+  ],
+  "219": [
+   "George MacKay",
+   "Dean-Charles Chapman",
+   "Mark Strong",
+   "Colin Firth",
+   "Benedict Cumberbatch"
   ],
   "156": [
    "Michael J. Fox",
@@ -819,6 +931,13 @@
    "Crispin Glover",
    "Thomas F. Wilson"
   ],
+  "216": [
+   "Dev Patel",
+   "Freida Pinto",
+   "Anil Kapoor",
+   "Irrfan Khan",
+   "Saurabh Shukla"
+  ],
   "165": [
    "Kevin Spacey",
    "Annette Bening",
@@ -826,12 +945,26 @@
    "Wes Bentley",
    "Mena Suvari"
   ],
+  "192": [
+   "Brad Pitt",
+   "Morgan Freeman",
+   "Kevin Spacey",
+   "Gwyneth Paltrow",
+   "R. Lee Ermey"
+  ],
   "104": [
    "Liam Neeson",
    "Ben Kingsley",
    "Ralph Fiennes",
    "Caroline Goodall",
    "Embeth Davidtz"
+  ],
+  "218": [
+   "Viggo Mortensen",
+   "Mahershala Ali",
+   "Linda Cardellini",
+   "Sebastian Maniscalco",
+   "Dimiter Marinov"
   ],
   "178": [
    "Brad Pitt",
@@ -882,6 +1015,13 @@
    "Robert Duvall",
    "Diane Keaton"
   ],
+  "215": [
+   "Ben Affleck",
+   "Bryan Cranston",
+   "Alan Arkin",
+   "John Goodman",
+   "Clea DuVall"
+  ],
   "111": [
    "Roberto Benigni",
    "Nicoletta Braschi",
@@ -916,6 +1056,13 @@
    "John Hurt",
    "Ian Holm",
    "Yaphet Kotto"
+  ],
+  "234": [
+   "Amy Adams",
+   "Jeremy Renner",
+   "Forest Whitaker",
+   "Michael Stuhlbarg",
+   "Mark O'Brien"
   ],
   "190": [
    "Sally Hawkins",
@@ -966,6 +1113,13 @@
    "Charles Durning",
    "Ray Walston"
   ],
+  "202": [
+   "Clint Eastwood",
+   "Gene Hackman",
+   "Morgan Freeman",
+   "Richard Harris",
+   "Jaimz Woolvett"
+  ],
   "149": [
    "Martin Sheen",
    "Marlon Brando",
@@ -979,6 +1133,13 @@
    "Stephanie Hsu",
    "Jamie Lee Curtis",
    "James Hong"
+  ],
+  "203": [
+   "Charlie Sheen",
+   "Tom Berenger",
+   "Willem Dafoe",
+   "Keith David",
+   "Forest Whitaker"
   ],
   "188": [
    "Al Pacino",
@@ -1008,12 +1169,26 @@
    "Brad Dourif",
    "Christopher Lloyd"
   ],
+  "213": [
+   "Michael Keaton",
+   "Edward Norton",
+   "Emma Stone",
+   "Zach Galifianakis",
+   "Naomi Watts"
+  ],
   "138": [
    "Brad Pitt",
    "Edward Norton",
    "Helena Bonham Carter",
    "Meat Loaf",
    "Jared Leto"
+  ],
+  "212": [
+   "Michael Keaton",
+   "Mark Ruffalo",
+   "Rachel McAdams",
+   "Liev Schreiber",
+   "Stanley Tucci"
   ],
   "102": [
    "Al Pacino",
@@ -1028,6 +1203,20 @@
    "Elizabeth Berridge",
    "Jeffrey Jones",
    "Roy Dotrice"
+  ],
+  "204": [
+   "Ivana Baquero",
+   "Sergi López",
+   "Doug Jones",
+   "Maribel Verdú",
+   "Ariadna Gil"
+  ],
+  "205": [
+   "Ulrich Mühe",
+   "Martina Gedeck",
+   "Sebastian Koch",
+   "Ulrich Tukur",
+   "Thomas Thieme"
   ],
   "182": [
    "Daniel Day-Lewis",
@@ -1092,6 +1281,20 @@
    "Melissa Benoist",
    "Austin Stowell"
   ],
+  "200": [
+   "Robert De Niro",
+   "Christopher Walken",
+   "Meryl Streep",
+   "John Savage",
+   "John Cazale"
+  ],
+  "233": [
+   "Joaquin Phoenix",
+   "Scarlett Johansson",
+   "Amy Adams",
+   "Rooney Mara",
+   "Chris Pratt"
+  ],
   "116": [
    "Ray Liotta",
    "Robert De Niro",
@@ -1134,12 +1337,33 @@
    "Joe E. Brown",
    "George Raft"
   ],
+  "209": [
+   "Guy Pearce",
+   "Carrie-Anne Moss",
+   "Joe Pantoliano",
+   "Mark Boone Junior",
+   "Stephen Tobolowsky"
+  ],
   "187": [
    "Frances McDormand",
    "David Strathairn",
    "Linda May",
    "Swankie",
    "Bob Wells"
+  ],
+  "199": [
+   "Woody Allen",
+   "Diane Keaton",
+   "Tony Roberts",
+   "Carol Kane",
+   "Paul Simon"
+  ],
+  "217": [
+   "Emilia Jones",
+   "Troy Kotsur",
+   "Marlee Matlin",
+   "Daniel Durant",
+   "Eugenio Derbez"
   ],
   "123": [
    "James Stewart",
@@ -1176,6 +1400,13 @@
    "Douglas Silva",
    "Jonathan Haagensen"
   ],
+  "193": [
+   "Jack Nicholson",
+   "Faye Dunaway",
+   "John Huston",
+   "Perry Lopez",
+   "John Hillerman"
+  ],
   "162": [
    "Robert De Niro",
    "Jodie Foster",
@@ -1204,12 +1435,40 @@
    "Aldo Giuffrè",
    "Luigi Pistilli"
   ],
+  "201": [
+   "Faye Dunaway",
+   "William Holden",
+   "Peter Finch",
+   "Robert Duvall",
+   "Beatrice Straight"
+  ],
   "143": [
    "Robert De Niro",
    "Cathy Moriarty",
    "Joe Pesci",
    "Nicholas Colasanto",
    "Frank Vincent"
+  ],
+  "210": [
+   "Choi Min-sik",
+   "Yoo Ji-tae",
+   "Kang Hye-jung",
+   "Kim Byung-ok",
+   "Oh Dal-su"
+  ],
+  "198": [
+   "Cary Grant",
+   "Eva Marie Saint",
+   "James Mason",
+   "Leo G. Carroll",
+   "Jessie Royce Landis"
+  ],
+  "206": [
+   "Tony Leung",
+   "Maggie Cheung",
+   "Ping Lam Siu",
+   "Rebecca Pan",
+   "Lai Chin"
   ],
   "119": [
    "Humphrey Bogart",
@@ -1226,32 +1485,46 @@
    "Millard Mitchell"
   ],
   "107": [
-   "Henry Fonda",
-   "Charles Bronson",
-   "Claudia Cardinale",
-   "Jason Robards",
-   "Gabriele Ferzetti"
+   "Fred MacMurray",
+   "Barbara Stanwyck",
+   "Edward G. Robinson",
+   "Porter Hall",
+   "Jean Heather"
   ],
   "108": [
-   "Henry Fonda",
-   "Charles Bronson",
-   "Claudia Cardinale",
-   "Jason Robards",
-   "Gabriele Ferzetti"
+   "Fred MacMurray",
+   "Barbara Stanwyck",
+   "Edward G. Robinson",
+   "Porter Hall",
+   "Jean Heather"
   ],
   "113": [
-   "Henry Fonda",
-   "Charles Bronson",
-   "Claudia Cardinale",
-   "Jason Robards",
-   "Gabriele Ferzetti"
+   "Fred MacMurray",
+   "Barbara Stanwyck",
+   "Edward G. Robinson",
+   "Porter Hall",
+   "Jean Heather"
   ],
   "129": [
-   "Henry Fonda",
-   "Charles Bronson",
-   "Claudia Cardinale",
-   "Jason Robards",
-   "Gabriele Ferzetti"
+   "Fred MacMurray",
+   "Barbara Stanwyck",
+   "Edward G. Robinson",
+   "Porter Hall",
+   "Jean Heather"
+  ],
+  "197": [
+   "Fred MacMurray",
+   "Barbara Stanwyck",
+   "Edward G. Robinson",
+   "Porter Hall",
+   "Jean Heather"
+  ],
+  "194": [
+   "James Stewart",
+   "Donna Reed",
+   "Lionel Barrymore",
+   "Henry Travers",
+   "Thomas Mitchell"
   ],
   "130": [
    "James Stewart",
@@ -1259,6 +1532,13 @@
    "Barbara Bel Geddes",
    "Tom Helmore",
    "Henry Jones"
+  ],
+  "211": [
+   "Harvey Keitel",
+   "Tim Roth",
+   "Steve Buscemi",
+   "Michael Madsen",
+   "Chris Penn"
   ],
   "120": [
    "Toshirô Mifune",
@@ -1891,50 +2171,198 @@
   "Everett Sloane": "everett-sloane.jpg",
   "Gabriel Byrne": "gabriel-byrne.jpg",
   "Crispin Glover": "crispin-glover.jpg",
-  "Karen Gillan": "karen-gillan.jpg"
+  "Karen Gillan": "karen-gillan.jpg",
+  "Florence Lee": "florence-lee.jpg",
+  "Horst Buchholz": "horst-buchholz.jpg",
+  "William Sylvester": "william-sylvester.jpg",
+  "Faye Dunaway": "faye-dunaway.jpg",
+  "John Huston": "john-huston.jpg",
+  "Perry Lopez": "perry-lopez.jpg",
+  "John Hillerman": "john-hillerman.jpg",
+  "Donna Reed": "donna-reed.jpg",
+  "Lionel Barrymore": "lionel-barrymore.jpg",
+  "Henry Travers": "henry-travers.jpg",
+  "Thomas Mitchell": "thomas-mitchell.jpg",
+  "Alida Valli": "alida-valli.jpg",
+  "Trevor Howard": "trevor-howard.jpg",
+  "Bernard Lee": "bernard-lee.jpg",
+  "Lamberto Maggiorani": "lamberto-maggiorani.jpg",
+  "Enzo Staiola": "enzo-staiola.jpg",
+  "Lianella Carell": "lianella-carell.jpg",
+  "Barbara Stanwyck": "barbara-stanwyck.jpg",
+  "Edward G. Robinson": "edward-g-robinson.jpg",
+  "Porter Hall": "porter-hall.jpg",
+  "Jean Heather": "jean-heather.jpg",
+  "Cary Grant": "cary-grant.jpg",
+  "Eva Marie Saint": "eva-marie-saint.jpg",
+  "James Mason": "james-mason.jpg",
+  "Leo G. Carroll": "leo-g-carroll.jpg",
+  "Jessie Royce Landis": "jessie-royce-landis.jpg",
+  "Woody Allen": "woody-allen.jpg",
+  "Tony Roberts": "tony-roberts.jpg",
+  "Carol Kane": "carol-kane.jpg",
+  "Christopher Walken": "christopher-walken.jpg",
+  "Meryl Streep": "meryl-streep.jpg",
+  "John Savage": "john-savage.jpg",
+  "Peter Finch": "peter-finch.jpg",
+  "Beatrice Straight": "beatrice-straight.jpg",
+  "Gene Hackman": "gene-hackman.jpg",
+  "Charlie Sheen": "charlie-sheen.jpg",
+  "Tom Berenger": "tom-berenger.jpg",
+  "Keith David": "keith-david.jpg",
+  "Forest Whitaker": "forest-whitaker.jpg",
+  "Ivana Baquero": "ivana-baquero.jpg",
+  "Sergi López": "sergi-lopez.jpg",
+  "Maribel Verdú": "maribel-verdu.jpg",
+  "Ariadna Gil": "ariadna-gil.jpg",
+  "Ulrich Mühe": "ulrich-muhe.jpg",
+  "Martina Gedeck": "martina-gedeck.jpg",
+  "Sebastian Koch": "sebastian-koch.jpg",
+  "Ulrich Tukur": "ulrich-tukur.jpg",
+  "Thomas Thieme": "thomas-thieme.jpg",
+  "Tony Leung": "tony-leung.jpg",
+  "Maggie Cheung": "maggie-cheung.jpg",
+  "Marcello Mastroianni": "marcello-mastroianni.jpg",
+  "Anouk Aimée": "anouk-aimee.jpg",
+  "Sandra Milo": "sandra-milo.jpg",
+  "Rossella Falk": "rossella-falk.jpg",
+  "Jean-Pierre Léaud": "jean-pierre-leaud.jpg",
+  "Claire Maurier": "claire-maurier.jpg",
+  "Mark Boone Junior": "mark-boone-junior.jpg",
+  "Stephen Tobolowsky": "stephen-tobolowsky.jpg",
+  "Choi Min-sik": "choi-min-sik.jpg",
+  "Yoo Ji-tae": "yoo-ji-tae.jpg",
+  "Kang Hye-jung": "kang-hye-jung.jpg",
+  "Kim Byung-ok": "kim-byung-ok.jpg",
+  "Oh Dal-su": "oh-dal-su.jpg",
+  "Steve Buscemi": "steve-buscemi.jpg",
+  "Michael Madsen": "michael-madsen.jpg",
+  "Chris Penn": "chris-penn.jpg",
+  "Liev Schreiber": "liev-schreiber.jpg",
+  "Naomi Watts": "naomi-watts.jpg",
+  "Colin Firth": "colin-firth.jpg",
+  "Derek Jacobi": "derek-jacobi.jpg",
+  "Bryan Cranston": "bryan-cranston.jpg",
+  "Alan Arkin": "alan-arkin.jpg",
+  "John Goodman": "john-goodman.jpg",
+  "Clea DuVall": "clea-duvall.jpg",
+  "Dev Patel": "dev-patel.jpg",
+  "Freida Pinto": "freida-pinto.jpg",
+  "Anil Kapoor": "anil-kapoor.jpg",
+  "Saurabh Shukla": "saurabh-shukla.jpg",
+  "Emilia Jones": "emilia-jones.jpg",
+  "Troy Kotsur": "troy-kotsur.jpg",
+  "Marlee Matlin": "marlee-matlin.jpg",
+  "Daniel Durant": "daniel-durant.jpg",
+  "Eugenio Derbez": "eugenio-derbez.jpg",
+  "Linda Cardellini": "linda-cardellini.jpg",
+  "Sebastian Maniscalco": "sebastian-maniscalco.jpg",
+  "Dimiter Marinov": "dimiter-marinov.jpg",
+  "George MacKay": "george-mackay.jpg",
+  "Dean-Charles Chapman": "dean-charles-chapman.jpg",
+  "Mark Strong": "mark-strong.jpg",
+  "Anthony Gonzalez": "anthony-gonzalez.jpg",
+  "Gael García Bernal": "gael-garcia-bernal.jpg",
+  "Alanna Ubach": "alanna-ubach.jpg",
+  "Renée Victor": "renee-victor.jpg",
+  "Chris Pine": "chris-pine.jpg",
+  "Danny Huston": "danny-huston.jpg",
+  "David Thewlis": "david-thewlis.jpg",
+  "Cliff Robertson": "cliff-robertson.jpg",
+  "Bill Pullman": "bill-pullman.jpg",
+  "Mary McDonnell": "mary-mcdonnell.jpg",
+  "Judd Hirsch": "judd-hirsch.jpg",
+  "Tom Hiddleston": "tom-hiddleston.jpg",
+  "Cate Blanchett": "cate-blanchett.jpg",
+  "Tessa Thompson": "tessa-thompson.jpg",
+  "Ed Asner": "ed-asner.jpg",
+  "Christopher Plummer": "christopher-plummer.jpg",
+  "Delroy Lindo": "delroy-lindo.jpg",
+  "Jason Lee": "jason-lee.jpg",
+  "Spencer Fox": "spencer-fox.jpg",
+  "Timothée Chalamet": "timothee-chalamet.jpg",
+  "Austin Butler": "austin-butler.jpg",
+  "Rebecca Ferguson": "rebecca-ferguson.jpg",
+  "Patrick Stewart": "patrick-stewart.jpg",
+  "Dafne Keen": "dafne-keen.jpg",
+  "Boyd Holbrook": "boyd-holbrook.jpg",
+  "Stephen Merchant": "stephen-merchant.jpg",
+  "Ben Burtt": "ben-burtt.jpg",
+  "Jeff Garlin": "jeff-garlin.jpg",
+  "Fred Willard": "fred-willard.jpg",
+  "Jonah Hill": "jonah-hill.jpg",
+  "Kyle Chandler": "kyle-chandler.jpg",
+  "Jeremy Renner": "jeremy-renner.jpg",
+  "Michael Stuhlbarg": "michael-stuhlbarg.jpg",
+  "Mark O'Brien": "mark-o-brien.jpg",
+  "Fionn Whitehead": "fionn-whitehead.jpg",
+  "Mark Rylance": "mark-rylance.jpg"
  },
  "sin_foto": [
-  "Agnese Nano",
   "Alexandre Rodrigues",
-  "Anthony Heald",
-  "Arliss Howard",
-  "Basher Savage",
-  "Bob Wells",
-  "Daniel Richter",
-  "Dillon Freasier",
-  "Elizabeth Berridge",
-  "Florence Lee",
-  "Forrest Goodluck",
-  "Han Mo",
-  "Horst Buchholz",
-  "Hualālai Chung",
-  "Huck Milner",
-  "Jonathan Haagensen",
-  "Kevin J. O'Connor",
   "Leandro Firmino",
-  "Linda May",
-  "Liu Tongzi",
-  "Lorraine Gary",
-  "Lü Qi",
-  "Lü Yanting",
-  "Maia Kealoha",
-  "Marco Leonardi",
+  "Phellipe Haagensen",
+  "Jonathan Haagensen",
+  "Rumi Hiiragi",
   "Miyu Irino",
+  "Takashi Naitô",
+  "Yasuko Sawaguchi",
+  "Salvatore Cascio",
+  "Marco Leonardi",
+  "Agnese Nano",
+  "Anthony Heald",
+  "Daniel Richter",
+  "Elizabeth Berridge",
+  "Peter Appel",
+  "Lorraine Gary",
+  "Kevin J. O'Connor",
+  "Dillon Freasier",
+  "Arliss Howard",
   "Nate Torrence",
+  "Linda May",
+  "Swankie",
+  "Bob Wells",
+  "Paul Sharma",
+  "Basher Savage",
+  "Forrest Goodluck",
+  "Huck Milner",
   "Neel Sethi",
   "Nick Robinson",
-  "Paul Sharma",
-  "Peter Appel",
-  "Phellipe Haagensen",
-  "Rumi Hiiragi",
-  "Salvatore Cascio",
+  "Hualālai Chung",
+  "Lü Yanting",
+  "Han Mo",
+  "Lü Qi",
+  "Liu Tongzi",
+  "Maia Kealoha",
   "Sebastian Hansen",
-  "Swankie",
-  "Takashi Naitô",
-  "William Sylvester",
-  "Yasuko Sawaguchi"
+  "Gino Saltamerenda",
+  "Vittorio Antonucci",
+  "Paul Simon",
+  "Jaimz Woolvett",
+  "Ping Lam Siu",
+  "Rebecca Pan",
+  "Lai Chin",
+  "Albert Rémy",
+  "Patrick Auffay",
+  "Guy Decomble",
+  "Jordan Nagai",
+  "Bob Peterson",
+  "Elissa Knight"
  ],
- "dudosos": [],
+ "dudosos": [
+  [
+   "Neel Sethi",
+   "The Jungle Book is a 2016 American fantasy adventure film produced by Walt Disney Pictures"
+  ],
+  [
+   "Sebastian Hansen",
+   "A Minecraft Movie is a 2025 adventure comedy film based on the 2011 video game Minecraft d"
+  ],
+  [
+   "Paul Simon",
+   "Paul Frederic Simon (born October 13, 1941) is an American singer-songwriter and guitarist"
+  ]
+ ],
  "via_indirecta": {
   "William Sadler": "William Sadler (actor)",
   "Chester Conklin": "Chester Conklin",
@@ -1953,6 +2381,19 @@
   "Doug Jones": "Doug Jones (actor)",
   "Richard Armitage": "Richard Armitage (actor)",
   "Michelle Williams": "Michelle Williams (actress)",
-  "Chen Hao": "Chen Hao (actress)"
+  "Chen Hao": "Chen Hao (actress)",
+  "Florence Lee": "Florence Lee (born 1888)",
+  "Horst Buchholz": "File:Buchholz-tomb.JPG",
+  "William Sylvester": "File:2001 Floyd publicity still.jpg",
+  "Thomas Mitchell": "Thomas Mitchell (actor)",
+  "Tony Roberts": "Tony Roberts (actor)",
+  "John Savage": "John Savage (actor)",
+  "Sergi López": "Sergi López (actor)",
+  "Tony Leung": "Tony Leung Ka-fai",
+  "Chris Penn": "File:Chris Penn.jpg",
+  "George MacKay": "George MacKay (actor)",
+  "Anthony Gonzalez": "Anthony Gonzalez (actor)",
+  "Renée Victor": "File:Cropped Photo of Renée Victor.jpg",
+  "Mark O'Brien": "Mark O'Brien (actor)"
  }
 }

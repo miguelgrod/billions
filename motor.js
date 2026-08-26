@@ -150,7 +150,7 @@ const SAGAS = [
   // Marvel y DC van en el mismo saco a propósito. Por separado, con dos rondas
   // cada uno, una partida podía sacar cuatro de superhéroes y la queja seguiría
   // en pie: quien juega no ve dos universos, ve más de lo mismo.
-  [/^(Avengers|Iron Man|Captain America|Captain Marvel|Black Panther|Doctor Strange|Guardians of the Galaxy|Deadpool|Spider-Man|Venom|Thor|Ant-Man|The Dark Knight|Batman|Superman|Aquaman|Joker|Wonder Woman)/, 'Superhéroes'],
+  [/^(Avengers|Iron Man|Captain America|Captain Marvel|Black Panther|Doctor Strange|Guardians of the Galaxy|Deadpool|Spider-Man|Venom|Thor|Ant-Man|The Dark Knight|Batman|Superman|Aquaman|Joker|Wonder Woman|X-Men|Logan|The Wolverine)/, 'Superhéroes'],
   [/^(Star Wars|Rogue One|The Empire Strikes Back|Return of the Jedi)/, 'Star Wars'],
   [/^Harry Potter|^Fantastic Beasts/, 'Harry Potter'],
   [/^(LOTR|The Hobbit|Hobbit)/, 'Tolkien'],
@@ -167,11 +167,12 @@ const SAGAS = [
   [/^The Lion King/, 'Rey León'],
   [/^Zootopia/, 'Zootrópolis'],
   [/^Finding (Nemo|Dory)/, 'Nemo'],
-  [/^Incredibles/, 'Increíbles'],
+  [/^(The )?Incredibles/, 'Increíbles'],
   [/^Inside Out/, 'Del revés'],
   [/^Moana/, 'Vaiana'],
   [/^(The Super Mario|Super Mario)/, 'Mario'],
   [/^(The Hunger Games|Hunger Games)/, 'Hunger Games'],
+  [/^Dune/, 'Dune'],
 ];
 const TOPE_SAGA = 2;
 // Se resuelve una vez y se guarda: la comprobación entra en el bucle de sorteo.

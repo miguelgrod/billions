@@ -306,8 +306,24 @@
   "100": [
    "Ruben Fleischer"
   ],
+  "225": [
+   "Taika Waititi"
+  ],
   "144": [
    "Christopher Nolan"
+  ],
+  "221": [
+   "Patty Jenkins"
+  ],
+  "222": [
+   "Sam Raimi"
+  ],
+  "223": [
+   "Roland Emmerich"
+  ],
+  "220": [
+   "Lee Unkrich",
+   "Adrian Molina"
   ],
   "175": [
    "Steven Spielberg"
@@ -315,20 +331,42 @@
   "145": [
    "George Lucas"
   ],
+  "224": [
+   "James Gunn"
+  ],
+  "226": [
+   "Pete Docter",
+   "Bob Peterson"
+  ],
   "163": [
    "Christopher Nolan"
   ],
   "189": [
    "Alfonso Cuarón"
   ],
+  "228": [
+   "Denis Villeneuve"
+  ],
   "124": [
    "Robert Zemeckis"
+  ],
+  "227": [
+   "Brad Bird"
+  ],
+  "230": [
+   "James Mangold"
   ],
   "125": [
    "Irvin Kershner"
   ],
   "191": [
    "Alejandro G. Iñárritu"
+  ],
+  "235": [
+   "Christopher Nolan"
+  ],
+  "231": [
+   "Andrew Stanton"
   ],
   "146": [
    "James Cameron"
@@ -348,8 +386,14 @@
   "186": [
    "Damien Chazelle"
   ],
+  "214": [
+   "Tom Hooper"
+  ],
   "177": [
    "Quentin Tarantino"
+  ],
+  "229": [
+   "Denis Villeneuve"
   ],
   "154": [
    "Victor Fleming"
@@ -357,17 +401,32 @@
   "126": [
    "Hayao Miyazaki"
   ],
+  "232": [
+   "Martin Scorsese"
+  ],
   "155": [
    "Steven Spielberg"
+  ],
+  "219": [
+   "Sam Mendes"
   ],
   "156": [
    "Robert Zemeckis"
   ],
+  "216": [
+   "Danny Boyle"
+  ],
   "165": [
    "Sam Mendes"
   ],
+  "192": [
+   "David Fincher"
+  ],
   "104": [
    "Steven Spielberg"
+  ],
+  "218": [
+   "Peter Farrelly"
   ],
   "178": [
    "Quentin Tarantino"
@@ -390,6 +449,9 @@
   "101": [
    "Francis Ford Coppola"
   ],
+  "215": [
+   "Ben Affleck"
+  ],
   "111": [
    "Roberto Benigni"
   ],
@@ -404,6 +466,9 @@
   ],
   "158": [
    "Ridley Scott"
+  ],
+  "234": [
+   "Denis Villeneuve"
   ],
   "190": [
    "Guillermo del Toro"
@@ -427,12 +492,18 @@
   "112": [
    "George Roy Hill"
   ],
+  "202": [
+   "Clint Eastwood"
+  ],
   "149": [
    "Francis Ford Coppola"
   ],
   "167": [
    "Daniel Kwan",
    "Daniel Scheinert"
+  ],
+  "203": [
+   "Oliver Stone"
   ],
   "188": [
    "Francis Ford Coppola"
@@ -446,14 +517,26 @@
   "137": [
    "Miloš Forman"
   ],
+  "213": [
+   "Alejandro G. Iñárritu"
+  ],
   "138": [
    "David Fincher"
+  ],
+  "212": [
+   "Tom McCarthy"
   ],
   "102": [
    "Francis Ford Coppola"
   ],
   "139": [
    "Miloš Forman"
+  ],
+  "204": [
+   "Guillermo del Toro"
+  ],
+  "205": [
+   "F. Henckel von Donnersmarck"
   ],
   "182": [
    "Paul Thomas Anderson"
@@ -482,6 +565,12 @@
   "150": [
    "Damien Chazelle"
   ],
+  "200": [
+   "Michael Cimino"
+  ],
+  "233": [
+   "Spike Jonze"
+  ],
   "116": [
    "Martin Scorsese"
   ],
@@ -500,8 +589,17 @@
   "141": [
    "Billy Wilder"
   ],
+  "209": [
+   "Christopher Nolan"
+  ],
   "187": [
    "Chloé Zhao"
+  ],
+  "199": [
+   "Woody Allen"
+  ],
+  "217": [
+   "Sian Heder"
   ],
   "123": [
    "Alfred Hitchcock"
@@ -518,6 +616,9 @@
   "117": [
    "Fernando Meirelles"
   ],
+  "193": [
+   "Roman Polanski"
+  ],
   "162": [
    "Martin Scorsese"
   ],
@@ -530,8 +631,20 @@
   "142": [
    "Sergio Leone"
   ],
+  "201": [
+   "Sidney Lumet"
+  ],
   "143": [
    "Martin Scorsese"
+  ],
+  "210": [
+   "Park Chan-wook"
+  ],
+  "198": [
+   "Alfred Hitchcock"
+  ],
+  "206": [
+   "Wong Kar-wai"
   ],
   "119": [
    "Michael Curtiz"
@@ -541,19 +654,28 @@
    "Gene Kelly"
   ],
   "107": [
-   "Sergio Leone"
+   "Billy Wilder"
   ],
   "108": [
-   "Sergio Leone"
+   "Billy Wilder"
   ],
   "113": [
-   "Sergio Leone"
+   "Billy Wilder"
   ],
   "129": [
-   "Sergio Leone"
+   "Billy Wilder"
+  ],
+  "197": [
+   "Billy Wilder"
+  ],
+  "194": [
+   "Frank Capra"
   ],
   "130": [
    "Alfred Hitchcock"
+  ],
+  "211": [
+   "Quentin Tarantino"
   ],
   "120": [
    "Akira Kurosawa"
@@ -686,9 +808,37 @@
   "Steve Martino": "steve-martino.jpg",
   "Yu Yang": "yu-yang.jpg",
   "Dean Fleischer Camp": "dean-fleischer-camp.jpg",
-  "Jared Hess": "jared-hess.jpg"
+  "Jared Hess": "jared-hess.jpg",
+  "Frank Capra": "frank-capra.jpg",
+  "Carol Reed": "carol-reed.jpg",
+  "Vittorio De Sica": "vittorio-de-sica.jpg",
+  "Woody Allen": "woody-allen.jpg",
+  "Michael Cimino": "michael-cimino.jpg",
+  "Clint Eastwood": "clint-eastwood.jpg",
+  "Oliver Stone": "oliver-stone.jpg",
+  "Wong Kar-wai": "wong-kar-wai.jpg",
+  "Federico Fellini": "federico-fellini.jpg",
+  "François Truffaut": "francois-truffaut.jpg",
+  "Park Chan-wook": "park-chan-wook.jpg",
+  "Tom McCarthy": "tom-mccarthy.jpg",
+  "Tom Hooper": "tom-hooper.jpg",
+  "Ben Affleck": "ben-affleck.jpg",
+  "Danny Boyle": "danny-boyle.jpg",
+  "Sian Heder": "sian-heder.jpg",
+  "Peter Farrelly": "peter-farrelly.jpg",
+  "Adrian Molina": "adrian-molina.jpg",
+  "Patty Jenkins": "patty-jenkins.jpg",
+  "Roland Emmerich": "roland-emmerich.jpg",
+  "Taika Waititi": "taika-waititi.jpg",
+  "Pete Docter": "pete-docter.jpg",
+  "Bob Peterson": "bob-peterson.jpg",
+  "Denis Villeneuve": "denis-villeneuve.jpg",
+  "James Mangold": "james-mangold.jpg",
+  "Spike Jonze": "spike-jonze.jpg"
  },
- "sin_foto": [],
+ "sin_foto": [
+  "F. Henckel von Donnersmarck"
+ ],
  "dudosos": [],
  "via_indirecta": {
   "Irvin Kershner": "File:Irvin Kershner.jpg",
@@ -701,6 +851,8 @@
   "Jennifer Lee": "Jennifer Lee (filmmaker)",
   "Ryan Fleck": "Anna Boden and Ryan Fleck",
   "Yu Yang": "Jiaozi (director)",
-  "Steve McQueen": "Steve McQueen (director)"
+  "Steve McQueen": "Steve McQueen (director)",
+  "Tom McCarthy": "Tom McCarthy (director)",
+  "Bob Peterson": "Bob Peterson (filmmaker)"
  }
 }

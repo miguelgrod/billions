@@ -59,11 +59,11 @@ el recetario.
 | `main.js` | Estado, pintado, revelado, récord. Sin módulos: variables globales y `defer` |
 | `movies.js` | `const MOVIES` — generado por `tools/build-data.py`, **no editar a mano**. Campos: `r` identificador, `t` título, `g` recaudación (puede faltar), `y` año, `o` Óscars, `fa` nota FA, `d` director(es), `a` reparto, `oc` categorías |
 | `posters.js` | `const POSTERS` — puesto → nombre de archivo en `posters/` |
-| `posters/*.jpg` | 100 carátulas, 300 px de ancho |
+| `posters/*.jpg` | 235 carátulas, 300 px de ancho (alguna en `.png`, según lo que sirva Wikipedia) |
 | `posters/_report.json` | Caché de resolución del descargador (qué página y qué archivo de Wikipedia usó cada película) |
-| `directors/*.jpg` | 118 fotos de directores, 400 px de ancho |
-| `actors/*.jpg` | 624 fotos de actores (de 641 personas), 300 px de ancho |
-| `composers/*.jpg` | 77 fotos de compositores (de 96 personas), 300 px de ancho |
+| `directors/*.jpg` | 145 fotos de directores (de 146 personas), 400 px de ancho |
+| `actors/*.jpg` | 737 fotos de actores (de 786 personas), 300 px de ancho |
+| `composers/*.jpg` | 92 fotos de compositores (de 119 personas), 300 px de ancho |
 | `composers.js` | `COMPOSERS` (puesto de película → compositores) y `COMPOSER_PHOTOS` (nombre → archivo). Generado por `fetch-people.py --role composers` |
 | `directors.js` / `actors.js` | `DIRECTORS`/`ACTORS` (puesto de película → nombres) y `DIRECTOR_PHOTOS`/`ACTOR_PHOTOS` (nombre → archivo). **Todavía no los carga `index.html`**: los datos están listos, el juego no los usa |
 | `*/\_report.json` | Qué foto se asignó a cada persona, cuáles fueron por vía indirecta y cuáles quedaron en duda |
@@ -74,7 +74,7 @@ el recetario.
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
 | `tools/sella-versiones.py` | Pone la huella del contenido en los `<script src>` para que el navegador no sirva datos viejos de su caché |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
-| `top_peliculas_taquilla_y_critica.xlsx` | **La fuente del catálogo.** Una sola pestaña, «Listado completo»: 191 películas con director, nota de FilmAffinity, Óscars, 5 actores y compositor. Las pestañas «Top Taquilla» y «Top Crítica FA» se borraron el 2026-08-26 porque no las leía nadie |
+| `top_peliculas_taquilla_y_critica.xlsx` | **La fuente del catálogo.** Una sola pestaña, «Listado completo»: 233 películas con director, nota de FilmAffinity, Óscars, 5 actores y compositor. Las pestañas «Top Taquilla» y «Top Crítica FA» se borraron el 2026-08-26 porque no las leía nadie |
 | `top_50_actores_numero_peliculas.xlsx` | Los actores con más largometrajes rodados, con su fiabilidad. Origen de `actores.js`. **La hoja ya ha cambiado de nombre una vez**: el script la localiza por la fila de cabecera, no por el nombre |
 | `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `tol` margen de error, `f` archivo en `actors/` |
 | `tools/repara-personas.py` | Rehace las fotos de personas que apuntaban a otro con nombre parecido |
@@ -367,8 +367,10 @@ vaciarlo y se pierde al tercer fallo.
 
 ## El catálogo
 
-**191 películas**: las 189 de la hoja «Listado completo» más dos estrenos de 2026
-que sólo están en la lista de taquilla. Hasta agosto de 2026 el catálogo eran
+**235 películas**: las 233 de la hoja «Listado completo» más dos estrenos de 2026
+que sólo están en la lista de taquilla. Eran 191 hasta el 2026-08-26, cuando
+entraron 44 más —casi todas de crítica: *Chinatown*, *Se7en*, *Memento*, *8½*,
+*Dune*, *Coco*, *WALL·E*, *Logan*…— con los identificadores 192 a 235. Hasta agosto de 2026 el catálogo eran
 sólo las 100 más taquilleras y las 91 de crítica se descartaban en el cruce; por
 eso *El Padrino* y compañía no aparecían nunca.
 
@@ -404,6 +406,45 @@ eso *El Padrino* y compañía no aparecían nunca.
     si es más alta que ancha** (`MAX_RATIO`). Es la comprobación que faltaba: un
     logotipo va de 2:1 a 10:1 y se cae solo.
 
+### Añadir películas al catálogo
+
+Miguel amplía el Excel y hay que reaccionar. El orden importa, porque **una
+película sin carátula no existe para el juego**: los depósitos la filtran al
+arrancar.
+
+1. `python3 tools/build-data.py` — regenera `movies.js`. Comprueba después que
+   **ningún identificador se ha movido**: de ellos cuelgan los nombres de las
+   carátulas (`posters/007.jpg`). Las nuevas se numeran a continuación de la
+   última.
+2. `python3 tools/fetch-posters.py --width 300` — resuelve y descarga sólo lo que
+   falte. Al acabar, **mide las proporciones**: lo apaisado hay que mirarlo una a
+   una (ver más abajo).
+3. `python3 tools/fetch-people.py --role directors --width 400`, luego
+   `--role composers --width 300` y luego `--role actors --width 300`. Es lo
+   lento —Wikipedia devuelve 429 si se le pide seguido— y es reanudable.
+4. **Repasa la tabla `SAGAS` del motor.** Se etiqueta por el título, así que una
+   secuela de una saga conocida entra sola, pero una película que estrena saga o
+   que no sigue el patrón, no: al ampliar en agosto se escaparon *Logan* —que es
+   X-Men— y *The Incredibles*, porque el patrón decía `^Incredibles` y el título
+   lleva «The» delante.
+5. `python3 tools/sella-versiones.py` y a probar una partida entera.
+
+**Lo que se rompió la primera vez que se hizo esto** (2026-08-26), por si vuelve
+a asomar:
+
+- **`fetch-posters.py` reescribió `posters.js` con dos entradas** y dejó el juego
+  sin una sola carátula. Leía `movies.js` con un patrón que exigía que la ficha
+  acabara justo detrás del año, y desde que hay director y reparto eso sólo lo
+  cumplían las dos películas sin datos ampliados. Ahora los campos se buscan uno
+  a uno y **el script aborta si lee menos de 100 películas** en vez de tocar el
+  índice.
+- **No resolvía nunca las películas nuevas**: reutilizaba `_report.json` y las
+  que no estaban en la caché se descartaban en silencio, justo lo contrario de lo
+  que prometía. Ahora resuelve las que faltan y las añade.
+- **Una resolución fallida borraba del índice una carátula que estaba en disco.**
+  Le pasó a *El Padrino: Parte II*: Wikipedia falló ese día y la película se caía
+  del juego entero. Ahora, si hay archivo, se conserva.
+
 ### Leer el Excel
 
 Los tres scripts que abren un `.xlsx` lo hacen a pelo, descomprimiendo el zip y
@@ -435,21 +476,21 @@ se van a meter.
 
 | Tipo | Pregunta | Respuesta | Depósito |
 |---|---|---|---|
-| `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta | 100 |
-| `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta | 100 |
+| `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta | 226 |
+| `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta | 235 |
 | `critica` | ¿Cuál tiene mejor nota en FilmAffinity? | Elegir tarjeta | 146 |
-| `director` | ¿Quién dirigió *X*? | Elegir entre cuatro retratos | 98 |
-| `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 98 |
-| `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
-| `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 27 |
+| `director` | ¿Quién dirigió *X*? | Elegir entre cuatro retratos | 232 |
+| `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 230 |
+| `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 233 |
+| `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 117 |
 | `filmografia` | ¿Quién ha rodado más películas, *X* o *Y*? | Elegir tarjeta | 50 actores |
-| `bso` | ¿Compuso *X* la banda sonora de *Y*? | Sí / No | 157 |
+| `bso` | ¿Compuso *X* la banda sonora de *Y*? | Sí / No | 189 |
 
 - **`director` es la única de cuatro caras, y por eso existe.** Era un sí/no, y
   un sí/no se acierta a moneda: con cinco categorías binarias, once de las
   veinte burbujas de una partida se podían resolver sin saber nada. Con cuatro
   retratos el acierto a ciegas baja del 50 % al 25 % y además se ve mejor:
-  cuatro caras es una imagen, dos botones no. Los datos ya estaban —118 fotos de
+  cuatro caras es una imagen, dos botones no. Los datos ya estaban —145 fotos de
   directores—, sólo había que usarlos.
   - **La dificultad no es el número de opciones, es quiénes son.** Con cuatro
     caras de épocas distintas se acierta por descarte, así que lo que sube con
@@ -497,8 +538,9 @@ se van a meter.
   - Medido sobre 20.000 rondas: 49,6 % de síes y **ningún "no" falso**, porque
     aquí la negación se comprueba contra el dato y no con una heurística como en
     los repartos.
-- **`oscarcat` tira de un depósito pequeño** (27 películas con desglose de
-  premios, 18 categorías). Su umbral en `frescas()` está bajado a 6 por eso.
+- **`oscarcat` tiraba de un depósito pequeño** (eran 27 películas con desglose de
+  premios; con la ampliación de agosto son 117). Su umbral en `frescas()` sigue
+  bajado a 6 de cuando eran pocas.
 - **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae
   «Mejor Actor de Reparto (Heath Ledger)», y sin limpiarlo no se reconocería que
   dos películas ganaron la misma categoría.
@@ -590,13 +632,18 @@ cuatro o más.
 - **Una ronda que enfrenta a dos de la misma saga cuenta una vez, no dos.** Lo
   que cansa es ver la saga, no cuántas cartas suyas haya en la mesa.
 - **Se etiqueta por el título, no por identificador**, para que una secuela nueva
-  entre sola al regenerar los datos.
+  entre sola al regenerar los datos. **Lo que no entra sola es la que estrena
+  saga o no sigue el patrón**: al ampliar el catálogo se escaparon *Logan* —que
+  es X-Men— y *The Incredibles*, porque el patrón decía `^Incredibles` y el
+  título lleva «The» delante. Repasa la tabla cada vez que entren películas.
 - **El salvavidas de `nuevaRonda()` no mira sagas**: antes una ronda repetida de
   saga que ninguna.
-- Medido con 3.000 partidas: superhéroes **3,1 → 2,1** rondas por partida, Marvel
-  2,4 → 1,5, la saga más repetida de cada partida 2,7 → 1,9, y **la burbuja
-  pulsada sigue soltando siempre la pregunta de su categoría** (0 desajustes en
-  60.000 rondas), que es el riesgo de apretar cualquier filtro aquí.
+- Medido con 3.000 partidas cuando se puso: superhéroes **3,1 → 2,1** rondas por
+  partida, Marvel 2,4 → 1,5 y la saga más repetida de cada partida 2,7 → 1,9.
+  Con el catálogo de 235 películas se queda en **1,7 rondas de superhéroes** por
+  partida. En las tres medidas, **la burbuja pulsada sigue soltando siempre la
+  pregunta de su categoría** (0 desajustes en 60.000 rondas), que es el riesgo de
+  apretar cualquier filtro aquí.
 
 ## El azar de la partida
 
@@ -931,10 +978,15 @@ ancho (mediana 258). No hay forma de sacar más de esa fuente. Para alta
 resolución hay que usar TMDB (`w500`, `w780`, `original`), que da unos 2000 px y
 necesita una clave gratuita de la API v3. El backend ya está escrito.
 
-Siete carátulas son apaisadas (los "quad" británicos de Harry Potter, Skyfall y
-Spectre): son las auténticas de Wikipedia, y la tarjeta las recorta. **Son las
-únicas siete que pueden serlo**: cualquier otra apaisada es un logotipo colado, y
-un `sips -g pixelWidth -g pixelHeight posters/*.jpg` lo destapa en un segundo. TMDB usa
+**Diez carátulas son apaisadas y todas son legítimas**: son los "quad"
+británicos —Harry Potter, Skyfall, Spectre y, desde la ampliación de agosto,
+*The King's Speech*, *1917* y *Slumdog Millionaire*, que son producción
+británica—. Son las auténticas de Wikipedia y la tarjeta las recorta.
+**Cualquier otra apaisada hay que mirarla**: lo normal es que sea un logotipo
+colado, y un `sips -g pixelWidth -g pixelHeight posters/*.jpg` las destapa en un
+segundo. Comprobado a ojo que estas tres son carteles y no logotipos:
+`repara-caratulas.py` las rechaza por su proporción, y ahí hay que decidir a
+mano. TMDB usa
 siempre el formato vertical.
 
 Las imágenes tienen copyright de sus estudios y están a título ilustrativo, con
