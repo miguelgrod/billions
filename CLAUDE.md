@@ -3,8 +3,9 @@
 Quiz web de cine: veinte **burbujas** repartidas por la pantalla, cada una de un
 tipo de pregunta —taquilla, estrenos, directores, repartos, crítica, filmografía,
 banda sonora u Óscars—. Un sorteo
-las enciende al azar hasta pararse en una, que plantea su pregunta. Gana quien
-revienta las veinte antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
+las enciende al azar hasta pararse en una, que plantea su pregunta. **Cada
+pulsación gasta una burbuja, se acierte o se falle**, y gana quien vacía el campo
+antes de fallar tres veces. Interfaz al estilo de Apple TV. Se permiten dos fallos;
 al tercero se acaba la partida. En producción:
 **https://ganoyo.com**
 
@@ -169,6 +170,19 @@ vaciarlo y se pierde al tercer fallo.
     que avisa antes de que se abra la pregunta.
 - **Elegida y bloqueo**: pulsar una burbuja fija `state.actual`; mientras haya
   una elegida, las demás no responden.
+- **La burbuja jugada desaparece del campo, se acierte o se falle** (2026-08-26).
+  La fallada se quedaba y podía volver a pulsarse, y eso hacía dos cosas raras:
+  la partida podía tener más jugadas que burbujas, y el jugador se reencontraba
+  la misma burbuja con otra pregunta detrás. Ahora el campo se vacía en veinte
+  pulsaciones exactas.
+  - **Vaciar el campo ya no significa acertar las veinte**, así que ganar con
+    dieciocho aciertos y dos fallos es normal y las dos pantallas de fin cuentan
+    **aciertos**, no burbujas gastadas.
+  - **La función de Supabase tuvo que enterarse**: da por terminada la partida
+    cuando hay veinte jugadas —no veinte aciertos—, el tope de jugadas vuelve a
+    ser 20 y ninguna burbuja puede repetirse. Sin lo último, un cliente
+    manipulado podía repetir las falladas y colar rondas de más, que son puntos
+    de más.
 - **La burbuja acertada desaparece del campo**, no se queda apagada. Antes se
   quedaba a opacidad 0,3 con una marca de visto, y al final de la partida el
   campo era un cementerio de restos entre los que costaba distinguir lo que
@@ -919,7 +933,7 @@ partida: {
 - **El récord pasó a medirse en puntos** y usa una clave nueva
   (`billions.best.points`), porque los valores guardados con el sistema anterior
   eran niveles y no son comparables.
-- **Vidas:** `VIDAS = 3` en `main.js`. Fallar descuenta una y la ronda sigue; sólo
+- **Vidas:** `VIDAS = 3` en `main.js`. Fallar descuenta una y gasta la burbuja; sólo
   el fallo que deja `state.vidas` a cero abre la pantalla de fin. Los tres puntos
   de la cabecera los pinta `pintaVidas()`, que recibe si se acaba de perder una
   para hacerla latir al apagarse.

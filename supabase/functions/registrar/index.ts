@@ -82,13 +82,14 @@ function revalida(motor: Motor, partida: any) {
   if (!Array.isArray(campo) || campo.length !== BURBUJAS) {
     return { ok: false, motivo: 'el campo no tiene 20 burbujas' };
   }
-  // Una burbuja fallada NO sale del campo, así que una partida tiene más
-  // jugadas que burbujas: veinte aciertos más los dos fallos que se perdonan,
-  // o diecinueve aciertos y los tres que la acaban. El techo real es 22, y con
-  // el tope puesto en 20 se rechazaba cualquier victoria con un solo fallo
-  // —un tercio largo de las partidas— con un «demasiadas jugadas» que no había
-  // manera de entender desde fuera.
-  if (!Array.isArray(jugadas) || jugadas.length > BURBUJAS + VIDAS - 1) {
+  // Cada pulsación gasta una burbuja, se acierte o se falle, así que una
+  // partida no puede tener más jugadas que burbujas hay en el campo.
+  //
+  // Ojo si se vuelve a tocar esta regla: cuando la fallada se quedaba en el
+  // campo, el techo eran 22 —veinte aciertos más los dos fallos que se
+  // perdonan— y tener el tope en 20 rechazaba un tercio largo de las partidas
+  // con un «demasiadas jugadas» incomprensible desde fuera.
+  if (!Array.isArray(jugadas) || jugadas.length > BURBUJAS) {
     return { ok: false, motivo: 'demasiadas jugadas' };
   }
 
@@ -105,9 +106,11 @@ function revalida(motor: Motor, partida: any) {
     if (!Number.isInteger(j?.b) || j.b < 0 || j.b >= BURBUJAS) {
       return { ok: false, motivo: 'jugada con burbuja inexistente' };
     }
-    // Una burbuja acertada sale del campo; una fallada sigue ahí. Repetir una ya
-    // reventada es imposible jugando.
+    // Acertada o fallada, la burbuja sale del campo: repetir una ya jugada es
+    // imposible jugando, y admitirlo dejaría colar rondas de más —que son
+    // puntos de más— a quien tocara el cliente.
     if (usadas.has(j.b)) return { ok: false, motivo: 'burbuja repetida' };
+    usadas.add(j.b);
     if (!Number.isInteger(j?.ms) || j.ms < 0 || j.ms > TIEMPO) {
       return { ok: false, motivo: 'tiempo de respuesta imposible' };
     }
@@ -123,7 +126,6 @@ function revalida(motor: Motor, partida: any) {
 
     if (!agotado && j.r === ronda.correcta) {
       aciertos++;
-      usadas.add(j.b);
       // El multiplicador de la burbuja dorada sale del motor, no de lo que
       // diga el cliente: es la misma semilla y el mismo reparto.
       puntos += motor.puntosPor(j.ms, motor.multiplicadorDe ? motor.multiplicadorDe(j.b) : 1);
@@ -133,7 +135,9 @@ function revalida(motor: Motor, partida: any) {
   }
 
   // La partida sólo se registra acabada: o se quedó sin vidas o vació el campo.
-  if (vidas > 0 && aciertos < BURBUJAS) {
+  // Vaciar el campo ya no significa acertar las veinte, porque la fallada
+  // también se gasta: se puede terminar con dieciocho aciertos y dos fallos.
+  if (vidas > 0 && jugadas.length < BURBUJAS) {
     return { ok: false, motivo: 'la partida no ha terminado' };
   }
   return { ok: true, puntos, burbujas: aciertos };

@@ -411,7 +411,7 @@ const state = {
   newRecord: false,
   timer: null,
   campo: [],            // posición, tamaño y categoría de cada burbuja
-  completadas: new Set(),   // burbujas ya acertadas: salen del campo
+  completadas: new Set(),   // burbujas ya jugadas —acertadas o falladas—: salen del campo
   actual: null,         // burbuja elegida por el jugador
   saliendoIntro: false, // la portada se está desvaneciendo
   timerIntro: null,
@@ -1121,6 +1121,13 @@ function resuelve(correcto, ms, agotado) {
   } else {
     state.vidas--;
     pintaVidas(true);
+    // La burbuja fallada también se va del campo. Antes se quedaba y se podía
+    // volver a pulsar, y eso hacía dos cosas raras: la partida podía tener más
+    // jugadas que burbujas, y el jugador se encontraba la misma burbuja con otra
+    // pregunta distinta detrás. Ahora el campo se vacía en veinte pulsaciones
+    // exactas, se acierte o no.
+    state.completadas.add(state.actual);
+    state.reciente = state.actual;
     const titulo = agotado ? '¡Tiempo!' : '¡Fallaste!';
     if (state.vidas > 0) {
       const quedan = state.vidas === 1 ? 'Te queda 1 vida' : `Te quedan ${state.vidas} vidas`;
@@ -1221,7 +1228,7 @@ function guardaResultadoFinal({ titulo, etiqueta, detalle, record }) {
     etiqueta,
     detalle,
     record,
-    completadas: state.completadas.size,
+    completadas: state.score,          // aciertos, no burbujas gastadas
     total: BURBUJAS,
     // La partida en crudo: con esto se puede rehacer y comprobar entera. En el
     // modo de pruebas no va ninguna, y `ficticia` es lo que lo delata.
@@ -1255,7 +1262,11 @@ function victoria() {
       : `<br><span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
   guardaResultadoFinal({
     titulo: '¡Enhorabuena!',
-    etiqueta: 'puntos conseguidos',
+    // Vaciar el campo ya no implica veinte aciertos: la fallada también sale,
+    // así que se puede terminar con dieciocho. El número que cuenta es ése.
+    etiqueta: state.score === BURBUJAS
+      ? 'puntos · las veinte burbujas'
+      : `puntos · ${state.score} de ${BURBUJAS} aciertos`,
     detalle, record: state.newRecord,
   });
 }
@@ -1270,7 +1281,7 @@ function gameOver() {
       : `<span class="text-white/40">Tu récord: ${state.best} puntos</span>`);
   guardaResultadoFinal({
     titulo: 'Fin de la partida',
-    etiqueta: `puntos · ${state.completadas.size} de ${BURBUJAS} burbujas`,
+    etiqueta: `puntos · ${state.score} de ${BURBUJAS} aciertos`,
     detalle: detalleFinal,
     record: state.newRecord,
   });
