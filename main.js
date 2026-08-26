@@ -1308,31 +1308,15 @@ if (typeof window !== 'undefined') {
 }
 
 const refreshGameToIntro = () => {
-  paraCronometro();
   clearTimeout(state.timer);
-  clearTimeout(state.burbujaTimer);
   clearTimeout(state.timerIntro);
-  state.actual = null;
-  state.reciente = null;
-  state.score = 0;
-  state.puntos = 0;
-  state.vidas = VIDAS;
-  state.round = 1;
-  state.ronda = null;
-  state.next = null;
-  state.semilla = reiniciaMotor();
-  state.bitacora = [];
-  state.campo = reparteBurbujas();
-  state.completadas = new Set();
-  state.newRecord = false;
-  els.score.textContent = '0';
-  els.points.textContent = '0';
-  pintaVidas(false);
   hideToast();
-  els.trivial.classList.add('hidden');
-  els.trivial.classList.remove('flex');
-  els.board.classList.add('hidden');
-  els.board.classList.remove('flex');
+  // Volver a la portada es empezar una partida y dejarla debajo, que es
+  // exactamente lo que hace la carga de la página. Tiene que ser `startGame()`
+  // y no una copia de su reinicio: esto repetía a mano todo aquello menos
+  // `muestraTablero()`, así que el campo se quedaba oculto y al pulsar «Jugar»
+  // la portada se iba y detrás no había nada.
+  startGame();
   els.intro.classList.remove('hidden');
   els.intro.classList.remove('intro-fuera');
   els.introBest.textContent = state.best > 0 ? `Tu récord: ${state.best} puntos` : '';

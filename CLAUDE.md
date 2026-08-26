@@ -275,6 +275,13 @@ vaciarlo y se pierde al tercer fallo.
   el contenido no cabe se desborda por arriba y **no hay manera de llegar a él**:
   en un portátil bajo el título quedaba fuera de la pantalla. `safe` deja de
   centrar en cuanto hay desbordamiento.
+- **El icono de reinicio de la cabecera vuelve a la portada llamando a
+  `startGame()`**, no repitiendo su reinicio a mano. Lo repetía, y se le había
+  quedado fuera `muestraTablero()`: el campo se ocultaba y ya no lo volvía a
+  enseñar nadie, así que al pulsar «Jugar» la portada se desvanecía y detrás no
+  había nada. **`closeIntro()` sólo quita la portada**, porque da por hecho que
+  el tablero lleva pintado desde que cargó la página; quien devuelva a la
+  portada tiene que dejarlo así. Reproducido y verificado con Chrome headless.
 - **De la portada al juego se pasa con un fundido de `SALIDA_INTRO_MS` (1,5 s).**
   La portada se desvanece y se acerca un punto, como si se entrara en el
   tablero. **El cruce sale gratis**: el campo ya está pintado por detrás desde
