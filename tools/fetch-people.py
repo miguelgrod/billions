@@ -176,8 +176,23 @@ def archivo_de_hoja(z, nombre):
     raise SystemExit(f'No encuentro la hoja «{nombre}». Hay: {disponibles}')
 
 
+def compartidas(z):
+    """Los textos de un .xlsx pueden ir de dos maneras y hay que admitir las dos.
+
+    Cuando el archivo lo escribe un programa, cada celda lleva su texto dentro.
+    Cuando lo guarda Excel, los textos van a una tabla aparte y en la celda sólo
+    queda el número de fila de esa tabla. Sin resolverlo, «El Padrino» se leía
+    como «530» y el catálogo salía con los títulos convertidos en números.
+    """
+    if 'xl/sharedStrings.xml' not in z.namelist():
+        return []
+    root = ET.fromstring(z.read('xl/sharedStrings.xml'))
+    return [''.join(t.text or '' for t in si.iter('{%s}t' % NS['m'])) for si in root]
+
+
 def sheet_rows(nombre):
     z = zipfile.ZipFile(XLSX)
+    textos = compartidas(z)
     root = ET.fromstring(z.read('xl/' + archivo_de_hoja(z, nombre)))
     rows = []
     for row in root.findall('.//m:row', NS):
@@ -186,8 +201,11 @@ def sheet_rows(nombre):
             ref = re.match(r'([A-Z]+)', cell.get('r')).group(1)
             t = cell.find('.//m:t', NS)
             v = cell.find('m:v', NS)
-            c[ref] = t.text if t is not None else (v.text if v is not None else '')
-        if c.get('A', '').isdigit():
+            if cell.get('t') == 's' and v is not None:
+                c[ref] = textos[int(v.text)]
+            else:
+                c[ref] = t.text if t is not None else (v.text if v is not None else '')
+        if c.get('A', '').isdigit() and c.get('B', '').strip():
             rows.append(c)
     return rows
 

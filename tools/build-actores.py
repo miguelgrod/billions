@@ -38,11 +38,22 @@ NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 def filas():
     z = zipfile.ZipFile(XLSX)
 
+    # Los textos de un .xlsx van dentro de la celda si lo escribió un programa,
+    # y en una tabla aparte —con el índice en la celda— si lo guardó Excel. Hay
+    # que admitir las dos: al reguardar la hoja a mano, sin esto los nombres se
+    # leerían como números.
+    textos = []
+    if 'xl/sharedStrings.xml' in z.namelist():
+        textos = [''.join(t.text or '' for t in si.iter(NS + 't'))
+                  for si in ET.fromstring(z.read('xl/sharedStrings.xml'))]
+
     def val(c):
         if c.get('t') == 'inlineStr':
             return ''.join(t.text or '' for t in c.iter(NS + 't'))
         v = c.find(NS + 'v')
-        return v.text if v is not None else ''
+        if v is None:
+            return ''
+        return textos[int(v.text)] if c.get('t') == 's' else v.text
 
     for hoja in sorted(n for n in z.namelist() if n.startswith('xl/worksheets/sheet')):
         root = ET.fromstring(z.read(hoja))

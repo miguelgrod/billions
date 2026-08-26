@@ -74,7 +74,7 @@ el recetario.
 | `tools/build-artifact.py` | Empaqueta todo en un HTML autocontenido en `build/` |
 | `tools/sella-versiones.py` | Pone la huella del contenido en los `<script src>` para que el navegador no sirva datos viejos de su caché |
 | `top_100_...xlsx` | Datos de origen del juego (100 películas, sólo taquilla) |
-| `top_peliculas_taquilla_y_critica.xlsx` | Datos ampliados: 189 películas con director, nota de FilmAffinity, Óscars y 5 actores. **`movies.js` no sale de aquí todavía** |
+| `top_peliculas_taquilla_y_critica.xlsx` | **La fuente del catálogo.** Una sola pestaña, «Listado completo»: 191 películas con director, nota de FilmAffinity, Óscars, 5 actores y compositor. Las pestañas «Top Taquilla» y «Top Crítica FA» se borraron el 2026-08-26 porque no las leía nadie |
 | `top_50_actores_numero_peliculas.xlsx` | Los actores con más largometrajes rodados, con su fiabilidad. Origen de `actores.js`. **La hoja ya ha cambiado de nombre una vez**: el script la localiza por la fila de cabecera, no por el nombre |
 | `actores.js` | `const ACTORES_TOP` — generado por `tools/build-actores.py`, **no editar a mano**. Campos: `n` nombre, `p` nº de películas, `tol` margen de error, `f` archivo en `actors/` |
 | `tools/repara-personas.py` | Rehace las fotos de personas que apuntaban a otro con nombre parecido |
@@ -404,13 +404,40 @@ eso *El Padrino* y compañía no aparecían nunca.
     si es más alta que ancha** (`MAX_RATIO`). Es la comprobación que faltaba: un
     logotipo va de 2:1 a 10:1 y se cae solo.
 
+### Leer el Excel
+
+Los tres scripts que abren un `.xlsx` lo hacen a pelo, descomprimiendo el zip y
+leyendo el XML: no hay dependencias en este proyecto y por un lector de hojas no
+se van a meter.
+
+- **Los textos de un `.xlsx` van de dos maneras y hay que admitir las dos.** Si
+  el archivo lo escribe un programa, cada celda lleva su texto dentro
+  (`inlineStr`). **Si lo guarda Excel, los textos se van a
+  `xl/sharedStrings.xml` y en la celda sólo queda su índice** (`t="s"`). Pasó el
+  2026-08-26, al completar las notas a mano: el lector devolvía `530` donde
+  ponía «El Padrino» y el generador petó. Ahora `compartidas()` resuelve la
+  tabla en `build-data.py`, `fetch-people.py` y `build-actores.py`. **Si escribes
+  otro lector, empieza por ahí.**
+- **Una fila con número pero sin título no es una película.** La edición a mano
+  deja celdas sueltas —había cuatro, con un número en la columna A y el resto
+  vacío— y el filtro de «la A es un número» las daba por buenas. Ahora se exige
+  también título.
+- **La hoja se busca por su nombre, nunca por su posición** dentro del zip:
+  `sheet1.xml` no tiene por qué ser la primera pestaña, y ésta ya se ha
+  reordenado más de una vez. Si no aparece, el script se para y dice qué hojas
+  hay.
+- **Las columnas, en cambio, se leen por letra**: A número, B título, C año,
+  D director, E nota FA, F Óscars, G recaudación, H–L los cinco actores,
+  M fuente, N categorías de Óscar, O compositor. **Insertar una columna en medio
+  desplaza todo lo que tiene a su derecha sin que salte ningún error.**
+
 ## Los ocho tipos de ronda
 
 | Tipo | Pregunta | Respuesta | Depósito |
 |---|---|---|---|
 | `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta | 100 |
 | `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta | 100 |
-| `critica` | ¿Cuál tiene mejor nota en FilmAffinity? | Elegir tarjeta | 89 |
+| `critica` | ¿Cuál tiene mejor nota en FilmAffinity? | Elegir tarjeta | 146 |
 | `director` | ¿Quién dirigió *X*? | Elegir entre cuatro retratos | 98 |
 | `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 98 |
 | `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
@@ -475,8 +502,13 @@ eso *El Padrino* y compañía no aparecían nunca.
 - **Las categorías se limpian de paréntesis** al generar los datos: el Excel trae
   «Mejor Actor de Reparto (Heath Ledger)», y sin limpiarlo no se reconocería que
   dos películas ganaron la misma categoría.
-- **Nueve estrenos recientes no tienen nota de FilmAffinity** («N/D» en el Excel)
-  y quedan fuera de las rondas de crítica.
+- **45 películas no tienen nota de FilmAffinity** («N/D» en el Excel) y quedan
+  fuera de las rondas de crítica. Eran 132 hasta que Miguel completó la columna
+  a mano el 2026-08-26: el depósito pasó de 59 a 146 y **la ronda de crítica
+  dejó de ser la guarida de los superhéroes** —del 40,5 % de sus rondas al
+  17,1 %—, porque lo que faltaba era justamente la mitad alta de la escala, los
+  clásicos. Las que siguen sin nota son sobre todo secuelas y estrenos
+  recientes.
 
 Cada tipo es una función `ronda*(level)` que devuelve un objeto con `pregunta`,
 `modo` (`elige` o `sino`), `cartas`, `correcta` y `firma` (para no repetir ronda).
@@ -548,8 +580,9 @@ cuatro o más.
   superhéroes y secuelas**, así que cualquier duelo por debajo del 7,5 era
   Marvel contra Marvel. Sigue siendo la más cargada (28,5 %) porque el tope
   limita la partida entera, no la categoría: **si alguna vez se quiere arreglar
-  de raíz, es cuestión de conseguir la nota de las 132 películas que no la
-  tienen.**
+  de raíz, es cuestión de conseguir la nota de las que no la tienen** — y así
+  se hizo el 2026-08-26: con 146 notas en vez de 59, la crítica bajó al 17,1 %
+  y el conjunto de la partida a 2,0 rondas de superhéroes.
 - **Marvel y DC son una sola saga a propósito.** Separadas, con dos rondas cada
   una, una partida podía sacar cuatro de superhéroes y la queja seguiría en pie:
   quien juega no ve dos universos, ve más de lo mismo. Medido: con las dos
