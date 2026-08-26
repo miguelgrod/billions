@@ -127,6 +127,52 @@ const CON_OSCAR = PELIS.filter((m) => typeof m.o === 'number');
 const CON_NOTA = PELIS.filter((m) => typeof m.fa === 'number');
 const CON_CATEGORIA = PELIS.filter((m) => (m.oc || []).length);
 const CATEGORIAS_OSCAR = [...new Set(CON_CATEGORIA.flatMap((m) => m.oc))];
+
+/* ---------- sagas ----------
+   Los jugadores avisaron de que salían superhéroes a todas horas, y era verdad:
+   3,1 de las 20 rondas de una partida. No es que el sorteo los prefiera —su
+   cuota de apariciones, 14,4 %, va con su peso en el catálogo, 12,6 %—, es que
+   Marvel y DC son 22 películas de 191 y las bandas de dificultad aprietan los
+   duelos contra el grupo más denso del catálogo, que es el bloque moderno.
+   Así que el tope no es de superhéroes, es de saga: TOPE_SAGA rondas por
+   partida y el resto se rechaza. Marvel entra entero como una sola saga, porque
+   como tal se percibe.
+
+   Se etiqueta por el título y no por identificador para que una película nueva
+   de una saga ya conocida entre sola al regenerar los datos. */
+const SAGAS = [
+  // Marvel y DC van en el mismo saco a propósito. Por separado, con dos rondas
+  // cada uno, una partida podía sacar cuatro de superhéroes y la queja seguiría
+  // en pie: quien juega no ve dos universos, ve más de lo mismo.
+  [/^(Avengers|Iron Man|Captain America|Captain Marvel|Black Panther|Doctor Strange|Guardians of the Galaxy|Deadpool|Spider-Man|Venom|Thor|Ant-Man|The Dark Knight|Batman|Superman|Aquaman|Joker|Wonder Woman)/, 'Superhéroes'],
+  [/^(Star Wars|Rogue One|The Empire Strikes Back|Return of the Jedi)/, 'Star Wars'],
+  [/^Harry Potter|^Fantastic Beasts/, 'Harry Potter'],
+  [/^(LOTR|The Hobbit|Hobbit)/, 'Tolkien'],
+  [/^Jurassic/, 'Jurassic'],
+  [/^Avatar/, 'Avatar'],
+  [/^Toy Story/, 'Toy Story'],
+  [/^(Despicable Me|Minions)/, 'Gru'],
+  [/^Pirates of the Caribbean|^Pirates Caribbean/, 'Piratas'],
+  [/^Ice Age/, 'Ice Age'],
+  [/^Transformers/, 'Transformers'],
+  [/^Frozen/, 'Frozen'],
+  [/^(The Godfather|El Padrino)/, 'Padrino'],
+  [/^(Furious|The Fate of the Furious|Fast)/, 'Fast'],
+  [/^The Lion King/, 'Rey León'],
+  [/^Zootopia/, 'Zootrópolis'],
+  [/^Finding (Nemo|Dory)/, 'Nemo'],
+  [/^Incredibles/, 'Increíbles'],
+  [/^Inside Out/, 'Del revés'],
+  [/^Moana/, 'Vaiana'],
+  [/^(The Super Mario|Super Mario)/, 'Mario'],
+  [/^(The Hunger Games|Hunger Games)/, 'Hunger Games'],
+];
+const TOPE_SAGA = 2;
+// Se resuelve una vez y se guarda: la comprobación entra en el bucle de sorteo.
+const SAGA_DE = new Map(
+  MOVIES.map((m) => [m.r, (SAGAS.find(([re]) => re.test(m.t)) || [])[1]]).filter(([, s]) => s),
+);
+const sagasDe = (r) => new Set((r.pelis || []).map((m) => SAGA_DE.get(m.r)).filter(Boolean));
 // En qué años trabajó cada actor, hasta donde alcanzan nuestros datos. Es lo que
 // permite escoger un intruso cuya carrera conocida no roce la película por la
 // que se pregunta.
@@ -523,6 +569,12 @@ const TIPOS = [
   { id: 'bso', peso: 2, crea: rondaBso, hay: () => CON_BSO.length > 1 && COMPOSITORES.length > 1 },
 ];
 
+// Una ronda que enfrenta a dos de la misma saga cuenta una vez, no dos: lo que
+// cansa es ver la saga, no cuántas cartas suyas haya en la mesa.
+function cabeLaSaga(r) {
+  return [...sagasDe(r)].every((s) => (juego.sagas.get(s) || 0) < TOPE_SAGA);
+}
+
 // `categoria` la impone la burbuja elegida; sin ella se sortea por peso
 function nuevaRonda(level, categoria) {
   const disponibles = TIPOS.filter((t) => t.hay());
@@ -530,12 +582,14 @@ function nuevaRonda(level, categoria) {
   for (let intento = 0; intento < 30; intento++) {
     const tipo = forzado || porPeso(disponibles);
     const r = tipo.crea(level);
-    if (r && r.firma !== juego.ultima) {
+    if (r && r.firma !== juego.ultima && cabeLaSaga(r)) {
       juego.ultima = r.firma;
       (r.pelis || []).forEach((m) => juego.vistas.add(m.r));
+      sagasDe(r).forEach((s) => juego.sagas.set(s, (juego.sagas.get(s) || 0) + 1));
       return r;
     }
   }
+  // El salvavidas no mira sagas: antes una ronda repetida de saga que ninguna.
   return rondaTaquilla(level) || rondaOscar();
 }
 
@@ -558,12 +612,14 @@ function porPeso(tipos) {
 const juego = {
   vistas: new Set(),   // películas ya preguntadas en esta partida
   ultima: '',          // firma de la ronda anterior
+  sagas: new Map(),    // cuántas rondas lleva ya cada saga
 };
 
 // Empieza una partida: siembra y olvida lo de la anterior. Devuelve la semilla.
 function reiniciaMotor(semilla) {
   juego.vistas = new Set();
   juego.ultima = '';
+  juego.sagas = new Map();
   return siembra(semilla);
 }
 

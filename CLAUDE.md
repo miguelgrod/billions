@@ -480,6 +480,42 @@ Añadir un tipo nuevo es escribir esa función y meterla en `TIPOS` con su peso.
 6. **Las dos películas de 2026 sin datos ampliados** (*Michael*, *The Super Mario
    Galaxy Movie*) sólo aparecen en rondas de taquilla y estreno.
 
+### El tope de saga
+
+**Ninguna saga pasa de dos rondas por partida** (`TOPE_SAGA`, `SAGAS` y
+`cabeLaSaga()` en el motor). Vino de un aviso de los jugadores —«salen muchas de
+superhéroes»— que al medirlo resultó cierto: **3,1 de las 20 rondas** llevaban
+una, el 98 % de las partidas tenía al menos una y una de cada cuatro llegaba a
+cuatro o más.
+
+- **No era un fallo del sorteo.** La cuota de apariciones de las 22 de Marvel y
+  DC (14,4 %) iba con su peso en el catálogo (12,6 %). Lo que lo amplifica es
+  que **las bandas de dificultad aprietan todos los duelos contra el grupo más
+  denso del catálogo**, que es el bloque moderno: 67 películas de los 2010, 17
+  de ellas de superhéroes. Un duelo de estreno de uno a cinco años casi sólo
+  puede caer ahí.
+- **El peor sitio era la crítica: el 40,5 % de sus rondas.** Sólo 59 películas
+  tienen nota de FilmAffinity y **toda la mitad baja de la escala (4,8–7,5) son
+  superhéroes y secuelas**, así que cualquier duelo por debajo del 7,5 era
+  Marvel contra Marvel. Sigue siendo la más cargada (28,5 %) porque el tope
+  limita la partida entera, no la categoría: **si alguna vez se quiere arreglar
+  de raíz, es cuestión de conseguir la nota de las 132 películas que no la
+  tienen.**
+- **Marvel y DC son una sola saga a propósito.** Separadas, con dos rondas cada
+  una, una partida podía sacar cuatro de superhéroes y la queja seguiría en pie:
+  quien juega no ve dos universos, ve más de lo mismo. Medido: con las dos
+  aparte salían 2,5 rondas; juntas, 2,1.
+- **Una ronda que enfrenta a dos de la misma saga cuenta una vez, no dos.** Lo
+  que cansa es ver la saga, no cuántas cartas suyas haya en la mesa.
+- **Se etiqueta por el título, no por identificador**, para que una secuela nueva
+  entre sola al regenerar los datos.
+- **El salvavidas de `nuevaRonda()` no mira sagas**: antes una ronda repetida de
+  saga que ninguna.
+- Medido con 3.000 partidas: superhéroes **3,1 → 2,1** rondas por partida, Marvel
+  2,4 → 1,5, la saga más repetida de cada partida 2,7 → 1,9, y **la burbuja
+  pulsada sigue soltando siempre la pregunta de su categoría** (0 desajustes en
+  60.000 rondas), que es el riesgo de apretar cualquier filtro aquí.
+
 ## El azar de la partida
 
 **Hay dos generadores, y no se pueden mezclar.**
@@ -595,8 +631,8 @@ comprobar si la puntuación es la que dice ser. Si la validación tuviera su pro
 copia de estas reglas, las dos se desincronizarían a la primera y la
 clasificación empezaría a rechazar partidas buenas.
 
-- **`juego.vistas` y `juego.ultima` viven en el motor**, no en el `state` de
-  main.js: hacen falta para reproducir la partida igual que se jugó.
+- **`juego.vistas`, `juego.ultima` y `juego.sagas` viven en el motor**, no en el
+  `state` de main.js: hacen falta para reproducir la partida igual que se jugó.
 - **`reiniciaMotor(semilla)`** siembra y olvida lo de la partida anterior.
 - **El reparto de categorías es del motor; la posición y la foto de cada burbuja
   no.** `reparteBurbujas()` (main.js) pide las categorías y sólo reparte por la
