@@ -151,6 +151,22 @@ vaciarlo y se pierde al tercer fallo.
 - **La foto va debajo y el color encima con alfa**, no al revés: así la esfera
   conserva la identidad de color de su categoría y la foto se lee a media
   intensidad. Poner la foto encima con `opacity` apagaría también el degradado.
+- **Dos de las veinte son doradas y puntúan el doble** (`DORADAS`,
+  `MULTI_DORADA`, `esDorada()`). Es lo que le da sentido a poder elegir burbuja:
+  antes todas valían igual y la única decisión del juego era indiferente.
+  - **Las sortea el motor dentro de `reparteCategorias()`**, no main.js y no una
+    función aparte. El servidor rehace la partida llamando sólo a
+    `reparteCategorias()` y a `nuevaRonda()`: si el sorteo consumiera azar
+    sembrado en otro sitio, la secuencia dejaría de cuadrar entre navegador y
+    servidor y las puntuaciones no coincidirían.
+  - **El multiplicador lo aplica `puntosPor(ms, multiplicador)`**, sobre los
+    puntos ya redondeados, para que valga exactamente el doble de lo que se ve
+    en las demás.
+  - **Conservan su color de categoría y su foto.** Lo que las distingue es el
+    aro dorado y la marca `×2`. Pintarlas enteras de oro habría borrado de qué
+    van, que es justo lo que el color está diciendo.
+  - **El rótulo al elegirla dice `· ×2`**: en táctil no hay hover y es lo único
+    que avisa antes de que se abra la pregunta.
 - **Elegida y bloqueo**: pulsar una burbuja fija `state.actual`; mientras haya
   una elegida, las demás no responden.
 - **La burbuja acertada desaparece del campo**, no se queda apagada. Antes se
@@ -395,13 +411,30 @@ eso *El Padrino* y compañía no aparecían nunca.
 | `taquilla` | ¿Cuál recaudó más? | Elegir tarjeta | 100 |
 | `anio` | ¿Cuál se estrenó antes? | Elegir tarjeta | 100 |
 | `critica` | ¿Cuál tiene mejor nota en FilmAffinity? | Elegir tarjeta | 89 |
-| `director` | ¿Dirigió *X* la película *Y*? | Sí / No | 98 |
+| `director` | ¿Quién dirigió *X*? | Elegir entre cuatro retratos | 98 |
 | `actores` | ¿Coincidieron *X* e *Y* en *Z*? | Sí / No | 98 |
 | `oscar` | ¿Ganó *X* algún Óscar? | Sí / No | 98 |
 | `oscarcat` | ¿Ganó *X* el Óscar a *Mejor Y*? | Sí / No | 27 |
 | `filmografia` | ¿Quién ha rodado más películas, *X* o *Y*? | Elegir tarjeta | 50 actores |
 | `bso` | ¿Compuso *X* la banda sonora de *Y*? | Sí / No | 157 |
 
+- **`director` es la única de cuatro caras, y por eso existe.** Era un sí/no, y
+  un sí/no se acierta a moneda: con cinco categorías binarias, once de las
+  veinte burbujas de una partida se podían resolver sin saber nada. Con cuatro
+  retratos el acierto a ciegas baja del 50 % al 25 % y además se ve mejor:
+  cuatro caras es una imagen, dos botones no. Los datos ya estaban —118 fotos de
+  directores—, sólo había que usarlos.
+  - **La dificultad no es el número de opciones, es quiénes son.** Con cuatro
+    caras de épocas distintas se acierta por descarte, así que lo que sube con
+    el nivel es **cuántos de los tres intrusos son contemporáneos** de la
+    película (a menos de seis años): uno hasta el nivel 3, dos hasta el 9 y los
+    tres del 10 en adelante. Medido: 1,6 de 3 en el nivel 1, 2,3 en el 5 y 3,0
+    del 12 en adelante.
+  - **Ningún intruso puede compartir foto con la respuesta.** Tres fotos de
+    director son de dúo y las comparten seis personas (los Russo, los Daniels,
+    Boden & Fleck): dos caras iguales en la mesa serían una ronda absurda.
+  - **Si la película la firman dos, se pregunta por uno y el otro no sale de
+    intruso**: sería una segunda respuesta correcta.
 - **`filmografia` no juega con películas, sino con personas.** Su depósito es
   `actores.js` (los 50 con más largometrajes rodados, de Samuel L. Jackson con
   152 a Timothée Chalamet con 20), y por eso su ronda **no declara `pelis`**:
@@ -588,6 +621,14 @@ clasificación pública. Vive en Supabase (proyecto `vupsyrunkwsqegdvtcbg`,
   regeneras `movies.js` y despliegas, **las partidas empezadas antes se rechazan
   con un 409** hasta que se juegue una nueva: no se puede rehacer una partida con
   unos datos que ya no están. Es a propósito.
+- **Una partida tiene más jugadas que burbujas.** La fallada no sale del campo,
+  así que se vuelve a pulsar: el techo real son **22** —veinte aciertos más los
+  dos fallos que se perdonan, o diecinueve y los tres que la acaban—. La función
+  tenía el tope en 20 y **rechazaba con «demasiadas jugadas» cualquier victoria
+  con un solo fallo**, que es más de un tercio de las partidas. Corregido a
+  `BURBUJAS + VIDAS - 1`. Si tocas las vidas o las burbujas, este tope va detrás.
+- **La función tolera un motor sin doradas** (`multiplicadorDe` opcional), para
+  poder desplegarla antes que el sitio sin romper las partidas en curso.
 - Probado contra el servidor real: partida legítima aceptada; respuestas de
   100 ms, campo manipulado, partida a medias, datos falseados y falta de alias,
   todas rechazadas con su motivo en castellano.
@@ -647,8 +688,9 @@ comprobar si la puntuación es la que dice ser. Si la validación tuviera su pro
 copia de estas reglas, las dos se desincronizarían a la primera y la
 clasificación empezaría a rechazar partidas buenas.
 
-- **`juego.vistas`, `juego.ultima` y `juego.sagas` viven en el motor**, no en el
-  `state` de main.js: hacen falta para reproducir la partida igual que se jugó.
+- **`juego.vistas`, `juego.ultima`, `juego.sagas` y `juego.doradas` viven en el
+  motor**, no en el `state` de main.js: hacen falta para reproducir la partida
+  igual que se jugó.
 - **`reiniciaMotor(semilla)`** siembra y olvida lo de la partida anterior.
 - **El reparto de categorías es del motor; la posición y la foto de cada burbuja
   no.** `reparteBurbujas()` (main.js) pide las categorías y sólo reparte por la

@@ -431,6 +431,11 @@ const COLS = {
   1: 'grid-cols-1 sm:grid-cols-1',
   2: 'grid-cols-1 sm:grid-cols-2',
   3: 'grid-cols-2 sm:grid-cols-3',
+  // Cuatro retratos: dos por dos hasta el escritorio. En fila de cuatro no
+  // caben en el ancho de una tableta, y en el alto de un móvil menos aún.
+  // `content-center` agrupa las dos filas en el centro: la rejilla crece con
+  // `flex-1` y sin esto las estira, dejando un pasillo vacío entre ellas.
+  4: 'grid-cols-2 content-center lg:grid-cols-4',
 };
 
 // Con cinco tipos de ronda conviene decir de qué va antes de leer la pregunta
@@ -446,7 +451,7 @@ const ETIQUETAS = {
   bso: 'Banda sonora',
 };
 
-function cartaHTML(c, i, clicable, anchaEnMovil) {
+function cartaHTML(c, i, clicable, anchaEnMovil, cuatro) {
   const etiqueta = clicable ? 'button' : 'div';
   // la película ocupa la fila entera en móvil cuando hay tres tarjetas
   const tramo = anchaEnMovil ? 'col-span-2 sm:col-span-1' : '';
@@ -456,10 +461,15 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
   const ALTO = 0.85;
   const escalaMovil = typeof window !== 'undefined' && window.innerWidth
     ? (window.innerWidth < 640 ? 0.9 : 1) : 1;
-  const minMovil = Math.round((c.retrato ? 200 : 220) * escalaMovil * ALTO);
-  const alto = c.retrato
-    ? `min-h-[${minMovil}px] sm:h-[230px] sm:w-[180px] lg:h-[344px] lg:w-[270px] sm:justify-self-center`
-    : `min-h-[${minMovil}px] sm:h-[238px] sm:w-[186px] lg:h-[min(425px,48vh)] lg:w-[334px] sm:justify-self-center`;
+  // Con cuatro tarjetas hay dos filas en móvil y cuatro columnas en escritorio:
+  // el alto de una pantalla de teléfono es lo que manda, y ahí dos filas de
+  // 200 px se salían por abajo. Medido en un iPhone SE (667 px de alto).
+  const minMovil = Math.round((cuatro ? 132 : c.retrato ? 200 : 220) * escalaMovil * ALTO);
+  const alto = cuatro
+    ? `min-h-[${minMovil}px] h-[22vh] max-h-[190px] sm:h-[212px] sm:max-h-none sm:w-[164px] lg:h-[280px] lg:w-[218px] sm:justify-self-center`
+    : c.retrato
+      ? `min-h-[${minMovil}px] sm:h-[230px] sm:w-[180px] lg:h-[344px] lg:w-[270px] sm:justify-self-center`
+      : `min-h-[${minMovil}px] sm:h-[238px] sm:w-[186px] lg:h-[min(425px,48vh)] lg:w-[334px] sm:justify-self-center`;
   return `
     <${etiqueta} ${clicable ? `data-index="${i}"` : ''}
       class="carta ${tramo} ${clicable ? 'choice foco cursor-pointer' : 'pointer-events-none'}
@@ -472,11 +482,11 @@ function cartaHTML(c, i, clicable, anchaEnMovil) {
            alt="" aria-hidden="true" />
       <div class="pointer-events-none absolute inset-0"
            style="background:linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.1) 100%)"></div>
-      <div class="relative flex flex-col items-center px-4 pb-5 pt-6">
+      <div class="relative flex flex-col items-center px-4 ${cuatro ? 'pb-3 pt-4' : 'pb-5 pt-6'}">
         ${c.sub ? `<span class="mb-2 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur-sm">${c.sub}</span>` : ''}
-        <span class="tight text-lg font-semibold leading-tight text-white lg:text-2xl">${c.titulo}</span>
+        <span class="tight ${cuatro ? 'text-[15px] lg:text-xl' : 'text-lg lg:text-2xl'} font-semibold leading-tight text-white">${c.titulo}</span>
         <span class="js-valor display mt-2 h-7 whitespace-nowrap text-lg leading-none text-white opacity-0 transition-opacity duration-300 lg:text-2xl"></span>
-        ${clicable ? '<span class="mt-1 text-[11px] text-white/45 transition group-hover:text-white/80">Pulsa para elegir</span>' : ''}
+        ${clicable && !cuatro ? '<span class="mt-1 text-[11px] text-white/45 transition group-hover:text-white/80">Pulsa para elegir</span>' : ''}
       </div>
     </${etiqueta}>`;
 }
@@ -494,8 +504,9 @@ function pintaRonda(r) {
   els.cards.className =
     'relative grid flex-1 gap-3 sm:mx-auto sm:w-fit sm:items-center sm:gap-4 lg:gap-5 ' +
     (COLS[r.cartas.length] || COLS[2]);
+  const cuatro = r.cartas.length === 4;
   els.cards.innerHTML = r.cartas
-    .map((c, i) => cartaHTML(c, i, clicable, r.cartas.length === 3 && i === 0))
+    .map((c, i) => cartaHTML(c, i, clicable, r.cartas.length === 3 && i === 0, cuatro))
     .join('');
 
   [...els.cards.querySelectorAll('.js-img')].forEach((img, i) => {
@@ -708,6 +719,9 @@ function reparteBurbujas() {
       const i = f * columnas + c;
       campo.push({
         cat: cats[i],
+        // Cuáles doblan puntos lo decide el motor al repartir las categorías:
+        // es parte de la partida y el servidor tiene que llegar a lo mismo.
+        dorada: esDorada(i),
         img: imagenPara(cats[i], usadas),
         // el desorden se mide en fracción de celda: con rejillas distintas, un
         // valor fijo en porcentaje de pantalla se come filas enteras
@@ -771,7 +785,12 @@ function pintaBurbujas() {
     const fondo = b.img
       ? `radial-gradient(circle at 32% 26%, ${velo}), url('${b.img}') ${encuadre}/cover`
       : `radial-gradient(circle at 32% 26%, ${luz} 0%, ${medio} 46%, ${hondo} 100%)`;
-    const sombra = `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
+    // La dorada conserva su color de categoría y su foto: lo que cambia es el
+    // aro y la marca. Pintarla entera de oro habría borrado de qué va, que es
+    // justo lo que el color de la burbuja está diciendo.
+    const sombra = b.dorada
+      ? `0 0 0 3px rgba(255,206,84,.95), 0 0 34px -2px rgba(255,190,40,.5), 0 26px 54px -14px ${medio}5c`
+      : `0 26px 54px -14px ${medio}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
     // La posición se corrige para que la burbuja, con su deriva incluida, no
     // asome fuera del campo: sin esto las columnas de los extremos se salían.
     const radio = (base * b.escala) / 2;
@@ -787,7 +806,7 @@ function pintaBurbujas() {
        <div class="deriva-x" style="--dx:${dxPx.toFixed(1)}px;--tx:${b.tx}s;--rx:${b.rx}s">
         <div class="deriva-y relative" style="--dy:${dyPx.toFixed(1)}px;--ty:${b.ty}s;--ry:${b.ry}s">
         <button data-burbuja="${i}" ${reventando ? 'disabled aria-hidden="true"' : ''}
-             class="esfera relative ${elegida ? 'esfera-elegida' : ''}
+             class="esfera relative ${elegida ? 'esfera-elegida' : ''} ${b.dorada ? 'dorada' : ''}
                     ${reventando ? 'revienta pointer-events-none' : 'esfera-tocable'}"
              style="width:${(base * b.escala).toFixed(1)}px;aspect-ratio:1;
                     background:${fondo};
@@ -795,7 +814,9 @@ function pintaBurbujas() {
                     box-shadow:${sombra};
                     transform: scale(${escala});
                     filter:blur(${desenfoque}px)"
-             aria-label="${ETIQUETAS[b.cat]}, elegir">
+             aria-label="${ETIQUETAS[b.cat]}${b.dorada ? ', dorada, puntúa el doble' : ''}, elegir">
+          ${b.dorada && !reventando ? `<span class="marca-x2 pointer-events-none absolute"
+                          style="font-size:${Math.max(9, 10 * b.escala).toFixed(1)}px">×2</span>` : ''}
           ${reventando ? '' : `<span class="etiqueta pointer-events-none absolute inset-0 flex items-center
                           justify-center px-2 text-center font-bold uppercase leading-none tracking-tight text-white"
                           style="font-size:${Math.max(9, 11 * b.escala).toFixed(1)}px;
@@ -808,11 +829,13 @@ function pintaBurbujas() {
 }
 
 // Rótulo con la temática de la burbuja que ha salido
-function muestraRotulo(cat) {
+function muestraRotulo(cat, dorada) {
   els.rotuloIcono.innerHTML =
     iconoHTML(cat, { clase: 'h-full w-full', color: COLORES[cat], grosor: 1.5 });
-  els.rotuloTxt.textContent = ETIQUETAS[cat];
-  els.rotuloTxt.style.color = COLORES[cat];
+  // En táctil no hay hover: el rótulo es lo único que avisa de que esta burbuja
+  // vale el doble antes de que se abra la pregunta.
+  els.rotuloTxt.textContent = dorada ? `${ETIQUETAS[cat]} · ×2` : ETIQUETAS[cat];
+  els.rotuloTxt.style.color = dorada ? '#FFCE54' : COLORES[cat];
   els.rotulo.classList.remove('hidden');
   els.rotulo.classList.add('flex');
   els.rotuloCaja.classList.remove('rotulo-in');
@@ -866,8 +889,9 @@ function eligeBurbuja(i) {
   // Actualiza sólo las burbujas afectadas para evitar re-render completo
   updateBubbleSelection(previo, i);
   const cat = state.campo[i].cat;
-  els.estado.textContent = ETIQUETAS[cat];
-  muestraRotulo(cat);
+  const dorada = !!state.campo[i].dorada;
+  els.estado.textContent = dorada ? `${ETIQUETAS[cat]} · ×2` : ETIQUETAS[cat];
+  muestraRotulo(cat, dorada);
   const ronda = nuevaRonda(state.score + 1, cat);
   precarga(ronda);
   state.timer = setTimeout(() => lanzaPregunta(ronda), ELEGIDA_MS);
@@ -1068,8 +1092,9 @@ function resuelve(correcto, ms, agotado) {
   }
 
   const detalle = r.explica || explicaDuelo(r);
+  const dorada = !!(state.campo[state.actual] && state.campo[state.actual].dorada);
   if (correcto) {
-    const ganados = puntosPor(ms);
+    const ganados = puntosPor(ms, multiplicadorDe(state.actual));
     state.score++;
     state.puntos += ganados;
     els.score.textContent = state.score;
@@ -1086,7 +1111,8 @@ function resuelve(correcto, ms, agotado) {
     });
     const hito = state.score % 5 === 0;
     showToast('ok',
-      hito ? `¡${state.score} seguidas!` : ACIERTOS[state.score % ACIERTOS.length],
+      dorada ? '¡Dorada! Puntos ×2'
+        : hito ? `¡${state.score} seguidas!` : ACIERTOS[state.score % ACIERTOS.length],
       detalle,
       ganados);
     state.completadas.add(state.actual);
@@ -1385,8 +1411,11 @@ document.addEventListener('keydown', (e) => {
   const r = state.ronda;
   if (!r) return;
   if (r.modo === 'elige') {
-    if (e.key === 'ArrowLeft' || e.key === '1') responde(0);
-    if (e.key === 'ArrowRight' || e.key === '2') responde(1);
+    // Con cuatro tarjetas las flechas no bastan: van también los números.
+    const n = Number(e.key);
+    if (n >= 1 && n <= r.cartas.length) return responde(n - 1);
+    if (e.key === 'ArrowLeft') responde(0);
+    if (e.key === 'ArrowRight') responde(r.cartas.length === 2 ? 1 : r.cartas.length - 1);
   } else {
     if (e.key === 'ArrowLeft' || e.key === '1' || e.key.toLowerCase() === 's') responde(true);
     if (e.key === 'ArrowRight' || e.key === '2' || e.key.toLowerCase() === 'n') responde(false);

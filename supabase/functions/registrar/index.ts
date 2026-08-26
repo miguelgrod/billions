@@ -29,7 +29,11 @@ type Motor = {
   reiniciaMotor: (s: number) => number;
   reparteCategorias: () => string[];
   nuevaRonda: (nivel: number, cat: string) => { correcta: unknown; tipo: string } | null;
-  puntosPor: (ms: number) => number;
+  puntosPor: (ms: number, multiplicador?: number) => number;
+  // Dos burbujas de las veinte puntúan el doble, y cuáles son sale de la misma
+  // semilla. Va opcional a propósito: así esta función sigue valiendo para un
+  // motor anterior a las doradas, que simplemente no las tiene.
+  multiplicadorDe?: (b: number) => number;
 };
 
 // Un isolate atiende muchas peticiones seguidas: se guarda el motor ya montado y
@@ -61,7 +65,8 @@ async function montaMotor(
   }
 
   const codigo = fuentes.join('\n;\n') +
-    '\n;\nreturn { reiniciaMotor, reparteCategorias, nuevaRonda, puntosPor };';
+    '\n;\nreturn { reiniciaMotor, reparteCategorias, nuevaRonda, puntosPor,' +
+    "\n  multiplicadorDe: typeof multiplicadorDe === 'function' ? multiplicadorDe : undefined };";
   const motor = new Function(codigo)() as Motor;
   cache = { clave, motor };
   return motor;
@@ -77,7 +82,13 @@ function revalida(motor: Motor, partida: any) {
   if (!Array.isArray(campo) || campo.length !== BURBUJAS) {
     return { ok: false, motivo: 'el campo no tiene 20 burbujas' };
   }
-  if (!Array.isArray(jugadas) || jugadas.length > BURBUJAS) {
+  // Una burbuja fallada NO sale del campo, así que una partida tiene más
+  // jugadas que burbujas: veinte aciertos más los dos fallos que se perdonan,
+  // o diecinueve aciertos y los tres que la acaban. El techo real es 22, y con
+  // el tope puesto en 20 se rechazaba cualquier victoria con un solo fallo
+  // —un tercio largo de las partidas— con un «demasiadas jugadas» que no había
+  // manera de entender desde fuera.
+  if (!Array.isArray(jugadas) || jugadas.length > BURBUJAS + VIDAS - 1) {
     return { ok: false, motivo: 'demasiadas jugadas' };
   }
 
@@ -113,7 +124,9 @@ function revalida(motor: Motor, partida: any) {
     if (!agotado && j.r === ronda.correcta) {
       aciertos++;
       usadas.add(j.b);
-      puntos += motor.puntosPor(j.ms);
+      // El multiplicador de la burbuja dorada sale del motor, no de lo que
+      // diga el cliente: es la misma semilla y el mismo reparto.
+      puntos += motor.puntosPor(j.ms, motor.multiplicadorDe ? motor.multiplicadorDe(j.b) : 1);
     } else {
       vidas--;
     }

@@ -191,6 +191,25 @@
     /* la burbuja señalada sube de capa para que su etiqueta no quede debajo */
     .burbuja:has(.esfera-tocable:hover), .burbuja:has(.esfera-tocable:focus-visible) { z-index: 40; }
 
+    /* Dos burbujas de las veinte puntúan el doble. Conservan el color y la foto
+       de su categoría —eso es lo que dice de qué van— y lo que las distingue es
+       el aro dorado, que va en el box-shadow de línea, y esta marca. El brillo
+       recorre el aro despacio para que se vea sin gritar. */
+    .marca-x2 {
+      top: -2px; right: -2px;
+      display: flex; align-items: center; justify-content: center;
+      min-width: 2.1em; height: 1.55em; padding: 0 .35em;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #FFE9A8 0%, #FFCE54 45%, #E8A317 100%);
+      color: #3a2400; font-weight: 800; letter-spacing: -.02em; line-height: 1;
+      box-shadow: 0 2px 8px rgba(0,0,0,.45);
+    }
+    @keyframes brilloDorado {
+      0%, 100% { filter: brightness(1); }
+      50%      { filter: brightness(1.16); }
+    }
+    .dorada { animation: brilloDorado 2.6s ease-in-out infinite; }
+
     /* La burbuja acertada se va del campo: crece, se difumina y desaparece,
        como una pompa al reventar. La animación gana a la escala en línea del
        botón porque las animaciones pesan más que el atributo style. */
@@ -263,7 +282,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       .deriva-x, .deriva-y, .esfera-elegida, .aparece, .ask-in, .card-in, .card-out,
-      .score-bump, .life-out, .shake, .pop { animation: none; }
+      .score-bump, .life-out, .shake, .pop, .dorada { animation: none; }
       /* sin animación el fundido no se ve: se apaga de golpe en vez de dejar la
          portada 1,5 s tapando el juego sin que pase nada */
       .intro-fuera { animation: none; opacity: 0; }
@@ -499,7 +518,7 @@
   <script src="composers.js?v=01eff1c1" defer></script>
   <script src="actores.js?v=3d235854" defer></script>
   <script src="nacimientos.js?v=d7886cba" defer></script>
-  <script src="motor.js?v=6468e128" defer></script>
-  <script src="main.js?v=5914848d" defer></script>
+  <script src="motor.js?v=e85293ba" defer></script>
+  <script src="main.js?v=ee03c0fa" defer></script>
 </body>
 </html>

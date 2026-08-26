@@ -40,6 +40,12 @@ const HUECO_SEGURO = 12;
 const EDAD_MAX = 22;
 
 const BURBUJAS = 20;
+// Dos burbujas de las veinte puntúan el doble. Salen del azar sembrado como el
+// reparto de categorías —son parte de la partida, no adorno—, y por eso las
+// decide `reparteCategorias()` y no main.js: el servidor rehace la partida con
+// este mismo archivo y tiene que llegar a los mismos puntos.
+const DORADAS = 2;
+const MULTI_DORADA = 2;
 const CATEGORIAS = ['taquilla', 'anio', 'director', 'actores', 'oscar', 'oscarcat',
                     'critica', 'filmografia', 'bso'];
 
@@ -350,31 +356,56 @@ function rondaAnio(level) {
 // ---- Director: ¿dirigió esta persona esta película? ----
 function rondaDirector(level) {
   const m = pick(frescas(CON_DIRECTOR));
-  const verdadero = coin();
-  let nombre;
-  if (verdadero) {
-    nombre = pick(m.d);
-  } else {
-    // cuanto más alto el nivel, más plausible el intruso: mismo momento del cine
-    const cerca = level > 6;
-    const candidatos = DIRECTORES.filter((n) => {
-      if (m.d.includes(n)) return false;
-      if (!cerca) return true;
-      return CON_DIRECTOR.some((o) => o.d.includes(n) && Math.abs(o.y - m.y) <= 6);
-    });
-    nombre = pick(candidatos.length ? candidatos : DIRECTORES.filter((n) => !m.d.includes(n)));
-  }
-  if (!nombre) return null;
+  // Si la firman dos, se pregunta por uno de ellos y el otro no puede salir de
+  // intruso: sería una segunda respuesta correcta.
+  const bueno = pick(m.d);
+  const fotoBuena = directorPhoto(bueno);
+  // La dificultad no está en el número de opciones, está en quiénes son: con
+  // cuatro caras de épocas distintas se acierta por descarte. Así que lo que
+  // sube con el nivel es cuántos de los tres intrusos son contemporáneos de la
+  // película —a menos de seis años—, de uno en el nivel 1 a los tres en el 10.
+  const contemporaneos = level >= 10 ? 3 : level >= 4 ? 2 : 1;
+  const plausible = (n) => CON_DIRECTOR.some((o) => o.d.includes(n) && Math.abs(o.y - m.y) <= 6);
+  const elegibles = (filtra) => DIRECTORES.filter((n) => {
+    if (m.d.includes(n)) return false;
+    // Tres directores comparten foto con su codirector —los Russo, los Daniels,
+    // Boden & Fleck—: dos caras iguales en la mesa serían una ronda absurda.
+    if (directorPhoto(n) === fotoBuena) return false;
+    return filtra(n);
+  });
+  const cerca = elegibles(plausible);
+  const lejos = elegibles(() => true);
+  if (lejos.length < 3) return null;
+
+  const intrusos = [];
+  const fotos = new Set([fotoBuena]);
+  const mete = (pool) => {
+    for (let i = 0; i < 30; i++) {
+      const n = pick(pool);
+      if (!n || intrusos.includes(n) || fotos.has(directorPhoto(n))) continue;
+      intrusos.push(n);
+      fotos.add(directorPhoto(n));
+      return true;
+    }
+    return false;
+  };
+  for (let i = 0; i < contemporaneos && cerca.length; i++) mete(cerca);
+  while (intrusos.length < 3) { if (!mete(lejos)) return null; }
+
+  const nombres = [bueno, ...intrusos];
+  barajaEnSitio(nombres);
   const real = m.d.length > 1 ? `La dirigieron ${m.d.join(' y ')}` : `La dirigió ${m.d[0]}`;
   return {
     tipo: 'director',
-    pregunta: `¿Dirigió ${nom(nombre)} la película ${nom(m.t)}?`,
-    modo: 'sino',
-    cartas: [cartaPeli(m), cartaPersona(nombre, directorPhoto(nombre), 'Director')],
-    correcta: verdadero,
+    pregunta: `¿Quién dirigió ${nom(m.t)}?`,
+    modo: 'elige',
+    // Sin rótulo de oficio en la carta: con cuatro caras y la pregunta delante,
+    // poner «Director» cuatro veces es ruido.
+    cartas: nombres.map((n) => cartaPersona(n, directorPhoto(n), null)),
+    correcta: nombres.indexOf(bueno),
     pelis: [m],
     explica: `${real}.`,
-    firma: `dir-${m.r}-${nombre}`,
+    firma: `dir-${m.r}-${bueno}`,
   };
 }
 
@@ -622,6 +653,7 @@ const juego = {
   vistas: new Set(),   // películas ya preguntadas en esta partida
   ultima: '',          // firma de la ronda anterior
   sagas: new Map(),    // cuántas rondas lleva ya cada saga
+  doradas: new Set(),  // qué burbujas puntúan el doble
 };
 
 // Empieza una partida: siembra y olvida lo de la anterior. Devuelve la semilla.
@@ -629,14 +661,19 @@ function reiniciaMotor(semilla) {
   juego.vistas = new Set();
   juego.ultima = '';
   juego.sagas = new Map();
+  juego.doradas = new Set();
   return siembra(semilla);
 }
 
 
 /* ---------- los puntos ---------- */
 
-const puntosPor = (ms) =>
-  Math.max(0, Math.round(PUNTOS_MAX * (1 - Math.min(ms, TIEMPO) / TIEMPO)));
+// El multiplicador se aplica sobre los puntos ya redondeados, para que una
+// burbuja dorada valga exactamente el doble de lo que se ve en las demás.
+const puntosPor = (ms, multiplicador = 1) =>
+  Math.max(0, Math.round(PUNTOS_MAX * (1 - Math.min(ms, TIEMPO) / TIEMPO))) * multiplicador;
+const esDorada = (b) => juego.doradas.has(b);
+const multiplicadorDe = (b) => (esDorada(b) ? MULTI_DORADA : 1);
 
 
 /* ---------- el reparto de categorías del campo ---------- */
@@ -668,6 +705,14 @@ function reparteCategorias() {
   barajaEnSitio(sobran);
   cats.push(...sobran.slice(0, extra));
   barajaEnSitio(cats);
+  // Las doradas se sortean aquí y no en una función aparte a propósito: quien
+  // rehace la partida —el servidor— llama a `reparteCategorias()` y a
+  // `nuevaRonda()`, y nada más. Si esto consumiera azar en otro sitio, la
+  // secuencia sembrada dejaría de cuadrar entre el navegador y el servidor.
+  juego.doradas = new Set();
+  const indices = cats.map((_, i) => i);
+  barajaEnSitio(indices);
+  indices.slice(0, DORADAS).forEach((i) => juego.doradas.add(i));
   return cats;
 }
 
