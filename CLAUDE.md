@@ -1189,6 +1189,81 @@ Los detalles de la infraestructura y lo que queda pendiente están en
 
 ## Pendiente
 
+### Preparado para la próxima sesión: el Óscar de interpretación
+
+Miguel pidió una ronda de «¿tiene *X* un Óscar?». **Esa pregunta, tal cual, no se
+puede hacer y no hay que intentarlo**: sólo sabemos de los premios de las 235
+películas del catálogo, así que el "no" sería falso a menudo —Meryl Streep tiene
+tres Óscars y ninguno por una película de aquí—. Negarle un premio a quien lo
+tiene es peor que la heurística de los repartos, porque el jugador sí lo sabe.
+
+Lo que sí se puede, y es lo acordado, es **atar la pregunta a la película**:
+
+> ¿Quién ganó el Óscar por *El caballero oscuro*? → cuatro retratos
+> ¿Ganó *Al Pacino* el Óscar por *El Padrino*? → sí/no
+
+Ahí las dos respuestas son exactas: sabemos quién lo ganó y, por tanto, quién no.
+
+**Lo primero es el dato, y falta.** Ojo con lo que dice más arriba de
+«Mejor Actor de Reparto (Heath Ledger)»: **el paréntesis con el nombre es la
+excepción, no la regla**. Medido el 2026-08-26 sobre la hoja «Listado completo»:
+
+- **39 películas tienen premio de interpretación** (19 Mejor Actor, 17 Mejor
+  Actor de Reparto, 8 Mejor Actriz, 4 Mejor Actriz de Reparto: 48 premios).
+- **Sólo 3 traen el nombre del premiado**: Joe Pesci en *Goodfellas*, Heath
+  Ledger en *The Dark Knight* y Christoph Waltz en *Inglourious Basterds*.
+- Quedan **36 filas por completar**, y son las únicas: *El Padrino*, *Forrest
+  Gump*, *El silencio de los corderos*, *Amadeus*, *Toro salvaje*, *Alguien voló
+  sobre el nido del cuco*…
+
+Para sacar la lista al día, en la raíz del repo:
+
+```bash
+python3 - <<'EOF'
+import re
+# El módulo saca ROOT de __file__, así que hay que dárselo.
+g = {'__file__': 'tools/build-data.py'}
+exec(compile(open('tools/build-data.py').read().split('if __name__')[0], 'build-data.py', 'exec'), g)
+for f in g['rows'](g['AMPLIADO'], g['HOJA_AMPLIADA']):
+    if re.search(r'Mejor Act(or|riz)', f.get('N', '')) and '(' not in f['N']:
+        print(f['B'], '→', ', '.join(c for c in f['N'].split(', ') if 'Act' in c))
+EOF
+```
+
+(Probado el 2026-08-26: saca las 36.)
+
+**Cómo rellenarlo** (esto es trabajo de Miguel en el Excel): el nombre entre
+paréntesis detrás de su categoría, como ya está *Heath Ledger*. Dos avisos:
+
+1. **Escribe el nombre exactamente como aparece en las columnas H–L**, que es de
+   donde sale el índice de fotos. Un nombre que no case se queda sin cara y, por
+   la regla de siempre, fuera del juego.
+2. **Si el premiado no está entre los cinco actores de la ficha, añádelo**, o no
+   tendrá foto que enseñar.
+
+**Y después, el código** (esto es media hora):
+
+- `build-data.py` ya limpia el paréntesis para poder comparar categorías entre
+  películas —eso no se toca—, pero además tiene que **guardar el nombre en un
+  campo nuevo**, del estilo `op: { "Mejor Actor": "Al Pacino" }`. La expresión
+  que limpia está en `categorias_oscar()`.
+- La ronda de cuatro retratos **reaprovecha entera la máquina de `rondaDirector`**
+  —cartas de persona, `modo: 'elige'`, rejilla `COLS[4]`, teclas 1-4— y encima
+  los tres señuelos salen solos y son perfectos: **los otros actores de la misma
+  película**. Nada de intrusos traídos de fuera.
+- **Dónde meterla.** Añadir una décima categoría obliga a **repartir de nuevo la
+  rampa de color entera**, que es la regla que hay más arriba. Sale más barato
+  que sea un segundo generador dentro de `oscarcat`, que ya pregunta por
+  categorías de Óscar: la burbuja sigue diciendo «Categoría» y a veces plantea
+  una y a veces la otra.
+- **Depósito pequeño**: 39 películas. `frescas()` ya está bajado a 6 para
+  `oscarcat` por lo mismo.
+
+Lo que **no** resuelve esto es la pregunta original. Para «¿tiene *X* un Óscar?»
+hace falta el dato por persona, y el camino bueno es Wikidata (`P166`), hermano
+de `fetch-nacimientos.py` (`P569`), que ya resolvió a los actores sin fallar uno.
+Queda apuntado como paso siguiente, no como parte de esto.
+
 - Carátulas en alta resolución vía TMDB (bloqueado: hace falta la clave).
 - No hay forma de saltarse la pausa del revelado; si se hace lenta, un clic o
   tecla que adelante la ronda lo resuelve.
