@@ -69,20 +69,24 @@ function rejilla() {
 function reparteBurbujas() {
   const { cols, filas } = rejilla();
   state.posiciones = state.campo.map((_, i) => ({
-    // El desorden va en fracción de celda. Con 0,55 se solapaban de dos en
-    // dos; con 0,36 el campo sigue pareciendo repartido a mano y no se tocan.
-    cx: (i % cols + 0.5) / cols + (Math.random() - 0.5) * 0.36 / cols,
-    cy: (Math.floor(i / cols) + 0.5) / filas + (Math.random() - 0.5) * 0.34 / filas,
-    escala: 0.88 + Math.random() * 0.20,
-    // Dos ejes con periodos distintos: así el movimiento sólo se detiene en
-    // los extremos de cada eje y la trayectoria compuesta no se repite a la
-    // vista. Un solo recorrido con varios puntos frenaba en cada uno.
-    dx: (26 + Math.random() * 18).toFixed(1) + 's',
-    dy: (31 + Math.random() * 21).toFixed(1) + 's',
-    // El recorrido va en fracción del diámetro, no en píxeles fijos: 38 px
-    // sacaban la burbuja del campo en una pantalla pequeña.
-    rx: (0.10 + Math.random() * 0.10),
-    ry: (0.08 + Math.random() * 0.10),
+    // El desorden se mide en fracción de celda: con rejillas distintas, un
+    // valor fijo en porcentaje de pantalla se come filas enteras.
+    cx: (i % cols + 0.5) / cols + (Math.random() - 0.5) * 0.30 / cols,
+    cy: (Math.floor(i / cols) + 0.5) / filas + (Math.random() - 0.5) * 0.30 / filas,
+    escala: 0.74 + Math.random() * 0.52,
+    // Dos ejes con periodos largos y distintos: la trayectoria resultante no se
+    // repite a la vista y el movimiento nunca se detiene salvo en los extremos
+    // de cada eje. El recorrido va en fracción del diámetro, no en píxeles
+    // fijos: en un móvil, 38 px de deriva sacaban la burbuja fuera del campo.
+    dx: (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.16),
+    dy: (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.16),
+    tx: 26 + Math.random() * 18,
+    ty: 31 + Math.random() * 21,
+    // Retrasos negativos: cada burbuja entra en su ciclo por un punto
+    // distinto. Sin ellos las veinte respiran al unísono y se ve que es una
+    // animación en vez de un flotar.
+    rx: -Math.random() * 30,
+    ry: -Math.random() * 35,
     foto: null,
   }));
 }
@@ -106,25 +110,34 @@ function pintaBurbujas() {
     if (!viva && state.reciente !== i) return;
     const p = state.posiciones[i];
     const d = base * p.escala;
-    // La posición se corrige para que ninguna burbuja asome fuera: sin esto,
-    // las columnas de los extremos se salían hasta 51 px en un móvil.
-    const margen = d / 2 + d * Math.max(p.rx, p.ry) + 2;
-    const x = Math.min(Math.max(p.cx * w, margen), w - margen);
-    const y = Math.min(Math.max(p.cy * h, margen), h - margen);
     const elegida = state.actual === i;
     const reventando = state.reciente === i;
-    const letra = Math.max(9, Math.min(14, d * 0.115));
-    html += `<div class="burbuja" style="left:${x}px;top:${y}px">
-      <div class="deriva-x" style="--dx:${p.dx};--rx:${(d * p.rx).toFixed(1)}px">
-      <div class="deriva-y" style="--dy:${p.dy};--ry:${(d * p.ry).toFixed(1)}px">
+    // La posición se corrige para que la burbuja, con su deriva incluida, no
+    // asome fuera del campo: sin esto las columnas de los extremos se salían
+    // hasta 51 px en un móvil.
+    const dxPx = p.dx * base, dyPx = p.dy * base;
+    const mx = d / 2 + Math.abs(dxPx) + 2, my = d / 2 + Math.abs(dyPx) + 2;
+    const x = Math.min(Math.max(p.cx * w, mx), Math.max(mx, w - mx));
+    const y = Math.min(Math.max(p.cy * h, my), Math.max(my, h - my));
+    // Profundidad de campo: las pequeñas quedan algo desenfocadas y la elegida
+    // siempre entra a foco.
+    const desenfoque = elegida ? 0 : Math.max(0, (1.06 - p.escala) * 5).toFixed(1);
+    const color = colorPlano(clave);
+    const sombra = `0 26px 54px -14px ${color}5c, 0 6px 18px -6px rgba(0,0,0,.5)`;
+    const letra = Math.max(9, 11 * p.escala);
+    html += `<div class="burbuja" style="left:${x}px;top:${y}px;z-index:${elegida ? 30 : 10}">
+      <div class="deriva-x" style="--dx:${dxPx.toFixed(1)}px;--tx:${p.tx.toFixed(1)}s;--rx:${p.rx.toFixed(1)}s">
+      <div class="deriva-y relative" style="--dy:${dyPx.toFixed(1)}px;--ty:${p.ty.toFixed(1)}s;--ry:${p.ry.toFixed(1)}s">
         <button type="button" data-b="${i}" ${state.bloqueado || reventando ? 'disabled' : ''}
-          class="pompa relative block ${elegida ? 'elegida' : ''} ${reventando ? 'revienta' : ''}"
-          style="width:${d}px;height:${d}px;transform:scale(${elegida ? 1.14 : 1});
-                 box-shadow:0 10px 30px ${colorPlano(clave)}44;
+          class="esfera relative block ${elegida ? 'esfera-elegida' : ''} ${reventando ? 'revienta' : 'esfera-tocable'}"
+          style="width:${d.toFixed(1)}px;height:${d.toFixed(1)}px;
+                 --sombra:${sombra};--halo:${color}55;box-shadow:${sombra};
+                 transform:scale(${elegida ? 1.14 : 1});filter:blur(${desenfoque}px);
                  background-image:${p.foto ? `url('${p.foto}')` : 'none'};
-                 background-color:${colorPlano(clave)}">
+                 background-color:${color}"
+          aria-label="${TIPO_ETIQUETA[clave]}">
           <span class="velo" style="background:${esfera(clave)};opacity:${p.foto ? .62 : 1}"></span>
-          <span class="rotulo" style="font-size:${letra}px">${TIPO_ETIQUETA[clave]}</span>
+          ${reventando ? '' : `<span class="etiqueta" style="font-size:${letra.toFixed(1)}px">${TIPO_ETIQUETA[clave]}</span>`}
         </button>
       </div></div>
     </div>`;
@@ -170,6 +183,8 @@ function elige(i) {
   state.actual = i;
   state.bloqueado = true;
   pintaBurbujas();
+  const etiqueta = campo.querySelector('.esfera-elegida .etiqueta');
+  if (etiqueta) etiqueta.classList.add('rotulo-in');
   setTimeout(() => abrePregunta(i), ELEGIDA_MS);
 }
 
@@ -183,6 +198,9 @@ function abrePregunta(i) {
   $('pregunta').classList.add('flex', 'entra');
   $('creditos').classList.remove('hidden');
   $('categoria').textContent = state.ronda.etiqueta;
+  ['categoria', 'enunciado', 'pista'].forEach((id) => {
+    $(id).classList.remove('ask-in'); void $(id).offsetWidth; $(id).classList.add('ask-in');
+  });
   $('categoria').style.color = colorPlano(clave);
   $('enunciado').innerHTML = state.ronda.pregunta;
   $('pista').textContent = state.ronda.pista || '';
@@ -199,6 +217,12 @@ function pintaCartas() {
   const n = r.opciones.length;
   grid.className = `mt-5 grid gap-2.5 sm:gap-3 ${n === 2 ? 'grid-cols-2' : n === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`;
   grid.innerHTML = r.opciones.map((o, i) => cartaHTML(o, i)).join('');
+  // Entran escalonadas: 60 ms entre una y otra es lo que hace que se lean como
+  // que aparecen y no como que ya estaban.
+  grid.querySelectorAll('[data-o]').forEach((b, i) => {
+    b.classList.add('card-in');
+    b.style.animationDelay = `${i * 0.06}s`;
+  });
   grid.querySelectorAll('[data-o]').forEach((b) => {
     b.addEventListener('click', () => responde(Number(b.dataset.o)));
   });
@@ -281,6 +305,8 @@ function responde(indice) {
     state.puntos += puntos;
     state.aciertos++;
     $('score').textContent = state.puntos;
+    $('score').classList.remove('score-bump'); void $('score').offsetWidth;
+    $('score').classList.add('score-bump');
     aviso('ok', 'Correct', puntos, '');
   } else {
     state.vidas--;
@@ -347,7 +373,9 @@ function aviso(tipo, mensaje, puntos, detalle) {
 function pintaVidas(perdida) {
   $('vidas').innerHTML = Array.from({ length: VIDAS }, (_, i) => {
     const viva = i < state.vidas;
-    return `<span class="h-2.5 w-2.5 rounded-full ${viva ? 'bg-[#2EA166]' : 'bg-white/15'}"></span>`;
+    // La que se acaba de perder late al apagarse: es la que hay que mirar.
+    const cae = perdida && i === state.vidas;
+    return `<span class="h-2.5 w-2.5 rounded-full ${viva ? 'bg-[#2EA166]' : 'bg-white/15'} ${cae ? 'life-out' : ''}"></span>`;
   }).join('');
 }
 
@@ -403,15 +431,20 @@ function pintaIntro() {
   let html = '';
   for (let i = 0; i < 12; i++) {
     const clave = claves[i % claves.length];
-    const d = Math.max(58, Math.min(window.innerWidth, 900) / 7) * (0.7 + Math.random() * 0.7);
+    const k = 0.7 + Math.random() * 0.7;
+    const d = Math.max(58, Math.min(window.innerWidth, 900) / 7) * k;
     const x = 6 + Math.random() * 88, y = 6 + Math.random() * 88;
     const j = conFoto[Math.floor(Math.random() * conFoto.length)];
+    const color = colorPlano(clave);
+    // Las mismas pompas del campo, con su deriva desfasada y su profundidad de
+    // campo: lo primero que se ve es la pieza de verdad.
     html += `<div class="burbuja" style="left:${x}%;top:${y}%">
-      <div class="deriva-x" style="--dx:${(26 + Math.random() * 18).toFixed(1)}s;--rx:${(d * 0.14).toFixed(0)}px">
-      <div class="deriva-y" style="--dy:${(31 + Math.random() * 20).toFixed(1)}s;--ry:${(d * 0.12).toFixed(0)}px">
-        <span class="pompa relative block" style="width:${d}px;height:${d}px;
-          background-image:url('photos/${j[P_ID]}.jpg');background-color:${colorPlano(clave)};
-          filter:blur(${d < 70 ? 1.4 : 0}px);opacity:${d < 70 ? .75 : .95}">
+      <div class="deriva-x" style="--dx:${(d * (Math.random() < .5 ? -.18 : .18)).toFixed(0)}px;--tx:${(26 + Math.random() * 18).toFixed(1)}s;--rx:${(-Math.random() * 30).toFixed(1)}s">
+      <div class="deriva-y" style="--dy:${(d * (Math.random() < .5 ? -.16 : .16)).toFixed(0)}px;--ty:${(31 + Math.random() * 21).toFixed(1)}s;--ry:${(-Math.random() * 35).toFixed(1)}s">
+        <span class="esfera relative block" style="width:${d}px;height:${d}px;
+          background-image:url('photos/${j[P_ID]}.jpg');background-color:${color};
+          box-shadow:0 26px 54px -14px ${color}5c;
+          filter:blur(${Math.max(0, (1.06 - k) * 4.5).toFixed(1)}px);opacity:${k < .85 ? .8 : .95}">
           <span class="velo" style="background:${esfera(clave)};opacity:.62"></span>
         </span>
       </div></div></div>`;

@@ -182,9 +182,34 @@ estrechas más, vuelve a medirlo.
 - **La posición se corrige al pintar para que ninguna burbuja asome fuera**: el
   centro se limita a radio + deriva + 2 de cada borde. Comprobado en un móvil
   de 390 px: 0 de 20 burbujas se salen y no hay desplazamiento horizontal.
-- **La deriva va en dos ejes con periodos distintos** (26–44 s y 31–52 s) y **un
-  nivel del DOM por propiedad**: centrado, eje X, eje Y y escala. Si
-  compartieran `transform`, cada uno anularía a los demás.
+- **Las animaciones son las de Billions, replicadas de su CSS.** Merece la pena
+  saber en qué se diferencian de una versión ingenua, porque lo primero que
+  escribí aquí las tenía todas mal:
+  - **La deriva va en la propiedad `translate`, no en `transform`.** El
+    centrado de la burbuja vive en `transform` y la escala del resalte en la
+    esfera interior: si compartieran propiedad, cada uno anularía a los demás.
+  - **Cada burbuja lleva un `animation-delay` negativo distinto** (0 a −30 s en
+    un eje, 0 a −35 s en el otro). **Es lo que más se nota**: sin él las veinte
+    empiezan a la vez y el campo entero respira al unísono, que es lo que
+    delataba que era una animación en vez de un flotar.
+  - **Dos ejes con periodos largos y distintos** (26–44 s y 31–52 s) y curva
+    `cubic-bezier(.45,0,.55,1)`, casi sinusoidal: así el movimiento sólo se
+    detiene en los extremos de cada eje, como un péndulo. Un solo fotograma con
+    varios puntos y `ease-in-out` frenaba en cada punto intermedio.
+  - **En móvil la deriva va un 22 % más rápida** (media query sobre
+    `animation-duration`): el campo es más pequeño y el mismo recorrido se
+    percibe más lento. Comprobado: 38,2 s pasan a 29,8 s por debajo de 640 px.
+  - **Profundidad de campo**: las pequeñas llevan un desenfoque de hasta 1,6 px
+    —`(1.06 − escala) × 5`— y la elegida siempre entra a foco.
+  - **La elegida late**: un halo de su color que se expande y se apaga, dos
+    veces (`latido`), mientras se lee su etiqueta, que entra con `rotuloIn`.
+  - **`revienta` tiene tres pasos**, no dos: crece a 1,22 sin desenfoque, y de
+    ahí a 1,55 difuminándose a 7 px. Con dos pasos parecía que se encogía.
+  - **`will-change` y `backface-visibility`** en las capas animadas: es lo que
+    evita los tirones al mover veinte burbujas a la vez en un móvil.
+  - Las cartas usan **el foco de tvOS** (crecen un 5,5 % con la curva del
+    sistema) y entran escalonadas 60 ms (`card-in`); el marcador da un salto al
+    sumar y la vida perdida late al apagarse.
 - **Cada burbuja lleva de fondo el retrato de un jugador** al ~62 %, con la foto
   debajo y el color encima: así la esfera conserva la identidad de color de su
   categoría. Poner la foto encima con `opacity` apagaría también el degradado.
