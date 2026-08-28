@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfect Nine · Privacy</title>
+  <script src="vendor/tailwind.js?v=2810894e"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+           background: #06120d; color: rgba(255,255,255,.9); }
+    /* El mismo fondo que el juego. Aquí el texto es largo y va sobre la foto,
+       así que el velo es más opaco todavía. */
+    .fondo-foto {
+      position: fixed; inset: 0; z-index: -20;
+      background: #06120d url('imgs/stadium.jpg') center/cover no-repeat;
+      filter: blur(7px) saturate(.8) brightness(.88);
+      transform: scale(1.08);
+    }
+    .fondo-velo {
+      position: fixed; inset: 0; z-index: -10;
+      background: linear-gradient(180deg, rgba(4,14,10,.72), rgba(4,14,10,.84));
+    }
+    .display { letter-spacing: -0.04em; font-weight: 800; }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="fondo-foto"></div>
+  <div class="fondo-velo"></div>
+  <main class="mx-auto max-w-2xl px-5 py-12">
+    <h1 class="display text-3xl text-white">Privacy</h1>
+    <p class="mt-2 text-sm text-white/60">Last updated 28 August 2026</p>
+
+    <div class="mt-8 space-y-5 text-sm leading-relaxed text-white/80">
+      <p><b class="text-white">The game collects nothing.</b> There are no accounts, no analytics,
+      no advertising and no cookies. Nothing you do here is sent anywhere.</p>
+
+      <p><b class="text-white">No third-party requests.</b> Every file the page needs — the styles,
+      the font, the data — is served from this site. Your browser never contacts another
+      company while you play, so no one else sees your IP address.</p>
+
+      <p><b class="text-white">What stays on your device.</b> Your best score is saved in your
+      browser's local storage. It never leaves your device, and clearing your browser data
+      deletes it.</p>
+
+      <p><b class="text-white">Hosting.</b> The site is served from Amazon Web Services in Ireland
+      (eu-west-1). Like any web server, it records standard access logs.</p>
+
+      <p><b class="text-white">Data source.</b> Player records, team records and player
+      photographs come from the public MLB Stats API. The photographs are copyright of
+      their owners and are used here for identification only. This game is not affiliated with, endorsed by, or sponsored by
+      Major League Baseball or any of its clubs; team names are used descriptively to
+      identify the franchises a player appeared for.</p>
+
+      <p>Questions: <a href="mailto:bonitu@garciarodriguez.net" class="underline underline-offset-2 hover:text-white">bonitu@garciarodriguez.net</a></p>
+    </div>
+
+    <a href="index.html" class="mt-10 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Back to the game</a>
+  </main>
+</body>
+</html>

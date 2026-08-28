@@ -1164,6 +1164,19 @@ Y las dos de siempre:
   se llevaba por delante el resto del despliegue. Los pasos están en
   INFRAESTRUCTURA.md.
 
+## El otro juego del repo: Perfect Nine (MLB)
+
+Desde el 2026-08-28 hay un segundo juego en `mlb/`, **independiente de éste**:
+un quiz de béisbol con datos de la MLB Stats API: veinte burbujas, ocho
+categorías de pregunta y tres vidas. No comparte código,
+datos ni estilos con Billions —tiene su propia copia de Tailwind, de Inter y su
+propia página de privacidad—; lo único que comparte es el despliegue. Se sirve
+en `https://ganoyo.com/mlb/index.html` y su documentación es
+[mlb/CLAUDE.md](mlb/CLAUDE.md).
+
+**No lo acoples a Billions.** Si necesita un servicio nuevo, se le monta el
+suyo, igual que Billions hizo con Bonitu.
+
 ## Publicar
 
 **"Publicar" aquí significa desplegar, no crear un Artifact.**

@@ -139,6 +139,38 @@ nada más:
 Sus llaves van a los secretos `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY` del
 repositorio. Si falta un permiso, el workflow falla nombrando la acción exacta.
 
+## El segundo juego, en /mlb/
+
+Desde el 2026-08-28 el repo lleva un juego más, **Perfect Nine** (quiz de la
+MLB), en `mlb/`. Se despliega con el mismo workflow y se sirve en el mismo
+bucket, en `https://ganoyo.com/mlb/index.html`. Su documentación está en
+[mlb/CLAUDE.md](mlb/CLAUDE.md).
+
+- **El sync excluye `mlb/tools/*` y `mlb/cache/*`.** El primero son scripts de
+  Python que no pintan nada en un sitio web; el segundo son ~200 MB de datos
+  crudos de la MLB Stats API, que además están en `.gitignore` y por tanto
+  nunca llegan al runner.
+- **`/mlb/` a secas no funciona: hay que poner `/mlb/index.html`.** Con OAC, el
+  bucket no da permiso de listado y CloudFront no busca el documento índice
+  dentro de una carpeta, así que devuelve **403** —y el 403 está mapeado a
+  `/404.html`—. Se comprueba en un segundo: `/posters/` y `/imgs/` responden lo
+  mismo.
+- **Para que la carpeta a secas funcione** hay que añadir una CloudFront
+  Function asociada al *viewer request* del comportamiento por defecto:
+
+  ```js
+  function handler(event) {
+    var req = event.request;
+    if (req.uri.endsWith('/')) req.uri += 'index.html';
+    else if (!req.uri.includes('.')) req.uri += '/index.html';
+    return req;
+  }
+  ```
+
+  Se crea en CloudFront → Functions, se publica y se asocia a la distribución
+  `EJYIWS894T0ZX`. **Va a mano, como las páginas de error**, y por el mismo
+  motivo: el usuario `billions-deploy` sólo tiene `CreateInvalidation`.
+
 ## Trampas conocidas
 
 - **`aws s3 sync --delete` no borra lo que está excluido.** Si añades un archivo

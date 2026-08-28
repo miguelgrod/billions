@@ -1,2 +1,5 @@
 build/
 .DS_Store
+
+# Los datos crudos de la MLB Stats API: se vuelven a bajar con fetch-mlb.py
+mlb/cache/

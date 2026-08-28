@@ -45,6 +45,9 @@ jobs:
             --exclude ".gitignore" \
             --exclude ".github/*" \
             --exclude "tools/*" \
+            --exclude "mlb/tools/*" \
+            --exclude "mlb/cache/*" \
+            --exclude "mlb/src/*" \
             --exclude "supabase/*" \
             --exclude "build/*" \
             --exclude ".DS_Store" \
