@@ -330,21 +330,30 @@ respuestas correctas**.
 
 ## La clasificación
 
-Vive en `leaderboard.html` y **todavía no está encendida**: falta crear el
-proyecto de Supabase. Los pasos, el esquema y la función de validación están en
-[supabase/README.md](supabase/README.md).
+Vive en `leaderboard.html`. **Encendida el 2026-08-29** en un proyecto propio de
+Supabase (`umuzzbcmcwhcdbbfobms`, **Irlanda**, el mismo `eu-west-1` que el
+bucket). El esquema y la función están en
+[supabase/README.md](supabase/README.md), y **se despliegan a mano desde el
+panel**: el workflow sólo sube el sitio y `supabase/` está excluido del sync.
 
+- **Es la única excepción a «el sitio no hace ninguna petición externa»**, y
+  sólo ocurre **si el jugador pulsa Guardar**. Jugar no habla con ningún
+  servidor, y por eso sigue sin hacer falta consentimiento para jugar: el
+  consentimiento es el propio botón.
 - **Con `leaderboard-config.js` vacío, nada revienta**: la página de fin apaga
   el botón de guardar diciendo por qué y la clasificación explica que aún no
   está abierta, en vez de soltar un error de red que no significa nada.
 - **El marcador no se envía: se deduce.** El cliente manda la semilla y lo que
   hizo el jugador; los puntos los calcula el servidor rehaciendo la partida.
-  Probado en Node contra el verificador: partida legítima aceptada con los
-  puntos exactos, y rechazadas la del campo manipulado, la de burbuja repetida,
-  la de respuestas de 100 ms, la partida a medias, la de semilla falseada, la de
-  jugadas de más y la que apunta a una opción inexistente.
-- **La clave que irá en el JavaScript es pública por diseño y sólo puede leer.**
-  Escribir sólo se puede a través de la función.
+  Probado **contra el servidor real**: partida legítima aceptada con los puntos
+  exactos —1.271, los mismos que calculó el motor— y rechazadas la del campo
+  manipulado, la de burbuja repetida, la de respuestas de 100 ms, la partida a
+  medias, la de datos falseados, la de jugadas de más y la que va sin alias,
+  cada una con su motivo y su código.
+- **La clave del JavaScript es pública por diseño y sólo puede leer.** La tabla
+  tiene RLS con una única política de lectura y los permisos se dan columna a
+  columna: comprobado que con esa clave **no** se puede insertar ni leer
+  `partida` ni `huella` —401 en los tres casos—.
 - **Los nombres se escapan al pintarlos.** Los escribe cualquiera y van a un
   `innerHTML`: sin escapar, el primero que ponga `<img onerror=…>` de alias
   ejecuta código en el navegador de todos los demás. Probado con ese alias
@@ -383,10 +392,11 @@ proyecto de Supabase. Los pasos, el esquema y la función de validación están 
 
 ## Pendiente
 
-- **Crear el proyecto de Supabase.** Todo lo demás está escrito y probado: el
-  esquema, la función que revalida y las dos páginas. Son cinco pasos, en
-  [supabase/README.md](supabase/README.md). `privacy.html` ya explica qué se
-  enviará y cuándo, y dice que aún no está encendido.
+- **Borrar la fila de prueba** que dejó la comprobación del día que se encendió
+  la clasificación: alias «PRUEBA borrar», 1.271 puntos. Se hace desde el Table
+  Editor del panel, o con
+  `delete from puntuaciones where alias = 'PRUEBA borrar';`. Con la clave
+  pública no se puede borrar nada, que es justamente la idea.
 - Categorías que los datos ya permiten y no están: posiciones (receptor,
   cerrador), país de nacimiento como burbuja propia, récords de una temporada
   concreta.

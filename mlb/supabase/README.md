@@ -1,14 +1,22 @@
 # La clasificación de Perfect Nine
 
-**Todavía no está encendida**: hace falta crear el proyecto de Supabase. Hasta
-entonces, `leaderboard-config.js` tiene la URL vacía, la página de fin apaga el
-botón de guardar diciendo por qué y la clasificación explica que aún no está
-abierta. Nada revienta y nadie ve un error de red sin explicación.
+**Encendida el 2026-08-29.** Proyecto `umuzzbcmcwhcdbbfobms`, en **Irlanda**
+(el mismo `eu-west-1` que el bucket). Si alguna vez se vacía la `url` de
+`leaderboard-config.js`, las dos páginas se apagan solas con un mensaje en vez
+de soltar un error de red.
+
+Probado contra el servidor real el día que se encendió: partida legítima
+aceptada con los puntos exactos (1.271, los mismos que calculó el motor), y
+rechazadas la del campo manipulado (422), la de burbuja repetida (422), la de
+respuestas de 100 ms (422), la partida a medias (422), la de datos falseados
+(409), la de jugadas de más (422) y la que va sin alias (400). Comprobado
+también que con la clave pública **no** se puede insertar en la tabla ni leer
+las columnas `partida` y `huella` (401 en los tres casos).
 
 **Es un proyecto aparte del de Billions.** Los dos juegos no comparten
 infraestructura: si este necesita base de datos, se le monta la suya.
 
-## Para encenderla
+## Cómo se montó, por si hay que rehacerlo
 
 1. Crear un proyecto de Supabase **en Irlanda (eu-west-1)**, el mismo sitio que
    el bucket, y ejecutar `schema.sql` en su SQL Editor.

@@ -155,6 +155,10 @@ bucket, en `https://ganoyo.com/mlb/index.html`. Su documentación está en
   dentro de una carpeta, así que devuelve **403** —y el 403 está mapeado a
   `/404.html`—. Se comprueba en un segundo: `/posters/` y `/imgs/` responden lo
   mismo.
+- **Tiene su propio proyecto de Supabase** para la clasificación
+  (`umuzzbcmcwhcdbbfobms`, Irlanda), encendido el 2026-08-29. No comparte nada
+  con el de Billions: ni tabla, ni función, ni claves. Los pasos y las pruebas
+  están en [mlb/supabase/README.md](mlb/supabase/README.md).
 - **Para que la carpeta a secas funcione** hay que añadir una CloudFront
   Function asociada al *viewer request* del comportamiento por defecto:
 
