@@ -109,8 +109,29 @@
     const escapa = (s) => String(s).replace(/[&<>"']/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    // Oro, plata y bronce; el resto, en gris.
-    const MEDALLA = { 1: 'text-[#FFD60A]', 2: 'text-white/70', 3: 'text-[#FF9F0A]' };
+    // Oro, plata y bronce: disco, cinta y borde de cada una.
+    const MEDALLAS = {
+      1: { disco: '#FFD60A', cinta: '#C99700', nombre: 'Oro' },
+      2: { disco: '#D9DEE6', cinta: '#98A0AC', nombre: 'Plata' },
+      3: { disco: '#E08A45', cinta: '#A4602A', nombre: 'Bronce' },
+    };
+
+    // La medalla va en SVG en línea, como los logos de compartir de fin.html:
+    // el sitio no pide un solo archivo fuera, y así hereda el tamaño del texto.
+    // Lleva dentro el número, que es el dato; la medalla sólo lo destaca.
+    function medalla(puesto) {
+      const m = MEDALLAS[puesto];
+      if (!m) return `<span class="text-white/35">${puesto}</span>`;
+      return `<svg viewBox="0 0 22 26" width="22" height="26" class="block" role="img" aria-label="${m.nombre}, puesto ${puesto}">
+        <path d="M3 0h5.4l4.1 9-4.6 1.8z" fill="${m.cinta}"/>
+        <path d="M19 0h-5.4l-4.1 9 4.6 1.8z" fill="${m.cinta}"/>
+        <circle cx="11" cy="17" r="8.5" fill="${m.disco}" stroke="${m.cinta}" stroke-width="1.2"/>
+        <circle cx="11" cy="17" r="6.2" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="0.9"/>
+        <text x="11" y="17.6" text-anchor="middle" dominant-baseline="middle"
+              font-size="9" font-weight="700" fill="#000" fill-opacity=".62"
+              font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif">${puesto}</text>
+      </svg>`;
+    }
 
     function pinta(filas, desde) {
       tabla.innerHTML = filas.map((f, i) => {
@@ -118,7 +139,7 @@
         const yo = f.id === mia;
         return `
         <tr class="${yo ? 'mia' : ''}">
-          <td class="px-4 py-3 font-semibold sm:px-5 ${MEDALLA[puesto] || 'text-white/35'}">${puesto}</td>
+          <td class="px-4 py-3 font-semibold tabular-nums sm:px-5">${medalla(puesto)}</td>
           <td class="px-2 py-3 font-medium text-white">${escapa(f.alias)}${
             yo ? ' <span class="ml-1.5 rounded-full bg-[#30D158]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#30D158]">Tú</span>' : ''
           }</td>
