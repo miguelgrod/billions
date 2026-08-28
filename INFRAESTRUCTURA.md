@@ -93,7 +93,12 @@ certificado y el DNS se hicieron a mano:
     Mientras no exista, el workflow despliega igual y se salta **dos** pasos: la
     invalidación y la configuración de las páginas de error.
 
-    **Pendiente el 2026-08-25**: `404.html` y `500.html` ya están en el bucket,
+    **Sigue pendiente, comprobado el 2026-08-29**: `/noexiste.html` y
+    `/lo/que/sea` devuelven el XML de `AccessDenied` de S3 en vez de la página
+    de error. Son tres filas en la consola y arreglan Billions y Perfect Nine a
+    la vez.
+
+    `404.html` y `500.html` ya están en el bucket,
     pero una URL inventada sigue devolviendo el XML de S3 (`403 AccessDenied`,
     `x-cache: Error from cloudfront`). **Hay que configurarlo a mano**: se probó
     a hacerlo desde el workflow y el usuario de despliegue no tiene permiso

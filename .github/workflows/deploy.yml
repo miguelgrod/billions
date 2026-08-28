@@ -66,6 +66,50 @@ jobs:
             --cache-control "no-cache, must-revalidate" \
             --content-type "text/html; charset=utf-8"
 
+      # `https://ganoyo.com/mlb`, sin archivo, devolvía el XML de AccessDenied de
+      # S3: con OAC, CloudFront no busca el documento índice dentro de una
+      # carpeta y el bucket no da permiso de listado. Lo suyo sería una
+      # CloudFront Function de viewer request, pero eso hay que configurarlo a
+      # mano en la consola y `billions-deploy` no tiene permiso para tocar la
+      # distribución.
+      #
+      # Así que se sube un objeto con esa clave exacta —y otro con la barra— que
+      # no es una carpeta ni un índice: es una página que lleva al juego.
+      #
+      # Va DESPUÉS del sync a propósito: `--delete` borra lo que no está en el
+      # repositorio, y estas dos claves no lo están. Se recrean en cada
+      # despliegue. Excluirlas del sync habría sido más fino, pero el patrón
+      # `mlb` es demasiado parecido al directorio `mlb/` como para arriesgarse:
+      # si el CLI lo entendiera como la carpeta, `--delete` se llevaría el juego
+      # entero del bucket.
+      #
+      # Y se usa `s3api put-object` y no `s3 cp` porque `cp` trata un destino
+      # acabado en `/` como un prefijo y subiría `mlb/atajo.html` en vez de
+      # crear la clave `mlb/`.
+      - name: Atajo /mlb -> /mlb/index.html
+        run: |
+          cat > /tmp/atajo.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="refresh" content="0; url=/mlb/index.html">
+            <link rel="canonical" href="https://ganoyo.com/mlb/index.html">
+            <title>Perfect Nine</title>
+          </head>
+          <body style="background:#06120d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0">
+            <p><a href="/mlb/index.html" style="color:#fff">Perfect Nine</a></p>
+          </body>
+          </html>
+          HTML
+          for clave in "mlb" "mlb/"; do
+            aws s3api put-object \
+              --bucket "${BUCKET}" --key "${clave}" \
+              --body /tmp/atajo.html \
+              --content-type "text/html; charset=utf-8" \
+              --cache-control "no-cache, must-revalidate" >/dev/null
+          done
+
       # Las páginas de error (403 y 404 -> /404.html, 500 -> /500.html) se
       # configuran a mano en la consola, no desde aquí: hacerlo requeriría darle
       # a `billions-deploy` permiso de UpdateDistribution, que deja reescribir la
