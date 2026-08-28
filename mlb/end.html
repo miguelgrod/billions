@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfect Nine · Game over</title>
+  <script src="vendor/tailwind.js?v=2810894e"></script>
+  <style>
+    @font-face {
+      font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap;
+      src: url('fonts/inter-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+    }
+    :root { color-scheme: dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+      background: #06120d; color: rgba(255,255,255,.92);
+    }
+    .display { letter-spacing: -0.045em; font-weight: 800; }
+    .seam { background-image: repeating-linear-gradient(-45deg, #C8102E 0 3px, transparent 3px 9px); }
+    /* El mismo fondo que el juego. Ver CLAUDE.md: la foto va difuminada y
+       apagada, y el velo se calibró midiendo el contraste del texto. */
+    .fondo-foto {
+      position: fixed; inset: 0; z-index: -20;
+      background: #06120d url('imgs/stadium.jpg') center/cover no-repeat;
+      filter: blur(7px) saturate(.8) brightness(.88);
+      transform: scale(1.08);
+    }
+    .fondo-velo {
+      position: fixed; inset: 0; z-index: -10; pointer-events: none;
+      background: linear-gradient(180deg, rgba(4,14,10,.74) 0%, rgba(4,14,10,.86) 100%);
+    }
+    .glass {
+      background: rgba(12,26,20,.60); border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+    }
+    .glass-fuerte {
+      background: rgba(9,20,15,.72); border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(26px) saturate(150%); -webkit-backdrop-filter: blur(26px) saturate(150%);
+    }
+    /* El foco de tvOS, igual que en el juego. */
+    .foco { transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s, background .38s; }
+    @media (hover: hover) { .foco:not(:disabled):hover { transform: scale(1.045); } }
+    @media (prefers-reduced-motion: reduce) { .foco { transition: none; } }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="fondo-foto"></div>
+  <div class="fondo-velo"></div>
+
+  <main class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl items-center justify-center px-4 py-8 sm:px-6">
+    <div class="glass-fuerte w-full max-w-2xl rounded-[32px] p-6 shadow-2xl sm:p-8">
+      <div class="mb-6 flex items-center justify-center gap-2.5">
+        <span class="seam h-5 w-5 rounded-full opacity-80"></span>
+        <p id="fin-titulo" class="display text-3xl leading-none text-white sm:text-4xl">Game over</p>
+      </div>
+
+      <div class="mb-6 flex items-end justify-center gap-3">
+        <span class="display text-[64px] leading-none text-white sm:text-[88px]" id="fin-score">0</span>
+        <span id="fin-etiqueta" class="mb-2 text-sm uppercase tracking-[0.18em] text-white/55">POINTS</span>
+      </div>
+
+      <div class="glass rounded-[24px] p-4 sm:p-5">
+        <div id="fin-detalle" class="text-sm leading-relaxed text-white/80"></div>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <button id="fin-grabar" type="button"
+                class="foco whitespace-nowrap rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">
+          Save score
+        </button>
+        <!-- El nombre se pide sólo al pulsar: quien no quiera aparecer en la
+             clasificación no tiene que ver un formulario ni rechazarlo. -->
+        <a href="leaderboard.html"
+           class="foco inline-flex whitespace-nowrap items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">
+          Leaderboard
+        </a>
+        <a href="index.html"
+           class="foco inline-flex whitespace-nowrap items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black">
+          Play again
+        </a>
+      </div>
+
+      <!-- Formulario de la clasificación, oculto hasta que se pide. -->
+      <form id="fin-form" class="mt-5 hidden">
+        <label for="fin-alias" class="block text-center text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
+          What name should we use
+        </label>
+        <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <input id="fin-alias" name="alias" type="text" maxlength="20" required
+                 autocomplete="nickname" enterkeyhint="send" placeholder="Your name"
+                 class="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3 text-center text-sm text-white outline-none placeholder:text-white/30 focus:border-white/40 sm:w-64">
+          <button type="submit" id="fin-enviar"
+                  class="foco rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">
+            Save
+          </button>
+        </div>
+        <p class="mt-3 text-center text-xs leading-relaxed text-white/50">
+          Your name and score go on a public leaderboard.
+          <a href="privacy.html" class="underline underline-offset-2 hover:text-white/80">How your data is handled</a>.
+        </p>
+        <p id="fin-aviso" class="mt-3 hidden text-center text-sm"></p>
+      </form>
+
+      <div class="mt-6 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-left shadow-[0_16px_36px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-[10px] font-medium uppercase tracking-[0.26em] text-white/50">Support the game</p>
+          <span class="inline-flex rounded-full border border-[#0070BA]/50 bg-[#0070BA]/15 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#4DA9E8]">donation</span>
+        </div>
+        <p class="mt-3 text-sm leading-relaxed text-white/80">
+          This game will always be free, and you get nothing in return but this.
+          You can chip in towards its upkeep from €1.
+        </p>
+        <!-- Botón propio, no la imagen de paypalobjects.com ni su pixel de
+             seguimiento: cargarlos daría la IP de cada visitante a PayPal sin
+             que nadie haya pedido donar. Así la petición sólo sale al pulsar. -->
+        <form action="https://www.paypal.com/donate" method="post" target="_blank" rel="noreferrer noopener" class="mt-4 flex justify-center">
+          <input type="hidden" name="business" value="5EFDRMP5ECZZC">
+          <input type="hidden" name="no_recurring" value="1">
+          <input type="hidden" name="item_name" value="This game will always be free and you get no extra benefit. You can help pay for it here.">
+          <input type="hidden" name="currency_code" value="EUR">
+          <button type="submit"
+                  class="foco inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#009CDE] via-[#0070BA] to-[#003087] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(0,112,186,0.28)]">
+            <span aria-hidden="true" class="text-base leading-none">♥</span>
+            Donate with PayPal
+          </button>
+        </form>
+        <div class="mt-5 border-t border-white/10 pt-4">
+          <p class="text-center text-[10px] font-medium uppercase tracking-[0.22em] text-white/55">Share</p>
+          <div class="mt-3 flex items-center justify-center gap-2.5">
+            <!-- Los glifos van en línea, no como archivo ni desde un CDN: es la
+                 regla de siempre, y además así heredan el color del botón. -->
+            <a id="share-wa" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_10px_24px_rgba(37,211,102,0.28)]" aria-label="Share on WhatsApp">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            </a>
+            <a id="share-x" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.15)]" aria-label="Share on X">
+              <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+            </a>
+            <!-- Sólo la «f», no el disco de la marca, que aquí ya lo pone el
+                 botón. El translate la centra: su caja no está centrada en el
+                 viewBox porque en el logotipo la letra se apoya en el borde de
+                 abajo del círculo. -->
+            <a id="share-fb" href="#" target="_blank" rel="noreferrer noopener"
+               class="foco inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-[0_10px_24px_rgba(24,119,242,0.26)]" aria-label="Share on Facebook">
+              <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor" aria-hidden="true"><path transform="translate(-.098 -2.089)" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245Z"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="px-4 pb-8 text-center">
+    <p class="text-xs text-white/45">
+      Data and player photos from the MLB Stats API · Not affiliated with MLB or its clubs ·
+      <a href="privacy.html" class="underline underline-offset-2 hover:text-white/80">Privacy</a>
+    </p>
+  </footer>
+
+  <script src="leaderboard-config.js?v=00a70308"></script>
+  <script>
+    // Es una página autónoma: no carga el motor ni los datos del juego, sólo
+    // Tailwind y esto. El resultado llega por localStorage y no por la URL
+    // porque el detalle es HTML con marcado, y meterlo en la barra de
+    // direcciones sería feo y frágil.
+    const FIN_KEY = 'pn.lastResult';
+    const result = (() => {
+      // Si el almacenamiento no está disponible —modo privado— la página se
+      // pinta con sus valores por defecto en vez de quedarse en blanco.
+      try { return JSON.parse(localStorage.getItem(FIN_KEY) || '{}'); } catch (e) { return {}; }
+    })();
+
+    if (result.titulo) document.getElementById('fin-titulo').textContent = result.titulo;
+    if (typeof result.score === 'number') document.getElementById('fin-score').textContent = result.score;
+    if (result.etiqueta) document.getElementById('fin-etiqueta').textContent = result.etiqueta.toUpperCase();
+    if (result.detalle) document.getElementById('fin-detalle').innerHTML = result.detalle;
+
+    const shareUrl = 'https://ganoyo.com/mlb/index.html';
+    const shareText = encodeURIComponent('Perfect Nine · twenty questions about baseball. How many can you get?');
+    document.getElementById('share-wa').href = `https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}`;
+    document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`;
+    document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+
+    /* ---------- la clasificación global ---------- */
+    const ALIAS_KEY = 'pn.alias';
+    const grabar = document.getElementById('fin-grabar');
+    const form = document.getElementById('fin-form');
+    const alias = document.getElementById('fin-alias');
+    const enviar = document.getElementById('fin-enviar');
+    const aviso = document.getElementById('fin-aviso');
+
+    function apaga(texto, color) {
+      grabar.disabled = true;
+      grabar.classList.add('opacity-40');
+      // Decirlo en la pantalla y no sólo en el title: un botón apagado sin
+      // explicación parece una avería.
+      // El aviso va DESPUÉS de la fila de botones, no dentro: metido en el
+      // flex se colaba entre «Save score» y «Leaderboard» y partía los rótulos
+      // en dos líneas.
+      grabar.parentElement.insertAdjacentHTML('afterend',
+        `<p class="mt-3 text-center text-xs ${color}">${texto}</p>`);
+    }
+
+    if (!LEADERBOARD.url) {
+      // El servidor todavía no existe. Ver mlb/supabase/README.md.
+      apaga('Leaderboard opens when the server is up', 'text-white/45');
+    } else if (result.ficticia) {
+      apaga('Test result · not saved to the leaderboard', 'text-[#FFB000]');
+    } else if (!result.partida) {
+      // Se llega aquí abriendo la página suelta, sin haber jugado.
+      apaga('Play a game to save a score', 'text-white/45');
+    }
+
+    function di(texto, color) {
+      aviso.textContent = texto;
+      aviso.className = `mt-3 text-center text-sm ${color}`;
+    }
+
+    grabar.addEventListener('click', () => {
+      form.classList.remove('hidden');
+      grabar.classList.add('hidden');
+      try { alias.value = localStorage.getItem(ALIAS_KEY) || ''; } catch (e) { /* modo privado */ }
+      alias.focus();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = alias.value.trim();
+      if (!nombre) { di('Type a name.', 'text-white/60'); return; }
+
+      enviar.disabled = true;
+      di('Saving…', 'text-white/60');
+      try {
+        // El marcador no se envía: se deduce. El cliente manda la semilla y lo
+        // que hizo el jugador, y el servidor rehace la partida y calcula los
+        // puntos. No hay ningún número que falsear.
+        const res = await fetch(`${LEADERBOARD.url}/functions/v1/registrar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: LEADERBOARD.key,
+            Authorization: `Bearer ${LEADERBOARD.key}`,
+          },
+          body: JSON.stringify({ alias: nombre, partida: result.partida }),
+        });
+        const datos = await res.json().catch(() => ({}));
+        if (res.ok) {
+          try {
+            localStorage.setItem(ALIAS_KEY, nombre);
+            if (datos.id) localStorage.setItem('pn.miPuntuacion', datos.id);
+          } catch (e) { /* modo privado */ }
+          di(`Saved: ${datos.puntos} points. Taking you to the leaderboard…`, 'text-[#2EA166]');
+          alias.disabled = true;
+          enviar.textContent = 'Saved';
+          // Se deja leer la confirmación y se pasa solo a la clasificación, que
+          // es a donde quiere ir quien acaba de registrar su marca. El enlace
+          // queda debajo por si el salto no llega a producirse.
+          form.insertAdjacentHTML('beforeend',
+            '<p class="mt-4 text-center"><a href="leaderboard.html" ' +
+            'class="text-xs text-white/45 underline underline-offset-2 hover:text-white/80">Go now</a></p>');
+          setTimeout(() => { location.href = 'leaderboard.html'; }, 1200);
+        } else {
+          di(datos.error || "Couldn't save that.", 'text-[#C8102E]');
+          enviar.disabled = false;
+        }
+      } catch (error) {
+        di('No connection to the server.', 'text-[#C8102E]');
+        enviar.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

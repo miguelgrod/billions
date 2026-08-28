@@ -49,6 +49,10 @@ sube el repo entero al bucket `billions-cine`.
 | `imgs/stadium.jpg` | El fondo de todas las pantallas: 480 px, 56 KB |
 | `src/stadium.jpg` | El original de esa foto (1920 px, 4,4 MB). **No se despliega** |
 | `photos/_report.json` | Quién no tiene retrato, para no volver a pedirlo cada vez |
+| `end.html` | Pantalla de fin de partida, página aparte. Lee el resultado de `localStorage` (`pn.lastResult`) y ofrece guardar la marca, apoyar el juego y compartir |
+| `leaderboard.html` | Las mejores partidas. Autónoma: lee el servidor con `fetch` y no carga el motor ni los datos |
+| `leaderboard-config.js` | Dónde vive la clasificación. **Hoy está vacío a propósito**: no hay servidor todavía |
+| `supabase/` | Esquema, función de validación y sus instrucciones. **No se despliega** |
 | `privacy.html` | Página de privacidad propia. La de Billions no vale: es otro sitio |
 | `tools/fetch-mlb.py` | Descarga la API a `cache/`. Reanudable |
 | `tools/fetch-photos.py` | Descarga los retratos. Reanudable |
@@ -271,6 +275,92 @@ estrechas más, vuelve a medirlo.
   el texto**; sin él, una burbuja grande cae sobre el título y no hay manera de
   leerlo.
 
+## La partida acaba en otra página
+
+Como en Billions: `acaba()` arma el resultado, lo deja en `localStorage` bajo
+`pn.lastResult` y hace `location.href = 'end.html'`.
+
+- **El traspaso va por `localStorage` y no por la URL**: el detalle es HTML con
+  marcado, y meterlo en la barra de direcciones sería feo y frágil.
+- **`end.html` se apaña con lo que reciba.** Si el almacenamiento no está
+  disponible —modo privado— el `try/catch` traga y la página se pinta con sus
+  valores por defecto en vez de quedarse en blanco.
+- **Es una página autónoma**: no carga el motor ni los datos, sólo Tailwind y
+  un `<script>` en línea.
+- Lleva el bloque de apoyo (PayPal) y los tres enlaces de compartir. **El
+  donativo es un `<form>` a `paypal.com/donate` con botón propio**: ni la imagen
+  de `paypalobjects.com` ni el pixel de seguimiento del fragmento oficial, que
+  darían la IP de cada visitante a PayPal sin que nadie haya pedido donar. Los
+  logos de compartir son **SVG en línea** (simple-icons, CC0) por lo mismo.
+- **Del logo de Facebook sólo se usa la «f»**, recortada del glifo original: el
+  de simple-icons es el disco entero con la letra calada, y en blanco sobre el
+  botón azul salía el negativo de la marca. Lleva un `translate` porque su caja
+  no está centrada en el viewBox.
+- **El aviso de por qué no se puede guardar va DEBAJO de la fila de botones**,
+  no dentro: metido en el flex se colaba entre «Save score» y «Leaderboard» y
+  partía los rótulos en dos líneas.
+
+## La bitácora de la partida
+
+Cada jugada resuelta se anota en `state.bitacora`, y al acabar viaja dentro de
+`pn.lastResult` bajo la clave `partida`:
+
+```js
+partida: {
+  semilla: 31337,
+  campo: ['eras', 'rings', 'teams', …],       // la categoría de cada burbuja
+  jugadas: [{ b: 0, r: 1, ms: 2480 }, …],     // burbuja, opción pulsada, tiempo
+  datos: { 'mlb-data.js': '2af028cd', … },    // con qué versión se jugó
+}
+```
+
+- **`r` es el índice de la opción pulsada, y a `null` es que se agotó el
+  tiempo**, que no es lo mismo que fallar. El índice vale porque el orden de las
+  opciones lo baraja el azar sembrado: al rehacer la ronda vuelve a salir igual.
+- **`b` es el índice de la burbuja, no la categoría.** La categoría se saca del
+  campo, y el campo de la semilla: guardar las dos cosas permite detectar que no
+  cuadran.
+- **`datos` es imprescindible para reproducir.** Si se regenera `mlb-data.js`,
+  las mismas semillas dejan de dar las mismas preguntas. Las huellas ya las pone
+  `sella-versiones.py`, así que `versionDeDatos()` se limita a leerlas del DOM.
+
+Comprobado contra el motor fuera del navegador: de una partida jugada de verdad
+en el navegador salen **el mismo campo y las mismas cinco rondas con las mismas
+respuestas correctas**.
+
+## La clasificación
+
+Vive en `leaderboard.html` y **todavía no está encendida**: falta crear el
+proyecto de Supabase. Los pasos, el esquema y la función de validación están en
+[supabase/README.md](supabase/README.md).
+
+- **Con `leaderboard-config.js` vacío, nada revienta**: la página de fin apaga
+  el botón de guardar diciendo por qué y la clasificación explica que aún no
+  está abierta, en vez de soltar un error de red que no significa nada.
+- **El marcador no se envía: se deduce.** El cliente manda la semilla y lo que
+  hizo el jugador; los puntos los calcula el servidor rehaciendo la partida.
+  Probado en Node contra el verificador: partida legítima aceptada con los
+  puntos exactos, y rechazadas la del campo manipulado, la de burbuja repetida,
+  la de respuestas de 100 ms, la partida a medias, la de semilla falseada, la de
+  jugadas de más y la que apunta a una opción inexistente.
+- **La clave que irá en el JavaScript es pública por diseño y sólo puede leer.**
+  Escribir sólo se puede a través de la función.
+- **Los nombres se escapan al pintarlos.** Los escribe cualquiera y van a un
+  `innerHTML`: sin escapar, el primero que ponga `<img onerror=…>` de alias
+  ejecuta código en el navegador de todos los demás. Probado con ese alias
+  exacto: sale como texto.
+- **Al llegar de registrar, la lista no empieza por el número uno: empieza donde
+  está el jugador.** Se guarda su identificador, se calcula su puesto real —
+  contando también a los que empatan y llegaron antes, que si no dos empatados
+  compartirían número— y se cargan 60 filas desde 20 antes que él, con su fila
+  resaltada y la caja ya desplazada. El anclaje va **sin animación**: la lista
+  tiene que aparecer ya colocada.
+- **Los tres primeros llevan medalla** de oro, plata y bronce, en SVG en línea y
+  con el número dentro: la medalla destaca el puesto, no lo sustituye.
+- **El fondo de la cabecera fija va en los `th` y no en el `thead`**: puesto en
+  el thead no lo pintan todos los navegadores y las filas se transparentan al
+  pasar por debajo.
+
 ## Reglas del juego
 
 - `VIDAS` = 3, `TIEMPO` = 12 s por pregunta, `PUNTOS_MAX` = 100, 20 burbujas.
@@ -281,7 +371,10 @@ estrechas más, vuelve a medirlo.
   porque el mismo reloj decide los puntos: lo que se ve y lo que se cobra salen
   del mismo sitio.
 - **Durante la entrada de la pregunta no corre el reloj**: sería injusto
-  descontar tiempo de una pregunta que aún no se lee.
+  descontar tiempo de una pregunta que aún no se lee. **Y las cartas van
+  deshabilitadas hasta que arranca**: parar sólo el reloj no basta, porque quien
+  respondía antes pagaba el tiempo entero —`ms` cae a `TIEMPO`— y se quedaba sin
+  puntos habiendo acertado. Salió jugando una partida automática.
 - **El azar va sembrado** (`mulberry32`), así que con la semilla y las burbujas
   que pulsó el jugador se reconstruye la partida entera. Es lo que permitiría
   comprobar una puntuación en un servidor, como en Billions. **Lo decorativo
@@ -290,10 +383,10 @@ estrechas más, vuelve a medirlo.
 
 ## Pendiente
 
-- **Supabase propio, todavía sin montar**: clasificación con validación en
-  servidor, como la de Billions. Hace falta que Miguel cree el proyecto. **Si
-  algo se guarda en un servidor, `privacy.html` se actualiza ANTES de
-  encenderlo.**
+- **Crear el proyecto de Supabase.** Todo lo demás está escrito y probado: el
+  esquema, la función que revalida y las dos páginas. Son cinco pasos, en
+  [supabase/README.md](supabase/README.md). `privacy.html` ya explica qué se
+  enviará y cuándo, y dice que aún no está encendido.
 - Categorías que los datos ya permiten y no están: posiciones (receptor,
   cerrador), país de nacimiento como burbuja propia, récords de una temporada
   concreta.

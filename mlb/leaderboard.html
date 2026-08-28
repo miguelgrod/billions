@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfect Nine · Leaderboard</title>
+  <script src="vendor/tailwind.js?v=2810894e"></script>
+  <style>
+    @font-face {
+      font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap;
+      src: url('fonts/inter-latin.woff2') format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+    }
+    :root { color-scheme: dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+      background: #06120d; color: rgba(255,255,255,.92);
+    }
+    .display { letter-spacing: -0.05em; font-weight: 800; }
+    .seam { background-image: repeating-linear-gradient(-45deg, #C8102E 0 3px, transparent 3px 9px); }
+    .fondo-foto {
+      position: fixed; inset: 0; z-index: -20;
+      background: #06120d url('imgs/stadium.jpg') center/cover no-repeat;
+      filter: blur(7px) saturate(.8) brightness(.88);
+      transform: scale(1.08);
+    }
+    .fondo-velo {
+      position: fixed; inset: 0; z-index: -10; pointer-events: none;
+      background: linear-gradient(180deg, rgba(4,14,10,.74) 0%, rgba(4,14,10,.88) 100%);
+    }
+    .glass-fuerte {
+      background: rgba(9,20,15,.72); border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(26px) saturate(150%); -webkit-backdrop-filter: blur(26px) saturate(150%);
+    }
+    .foco { transition: transform .38s cubic-bezier(.2,.8,.2,1); }
+    @media (hover: hover) { .foco:hover { transform: scale(1.045); } }
+    /* La fila de quien acaba de registrar su marca, para encontrarse de un
+       vistazo. */
+    .mia { background: rgba(46,161,102,.12); box-shadow: inset 2px 0 0 #2EA166; }
+    @media (prefers-reduced-motion: reduce) { .foco { transition: none; } }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="fondo-foto"></div>
+  <div class="fondo-velo"></div>
+
+  <main class="mx-auto flex min-h-screen max-w-3xl flex-col items-center px-4 py-10 sm:px-6">
+    <header class="text-center">
+      <div class="flex items-center justify-center gap-2.5">
+        <span class="seam h-5 w-5 rounded-full opacity-80"></span>
+        <p class="display leading-none text-white" style="font-size:clamp(2.2rem,7vw,3.5rem)">Leaderboard</p>
+      </div>
+      <p class="mt-2 text-sm text-white/55">The best games of Perfect Nine</p>
+    </header>
+
+    <div class="glass-fuerte mt-8 w-full overflow-hidden rounded-[28px] shadow-2xl">
+      <!-- La tabla se desplaza dentro de su caja: en un móvil estrecho, un
+           nombre largo no debe empujar la página entera a lo ancho. -->
+      <div id="caja" class="max-h-[62vh] overflow-y-auto overflow-x-auto overscroll-contain">
+        <table class="w-full text-left text-sm">
+          <thead class="sticky top-0 z-10">
+            <!-- El fondo va en los `th` y no en el `thead`: puesto en el thead
+                 no lo pintan todos los navegadores y las filas se
+                 transparentan al pasar por debajo. -->
+            <tr class="text-[10px] uppercase tracking-[0.18em] text-white/45 [&>th]:border-b [&>th]:border-white/10 [&>th]:bg-[#0b1712]">
+              <th class="px-4 py-3 font-medium sm:px-5">#</th>
+              <th class="px-2 py-3 font-medium">Player</th>
+              <th class="px-4 py-3 text-right font-medium sm:px-5">Points</th>
+            </tr>
+          </thead>
+          <tbody id="tabla" class="divide-y divide-white/5"></tbody>
+        </table>
+      </div>
+      <p id="estado" class="px-5 py-8 text-center text-sm text-white/55">Loading…</p>
+    </div>
+
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <!-- Sólo aparece si la lista no empieza por el primero, que es cuando de
+           verdad hace falta: al llegar anclado a un puesto bajo. -->
+      <button id="al-top" type="button"
+              class="foco hidden items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
+        Jump to the top
+      </button>
+      <a href="index.html" class="foco inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">
+        Play
+      </a>
+    </div>
+
+    <p class="mt-auto pt-10 text-center text-xs text-white/40">
+      Data from the MLB Stats API · Not affiliated with MLB or its clubs ·
+      <a href="privacy.html" class="underline underline-offset-2 hover:text-white/70">Privacy</a>
+    </p>
+  </main>
+
+  <script src="leaderboard-config.js?v=00a70308"></script>
+  <script>
+    // Página autónoma: no carga el motor ni los datos del juego, sólo Tailwind
+    // y un fetch.
+    const VENTANA = 60;   // cuántas filas se piden de una vez
+    const ANTES = 20;     // cuántas por delante del jugador, al llegar anclado
+
+    const tabla = document.getElementById('tabla');
+    const estado = document.getElementById('estado');
+    const caja = document.getElementById('caja');
+    const alTop = document.getElementById('al-top');
+
+    // Quien acaba de registrar su marca guarda su identificador: con él se
+    // busca su puesto real y se le lleva hasta su fila.
+    let mia = null;
+    try { mia = localStorage.getItem('pn.miPuntuacion'); } catch (e) { /* modo privado */ }
+
+    const cab = { apikey: LEADERBOARD.key, Authorization: `Bearer ${LEADERBOARD.key}` };
+    const pide = (ruta, extra) => fetch(`${LEADERBOARD.url}/rest/v1/${ruta}`, { headers: { ...cab, ...extra } });
+
+    // Los nombres los escribe cualquiera y van a un innerHTML: sin escapar, el
+    // primero que ponga <img onerror=…> de alias ejecuta código en el navegador
+    // de todos los demás.
+    const escapa = (s) => String(s).replace(/[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Oro, plata y bronce: disco, cinta y borde de cada una.
+    const MEDALLAS = {
+      1: { disco: '#FFD60A', cinta: '#C99700', nombre: 'Gold' },
+      2: { disco: '#D9DEE6', cinta: '#98A0AC', nombre: 'Silver' },
+      3: { disco: '#E08A45', cinta: '#A4602A', nombre: 'Bronze' },
+    };
+
+    // La medalla va en SVG en línea, como los logos de compartir: el sitio no
+    // pide un solo archivo fuera. Lleva dentro el número, que es el dato; la
+    // medalla sólo lo destaca.
+    function medalla(puesto) {
+      const m = MEDALLAS[puesto];
+      if (!m) return `<span class="text-white/40">${puesto}</span>`;
+      return `<svg viewBox="0 0 22 26" width="22" height="26" class="block" role="img" aria-label="${m.nombre}, rank ${puesto}">
+        <path d="M3 0h5.4l4.1 9-4.6 1.8z" fill="${m.cinta}"/>
+        <path d="M19 0h-5.4l-4.1 9 4.6 1.8z" fill="${m.cinta}"/>
+        <circle cx="11" cy="17" r="8.5" fill="${m.disco}" stroke="${m.cinta}" stroke-width="1.2"/>
+        <circle cx="11" cy="17" r="6.2" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="0.9"/>
+        <text x="11" y="17.6" text-anchor="middle" dominant-baseline="middle"
+              font-size="9" font-weight="700" fill="#000" fill-opacity=".62"
+              font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif">${puesto}</text>
+      </svg>`;
+    }
+
+    function pinta(filas, desde) {
+      tabla.innerHTML = filas.map((f, i) => {
+        const puesto = desde + i + 1;
+        const yo = f.id === mia;
+        return `
+        <tr class="${yo ? 'mia' : ''}">
+          <td class="px-4 py-3 font-semibold tabular-nums sm:px-5">${medalla(puesto)}</td>
+          <td class="px-2 py-3 font-medium text-white">${escapa(f.alias)}${
+            yo ? ' <span class="ml-1.5 rounded-full bg-[#2EA166]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2EA166]">You</span>' : ''
+          }</td>
+          <td class="px-4 py-3 text-right font-semibold tabular-nums text-white sm:px-5">${f.puntos}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // El puesto exacto: los que tienen más puntos, más los que empatan pero
+    // llegaron antes. Sin la segunda mitad, dos empatados compartirían número y
+    // el ancla caería en la fila equivocada.
+    async function puestoDe(fila) {
+      const filtro = `or=(puntos.gt.${fila.puntos},and(puntos.eq.${fila.puntos},creado_en.lt.${encodeURIComponent(fila.creado_en)}))`;
+      const res = await pide(`puntuaciones?select=id&${filtro}`, { Prefer: 'count=exact', Range: '0-0' });
+      const total = (res.headers.get('content-range') || '').split('/')[1];
+      return Number(total || 0) + 1;
+    }
+
+    async function carga(desde) {
+      const res = await pide(
+        `puntuaciones?select=id,alias,puntos&order=puntos.desc,creado_en.asc` +
+        `&offset=${desde}&limit=${VENTANA}`);
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }
+
+    (async () => {
+      // Sin servidor no hay nada que pedir. Se dice y se acaba: un fetch a una
+      // dirección vacía sólo daría un error de red que no explica nada.
+      if (!LEADERBOARD.url) {
+        estado.innerHTML = 'The leaderboard isn\'t open yet.<br>'
+          + '<span class="text-white/40">Scores are saved once the server is up.</span>';
+        return;
+      }
+      try {
+        let desde = 0;
+        // Si el jugador viene de registrar su marca, la lista empieza donde él
+        // está y no por el número uno: es su puesto lo que ha venido a ver.
+        if (mia) {
+          const suya = await pide(`puntuaciones?select=id,puntos,creado_en&id=eq.${mia}`);
+          const [fila] = suya.ok ? await suya.json() : [];
+          // Si ya no existe —borrada— se cae al top sin decir nada.
+          if (fila) desde = Math.max(0, (await puestoDe(fila)) - 1 - ANTES);
+        }
+
+        const filas = await carga(desde);
+        if (!filas.length) {
+          estado.textContent = 'No games saved yet. Be the first.';
+          return;
+        }
+        pinta(filas, desde);
+        estado.classList.add('hidden');
+
+        // Anclar en su fila, dentro de la caja y sin animación: la lista tiene
+        // que aparecer ya colocada, no desplazarse sola delante del jugador.
+        const suya = tabla.querySelector('.mia');
+        if (suya) caja.scrollTop = suya.offsetTop - caja.clientHeight / 2 + suya.clientHeight / 2;
+        if (desde > 0) {
+          alTop.classList.remove('hidden');
+          alTop.classList.add('inline-flex');
+          alTop.addEventListener('click', async () => {
+            pinta(await carga(0), 0);
+            caja.scrollTop = 0;
+            alTop.classList.add('hidden');
+          });
+        }
+      } catch (error) {
+        estado.textContent = "Couldn't load the leaderboard. Try again later.";
+      }
+    })();
+  </script>
+</body>
+</html>

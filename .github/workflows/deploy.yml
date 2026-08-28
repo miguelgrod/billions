@@ -48,6 +48,7 @@ jobs:
             --exclude "mlb/tools/*" \
             --exclude "mlb/cache/*" \
             --exclude "mlb/src/*" \
+            --exclude "mlb/supabase/*" \
             --exclude "supabase/*" \
             --exclude "build/*" \
             --exclude ".DS_Store" \

@@ -52,6 +52,10 @@ const state = {
   puntos: 0,
   aciertos: 0,
   reciente: null,       // la que está reventando
+  // Cada jugada resuelta: qué burbuja, qué respondió y cuánto tardó. Con la
+  // semilla y esto se reconstruye la partida entera, que es lo que permite al
+  // servidor recalcular los puntos en vez de creérselos.
+  bitacora: [],
   t0: 0,
   corriendo: false,
   bloqueado: false,
@@ -207,7 +211,11 @@ function abrePregunta(i) {
   pintaCartas();
 
   // Durante la entrada no se puede responder ni corre el reloj: sería injusto
-  // descontar tiempo de una pregunta que aún no se lee.
+  // descontar tiempo de una pregunta que aún no se lee. Y no basta con parar
+  // el reloj: si las cartas siguen vivas, quien responde antes de que arranque
+  // paga el tiempo entero —`ms` cae a TIEMPO— y se queda sin puntos habiendo
+  // acertado. Salió jugando una partida automática, que responde al instante.
+  $('cartas').querySelectorAll('[data-o]').forEach((b) => { b.disabled = true; });
   setTimeout(arrancaReloj, FADE_MS);
 }
 
@@ -253,6 +261,7 @@ function cartaHTML(o, i) {
 // ---------------------------------------------------------------- reloj
 let bucle = 0;
 function arrancaReloj() {
+  $('cartas').querySelectorAll('[data-o]').forEach((b) => { b.disabled = false; });
   state.t0 = performance.now();
   state.corriendo = true;
   const paso = () => {
@@ -265,7 +274,7 @@ function arrancaReloj() {
     // porque el mismo reloj decide los puntos: lo que se ve y lo que se cobra
     // salen del mismo sitio.
     barra.style.background = queda < 0.25 ? '#FF453A' : queda < 0.5 ? '#FF9F0A' : '#FFB000';
-    if (ms >= TIEMPO) { state.corriendo = false; responde(-1); return; }
+    if (ms >= TIEMPO) { state.corriendo = false; responde(-1, true); return; }
     bucle = requestAnimationFrame(paso);
   };
   bucle = requestAnimationFrame(paso);
@@ -277,8 +286,11 @@ function paraReloj() {
 }
 
 // ------------------------------------------------------------ responder
-function responde(indice) {
+function responde(indice, porTiempo) {
   if (!state.ronda || state.respondida || state.terminada) return;
+  // Sin reloj no hay respuesta válida: o la pregunta aún está entrando, o ya
+  // se contestó. La única excepción es el propio aviso de tiempo agotado.
+  if (!state.corriendo && !porTiempo) return;
   state.respondida = true;
   const ms = state.corriendo ? performance.now() - state.t0 : TIEMPO;
   paraReloj();
@@ -299,6 +311,9 @@ function responde(indice) {
       b.style.borderColor = '#C8102E'; b.style.background = 'rgba(200,16,46,.16)';
     }
   });
+
+  // `r` a null es que se agotó el tiempo, que no es lo mismo que fallar.
+  state.bitacora.push({ b: state.actual, r: indice >= 0 ? indice : null, ms: Math.round(ms) });
 
   const correcta = r.opciones.find((o) => o.id === r.correcta);
   if (acierta) {
@@ -389,13 +404,45 @@ function record(puntos) {
   } catch (e) { return { mejor: puntos, nuevo: false }; }
 }
 
-function acaba(gana) {
+// Las huellas de los archivos con los que se ha jugado. Si se regeneran los
+// datos, las mismas semillas dejan de dar las mismas preguntas, así que el
+// servidor necesita saber con cuáles fue. Ya las pone sella-versiones.py en
+// cada <script src>: aquí sólo se leen del DOM.
+function versionDeDatos() {
+  const v = {};
+  document.querySelectorAll('script[src]').forEach((e) => {
+    const m = e.getAttribute('src').match(/([^/?]+)\?v=([0-9a-f]+)/);
+    if (m) v[m[1]] = m[2];
+  });
+  return v;
+}
+
+// La partida acaba en una página aparte, no en un aviso superpuesto: ahí caben
+// el resumen, la clasificación y el resto sin apretar el tablero.
+const FIN_KEY = 'pn.lastResult';
+
+function acaba(gana, ficticia) {
   state.terminada = true;
   const r = record(state.puntos);
-  $('fin-titulo').textContent = gana ? 'Field cleared.' : 'Three outs.';
-  $('fin-detalle').textContent = `${state.aciertos} of ${BURBUJAS} correct · ${state.puntos} points`;
-  $('fin-record').textContent = r.nuevo ? 'New personal best' : `Personal best ${r.mejor}`;
-  $('fin').classList.replace('hidden', 'flex');
+  const resultado = {
+    titulo: gana ? 'Field cleared.' : 'Three outs.',
+    score: state.puntos,
+    etiqueta: 'points',
+    detalle: `<p><b class="text-white">${state.aciertos} of ${BURBUJAS}</b> questions right`
+      + `${state.vidas < VIDAS ? ` · ${VIDAS - state.vidas} out${VIDAS - state.vidas === 1 ? '' : 's'}` : ''}.</p>`
+      + `<p class="mt-2 text-white/60">${r.nuevo ? 'A new personal best.' : `Your personal best is ${r.mejor}.`}</p>`,
+  };
+  if (ficticia) resultado.ficticia = true;
+  else {
+    resultado.partida = {
+      semilla: state.semilla,
+      campo: state.campo,
+      jugadas: state.bitacora,
+      datos: versionDeDatos(),
+    };
+  }
+  try { localStorage.setItem(FIN_KEY, JSON.stringify(resultado)); } catch (e) { /* modo privado */ }
+  location.href = 'end.html';
 }
 
 // ------------------------------------------------------------ arranque
@@ -412,12 +459,12 @@ function nuevaPartida(semilla) {
   state.bloqueado = false;
   state.respondida = false;
   state.terminada = false;
+  state.bitacora = [];
   reparteBurbujas();
   repartefotos();
   $('score').textContent = '0';
   pintaVidas();
   pintaBurbujas();
-  $('fin').classList.replace('flex', 'hidden');
   campo.classList.remove('hidden');
   $('pregunta').classList.add('hidden');
 }
@@ -461,9 +508,7 @@ $('jugar').addEventListener('click', () => {
   $('intro').classList.add('hidden');
   nuevaPartida();
 });
-$('otra').addEventListener('click', () => nuevaPartida());
 $('reset').addEventListener('click', () => {
-  $('fin').classList.replace('flex', 'hidden');
   $('intro').classList.remove('hidden');
   pintaIntro();
   nuevaPartida();
